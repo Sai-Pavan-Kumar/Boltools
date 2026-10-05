@@ -1,0 +1,48 @@
+# Boltools Software Git Ignore
+
+# Internal & Private Resources
+dontpushtogit/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+
+# Distribution & Build
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+*.manifest
+*.spec
+
+# PyInstaller / Packaging output
+*.exe
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs & Databases
+*.log
+*.sqlite3
