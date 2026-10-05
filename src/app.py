@@ -103,6 +103,9 @@ class BoltoolsApp(ctk.CTk):
         self.active_frame.grid(row=0, column=0, sticky="nsew")
 
     def show_home(self):
+        self.header.set_breadcrumb(["Workspace"])
+        self.sidebar.active_category = None
+        self.sidebar._update_button_states()
         home = HomeDashboard(
             self.content_area,
             on_tool_select=self.show_tool,
@@ -111,6 +114,11 @@ class BoltoolsApp(ctk.CTk):
         self._set_active_content(home)
 
     def show_category(self, category_id: str):
+        meta = ToolRegistry.CATEGORIES.get(category_id, {})
+        cat_name = meta.get("name", category_id)
+        self.header.set_breadcrumb(["Workspace", cat_name])
+        self.sidebar.active_category = category_id
+        self.sidebar._update_button_states()
         gallery = CategoryGallery(
             self.content_area,
             category_id=category_id,
@@ -120,6 +128,10 @@ class BoltoolsApp(ctk.CTk):
         self._set_active_content(gallery)
 
     def show_tool(self, tool: ToolDefinition):
+        self.header.set_breadcrumb(["Workspace", tool.category_name, tool.name])
+        self.sidebar.active_category = tool.category_id
+        self.sidebar._update_button_states()
+
         # Lazy instantiate or pull from cache
         if tool.id in self.tool_cache:
             self._set_active_content(self.tool_cache[tool.id])

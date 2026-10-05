@@ -8,7 +8,7 @@ from src.core.registry import ToolRegistry, ToolDefinition
 
 
 class CategoryGallery(ctk.CTkScrollableFrame):
-    """Grid display of all tools inside a specific domain category."""
+    """Grid display of all tools inside a specific domain category with Apple card aesthetics."""
 
     def __init__(
         self,
@@ -19,12 +19,12 @@ class CategoryGallery(ctk.CTkScrollableFrame):
         **kwargs
     ):
         super().__init__(master, fg_color=Theme.SURFACE_BASE, corner_radius=0, **kwargs)
-        
+
         self.category_id = category_id
         self.on_tool_select = on_tool_select
         self.on_back = on_back
 
-        self.meta = ToolRegistry.CATEGORIES.get(category_id, {"name": category_id, "icon": "🛠️", "desc": ""})
+        self.meta = ToolRegistry.CATEGORIES.get(category_id, {"name": category_id, "glyph": "◈", "desc": ""})
         self.tools = ToolRegistry.get_by_category(category_id)
 
         self._build_header()
@@ -34,13 +34,30 @@ class CategoryGallery(ctk.CTkScrollableFrame):
         header_frame = ctk.CTkFrame(self, fg_color="transparent")
         header_frame.pack(fill="x", padx=Theme.PAD_LG, pady=(Theme.PAD_LG, Theme.PAD_MD))
 
+        # Back link
+        back_btn = ctk.CTkButton(
+            header_frame,
+            text="← Back to Workspace Hub",
+            fg_color="transparent",
+            hover_color=Theme.SURFACE_CARD_HOVER,
+            text_color=Theme.TEXT_SECONDARY,
+            font=Theme.FONT_CAPTION,
+            height=24,
+            width=140,
+            anchor="w",
+            command=self.on_back
+        )
+        back_btn.pack(anchor="w", pady=(0, Theme.PAD_XS))
+
+        # Title row
         title_row = ctk.CTkFrame(header_frame, fg_color="transparent")
         title_row.pack(fill="x")
 
+        glyph = self.meta.get("glyph", "◈")
         title_lbl = ctk.CTkLabel(
             title_row,
-            text=f"{self.meta['icon']}  {self.meta['name']}",
-            font=(Theme.FONT_FAMILY, 22, "bold"),
+            text=f"{glyph}   {self.meta['name']}",
+            font=Theme.FONT_DISPLAY,
             text_color=Theme.TEXT_PRIMARY,
             anchor="w"
         )
@@ -48,21 +65,24 @@ class CategoryGallery(ctk.CTkScrollableFrame):
 
         count_badge = ctk.CTkLabel(
             title_row,
-            text=f"{len(self.tools)} Tools Available",
-            font=(Theme.FONT_FAMILY, 12),
+            text=f"{len(self.tools)} Tools In Suite",
+            font=Theme.FONT_LABEL,
+            fg_color=Theme.SURFACE_PILL,
             text_color=Theme.BRAND_ACCENT,
-            anchor="e"
+            corner_radius=Theme.RADIUS_PILL,
+            padx=12,
+            pady=4
         )
         count_badge.pack(side="right")
 
         desc_lbl = ctk.CTkLabel(
             header_frame,
             text=self.meta['desc'],
-            font=(Theme.FONT_FAMILY, 13),
+            font=Theme.FONT_BODY,
             text_color=Theme.TEXT_SECONDARY,
             anchor="w"
         )
-        desc_lbl.pack(fill="x", pady=(2, 0))
+        desc_lbl.pack(fill="x", pady=(4, 0))
 
     def _build_grid(self):
         grid_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -78,59 +98,70 @@ class CategoryGallery(ctk.CTkScrollableFrame):
                 fg_color=Theme.SURFACE_CARD,
                 corner_radius=Theme.RADIUS_CARD,
                 border_width=1,
-                border_color=Theme.BORDER_SUBTLE
+                border_color=Theme.BORDER_SUBTLE,
+                cursor="hand2"
             )
             card.grid(row=row, column=col, padx=Theme.PAD_XS, pady=Theme.PAD_XS, sticky="nsew")
 
-            inner = ctk.CTkFrame(card, fg_color="transparent")
+            inner = ctk.CTkFrame(card, fg_color="transparent", cursor="hand2")
             inner.pack(fill="both", expand=True, padx=Theme.PAD_MD, pady=Theme.PAD_MD)
+
+            # Top: Status Pill
+            top_bar = ctk.CTkFrame(inner, fg_color="transparent", cursor="hand2")
+            top_bar.pack(fill="x")
+
+            status_text = "● READY TO LAUNCH" if tool.is_implemented else "○ PLANNED"
+            status_col = Theme.STATUS_SUCCESS if tool.is_implemented else Theme.TEXT_MUTED
+
+            status_lbl = ctk.CTkLabel(
+                top_bar,
+                text=status_text,
+                font=Theme.FONT_CAPTION,
+                text_color=status_col,
+                anchor="w",
+                cursor="hand2"
+            )
+            status_lbl.pack(side="left")
 
             name_lbl = ctk.CTkLabel(
                 inner,
                 text=tool.name,
-                font=(Theme.FONT_FAMILY, 14, "bold"),
+                font=Theme.FONT_SUBTITLE,
                 text_color=Theme.TEXT_PRIMARY,
                 anchor="w",
-                justify="left"
+                justify="left",
+                cursor="hand2"
             )
-            name_lbl.pack(fill="x")
+            name_lbl.pack(fill="x", pady=(Theme.PAD_XS, 2))
 
             desc_lbl = ctk.CTkLabel(
                 inner,
                 text=tool.description,
-                font=(Theme.FONT_FAMILY, 12),
+                font=Theme.FONT_BODY,
                 text_color=Theme.TEXT_SECONDARY,
                 anchor="w",
                 justify="left",
-                wraplength=380
+                wraplength=380,
+                cursor="hand2"
             )
-            desc_lbl.pack(fill="x", pady=(Theme.PAD_XS, Theme.PAD_SM))
+            desc_lbl.pack(fill="x", pady=(0, Theme.PAD_MD))
 
-            action_row = ctk.CTkFrame(inner, fg_color="transparent")
+            action_row = ctk.CTkFrame(inner, fg_color="transparent", cursor="hand2")
             action_row.pack(fill="x")
 
-            status_text = "READY TO LAUNCH" if tool.is_implemented else "UPCOMING"
-            status_col = Theme.STATUS_SUCCESS if tool.is_implemented else Theme.TEXT_MUTED
-            
-            status_lbl = ctk.CTkLabel(
+            launch_btn = ctk.CTkButton(
                 action_row,
-                text=status_text,
-                font=(Theme.FONT_FAMILY, 10, "bold"),
-                text_color=status_col,
-                anchor="w"
-            )
-            status_lbl.pack(side="left")
-
-            btn_open = ctk.CTkButton(
-                action_row,
-                text="Open Tool",
+                text="Launch Tool  ↗",
                 fg_color=Theme.BRAND_PRIMARY if tool.is_implemented else Theme.SURFACE_INSET,
                 hover_color=Theme.BRAND_HOVER,
-                text_color=Theme.TEXT_PRIMARY,
+                text_color=Theme.TEXT_ON_BRAND if tool.is_implemented else Theme.TEXT_MUTED,
                 corner_radius=Theme.RADIUS_BUTTON,
-                height=28,
-                width=100,
-                font=(Theme.FONT_FAMILY, 11, "bold"),
+                height=32,
+                font=Theme.FONT_BODY_BOLD,
                 command=lambda t=tool: self.on_tool_select(t)
             )
-            btn_open.pack(side="right")
+            launch_btn.pack(side="right")
+
+            # Bind entire card click to open tool
+            for w in [card, inner, top_bar, status_lbl, name_lbl, desc_lbl]:
+                w.bind("<Button-1>", lambda e, t=tool: self.on_tool_select(t))

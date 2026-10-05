@@ -25,13 +25,13 @@ class ToolRegistry:
     """Central registry and fuzzy-search provider for Boltools."""
     
     CATEGORIES = {
-        "video": {"name": "Video & Media", "icon": "🎥", "desc": "High-speed lossless video processing"},
-        "audio": {"name": "AI Speech & Audio", "icon": "🎙️", "desc": "Transcription, stems and vocal mastering"},
-        "pdf": {"name": "PDF Master Studio", "icon": "📄", "desc": "Document security, conversions and split/merge"},
-        "image": {"name": "Image & Visuals", "icon": "🖼️", "desc": "Background removal, compression and upscaling"},
-        "creator": {"name": "Creator Intel", "icon": "📊", "desc": "Growth radar, streams, mockups and teleprompter"},
-        "design": {"name": "Design & Text", "icon": "🎨", "desc": "Color contrast, QR studio, diff and text lab"},
-        "system": {"name": "System & Files", "icon": "🛠️", "desc": "Vault encryption, duplicate hunter and batch tools"},
+        "video": {"name": "Video & Media", "glyph": "▶", "icon": "🎥", "desc": "High-speed lossless video processing"},
+        "audio": {"name": "AI Speech & Audio", "glyph": "●", "icon": "🎙️", "desc": "Transcription, stems and vocal mastering"},
+        "pdf": {"name": "PDF Master Studio", "glyph": "▤", "icon": "📄", "desc": "Document security, conversions and split/merge"},
+        "image": {"name": "Image & Visuals", "glyph": "◈", "icon": "🖼️", "desc": "Background removal, compression and upscaling"},
+        "creator": {"name": "Creator Intel", "glyph": "✦", "icon": "📊", "desc": "Growth radar, streams, mockups and teleprompter"},
+        "design": {"name": "Design & Text", "glyph": "⬡", "icon": "🎨", "desc": "Color contrast, QR studio, diff and text lab"},
+        "system": {"name": "System & Files", "glyph": "⚙", "icon": "🛠️", "desc": "Vault encryption, duplicate hunter and batch tools"},
     }
 
     _tools: Dict[str, ToolDefinition] = {}

@@ -1,7 +1,7 @@
-"""Top application header with official Boltools and The SurfBoard branding."""
+"""Top application header with official Boltools branding, dynamic breadcrumbs, and theme toggle."""
 
 import os
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 import customtkinter as ctk
 from PIL import Image
 
@@ -9,7 +9,7 @@ from src.core.theme import Theme
 
 
 class AppHeader(ctk.CTkFrame):
-    """Header bar featuring brand assets, subtitle, and search palette trigger."""
+    """Header toolbar featuring branding, breadcrumbs, search trigger, and theme toggle."""
 
     def __init__(
         self,
@@ -22,7 +22,7 @@ class AppHeader(ctk.CTkFrame):
         super().__init__(
             master,
             fg_color=Theme.SURFACE_SIDEBAR,
-            height=60,
+            height=56,
             corner_radius=0,
             border_width=1,
             border_color=Theme.BORDER_SUBTLE,
@@ -32,14 +32,16 @@ class AppHeader(ctk.CTkFrame):
         self.assets_dir = assets_dir
         self.on_search_click = on_search_click
         self.on_home_click = on_home_click
-        
+        self.current_theme_mode = "Dark"
+
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure(2, weight=0)
         self.grid_rowconfigure(0, weight=1)
 
         self._build_branding()
-        self._build_search_trigger()
+        self._build_breadcrumbs()
+        self._build_actions()
 
     def _load_image(self, filename: str, size: tuple[int, int]) -> Optional[ctk.CTkImage]:
         path = os.path.join(self.assets_dir, filename)
@@ -53,60 +55,107 @@ class AppHeader(ctk.CTkFrame):
 
     def _build_branding(self):
         # Clickable brand container returning to Home
-        brand_container = ctk.CTkFrame(self, fg_color="transparent", cursor="hand2")
-        brand_container.grid(row=0, column=0, sticky="w", padx=Theme.PAD_MD, pady=Theme.PAD_SM)
-        brand_container.bind("<Button-1>", lambda e: self.on_home_click())
+        brand_frame = ctk.CTkFrame(self, fg_color="transparent", cursor="hand2")
+        brand_frame.grid(row=0, column=0, sticky="w", padx=(Theme.PAD_MD, Theme.PAD_SM), pady=Theme.PAD_XS)
+        brand_frame.bind("<Button-1>", lambda e: self.on_home_click())
 
         # Monogram Bolt Logo
-        bolt_img = self._load_image("bolt_logo.webp", (32, 32))
+        bolt_img = self._load_image("bolt_logo.webp", (28, 28))
         if bolt_img:
-            bolt_label = ctk.CTkLabel(brand_container, image=bolt_img, text="")
+            bolt_label = ctk.CTkLabel(brand_frame, image=bolt_img, text="", cursor="hand2")
             bolt_label.pack(side="left", padx=(0, Theme.PAD_SM))
+            bolt_label.bind("<Button-1>", lambda e: self.on_home_click())
 
-        # Title & Subtitle column
-        text_col = ctk.CTkFrame(brand_container, fg_color="transparent")
-        text_col.pack(side="left", fill="y")
-        
+        # Title + Pro Badge
+        title_box = ctk.CTkFrame(brand_frame, fg_color="transparent", cursor="hand2")
+        title_box.pack(side="left")
+        title_box.bind("<Button-1>", lambda e: self.on_home_click())
+
         title_lbl = ctk.CTkLabel(
-            text_col,
+            title_box,
             text="BOLTOOLS",
-            font=(Theme.FONT_FAMILY, 15, "bold"),
+            font=Theme.FONT_TITLE,
             text_color=Theme.TEXT_PRIMARY,
-            anchor="w"
+            anchor="w",
+            cursor="hand2"
         )
-        title_lbl.pack(anchor="w")
-        
-        # Subtitle with SurfBoard brand
-        sub_row = ctk.CTkFrame(text_col, fg_color="transparent")
-        sub_row.pack(anchor="w")
+        title_lbl.pack(side="left", padx=(0, 6))
+        title_lbl.bind("<Button-1>", lambda e: self.on_home_click())
 
-        sub_lbl = ctk.CTkLabel(
-            sub_row,
-            text="Built by The SurfBoard",
-            font=(Theme.FONT_FAMILY, 11),
+        studio_badge = ctk.CTkLabel(
+            title_box,
+            text="PRO",
+            font=(Theme.FONT_FAMILY, 9, "bold"),
+            fg_color=Theme.SURFACE_PILL,
+            text_color=Theme.BRAND_ACCENT,
+            corner_radius=Theme.RADIUS_PILL,
+            width=36,
+            height=18
+        )
+        studio_badge.pack(side="left")
+
+    def _build_breadcrumbs(self):
+        self.crumb_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.crumb_container.grid(row=0, column=1, sticky="w", padx=Theme.PAD_MD)
+        self.crumb_label = ctk.CTkLabel(
+            self.crumb_container,
+            text="Workspace",
+            font=Theme.FONT_BODY,
             text_color=Theme.TEXT_SECONDARY,
             anchor="w"
         )
-        sub_lbl.pack(side="left")
+        self.crumb_label.pack(side="left")
 
-        surfboard_img = self._load_image("surfboard_logo.png", (14, 14))
-        if surfboard_img:
-            surf_icon = ctk.CTkLabel(sub_row, image=surfboard_img, text="")
-            surf_icon.pack(side="left", padx=(4, 0))
+    def set_breadcrumb(self, segments: List[str]):
+        """Updates the active path navigation indicator."""
+        trail = "  ›  ".join(segments)
+        self.crumb_label.configure(text=trail)
 
-    def _build_search_trigger(self):
-        # Raycast-style search bar trigger button
-        search_btn = ctk.CTkButton(
-            self,
-            text="Search all 57 tools...            Ctrl + K",
+    def _build_actions(self):
+        actions_frame = ctk.CTkFrame(self, fg_color="transparent")
+        actions_frame.grid(row=0, column=2, sticky="e", padx=Theme.PAD_MD)
+
+        # Raycast / Spotlight Style Search Trigger
+        self.search_btn = ctk.CTkButton(
+            actions_frame,
+            text="Search tools...   Ctrl + K",
             fg_color=Theme.SURFACE_CARD,
             hover_color=Theme.SURFACE_CARD_HOVER,
             text_color=Theme.TEXT_MUTED,
             border_width=1,
             border_color=Theme.BORDER_SUBTLE,
-            corner_radius=Theme.RADIUS_BUTTON,
-            font=(Theme.FONT_FAMILY, 12),
-            height=34,
+            corner_radius=Theme.RADIUS_PILL,
+            font=Theme.FONT_BODY,
+            height=32,
+            width=210,
             command=self.on_search_click
         )
-        search_btn.grid(row=0, column=2, sticky="e", padx=Theme.PAD_LG, pady=Theme.PAD_SM)
+        self.search_btn.pack(side="left", padx=(0, Theme.PAD_SM))
+
+        # Dynamic Theme Switcher (Dark / Light)
+        self.theme_btn = ctk.CTkButton(
+            actions_frame,
+            text="☀",
+            fg_color=Theme.SURFACE_CARD,
+            hover_color=Theme.SURFACE_CARD_HOVER,
+            text_color=Theme.TEXT_PRIMARY,
+            border_width=1,
+            border_color=Theme.BORDER_SUBTLE,
+            corner_radius=Theme.RADIUS_PILL,
+            font=(Theme.FONT_FAMILY, 14),
+            width=36,
+            height=32,
+            command=self._toggle_theme
+        )
+        self.theme_btn.pack(side="left")
+
+    def _toggle_theme(self):
+        """Switches dynamically between Apple Dark Mode and Light Mode."""
+        if self.current_theme_mode == "Dark":
+            self.current_theme_mode = "Light"
+            ctk.set_appearance_mode("Light")
+            self.theme_btn.configure(text="☾")
+        else:
+            self.current_theme_mode = "Dark"
+            ctk.set_appearance_mode("Dark")
+            self.theme_btn.configure(text="☀")
