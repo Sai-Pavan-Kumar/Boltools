@@ -49,18 +49,24 @@ class Theme:
     STATUS_WARNING_BG: Tuple[str, str] = ("#FFFBEB", "#451A03")    # Soft amber container
     STATUS_INFO: Tuple[str, str] = ("#3B82F6", "#38BDF8")         # Information / In-progress
 
-    # ── Typography Scale
-    FONT_FAMILY = "Segoe UI"
-    FONT_MONO = "Consolas"
+    # ── Option 3 Precision Typography Scale (Instrument Sans + Satoshi + DM Mono)
+    FONT_DISPLAY_FAMILY = "Instrument Sans"
+    FONT_BODY_FAMILY = "Satoshi"
+    FONT_MONO_FAMILY = "DM Mono"
 
-    FONT_DISPLAY = (FONT_FAMILY, 22, "bold")
-    FONT_TITLE = (FONT_FAMILY, 17, "bold")
-    FONT_SUBTITLE = (FONT_FAMILY, 13, "bold")
-    FONT_BODY = (FONT_FAMILY, 13, "normal")
-    FONT_BODY_BOLD = (FONT_FAMILY, 13, "bold")
-    FONT_LABEL = (FONT_FAMILY, 11, "bold")
-    FONT_CAPTION = (FONT_FAMILY, 10, "normal")
-    FONT_MONO_TEXT = (FONT_MONO, 11, "normal")
+    # Backward-compatible family aliases for modules
+    FONT_FAMILY = FONT_BODY_FAMILY
+    FONT_MONO = FONT_MONO_FAMILY
+
+    # Quiet, elegant weights (no aggressive shouting bold)
+    FONT_DISPLAY = (FONT_DISPLAY_FAMILY, 18, "normal")
+    FONT_TITLE = (FONT_DISPLAY_FAMILY, 14, "bold")
+    FONT_SUBTITLE = (FONT_BODY_FAMILY, 12, "bold")
+    FONT_BODY = (FONT_BODY_FAMILY, 12, "normal")
+    FONT_BODY_BOLD = (FONT_BODY_FAMILY, 12, "bold")
+    FONT_LABEL = (FONT_BODY_FAMILY, 11, "normal")
+    FONT_CAPTION = (FONT_BODY_FAMILY, 10, "normal")
+    FONT_MONO_TEXT = (FONT_MONO_FAMILY, 10, "normal")
 
     # ── Corner Radii (Apple-grade squircles)
     RADIUS_INPUT = 8
@@ -76,9 +82,34 @@ class Theme:
     PAD_LG = 24
     PAD_XL = 32
 
+    _fonts_registered = False
+
+    @classmethod
+    def register_custom_fonts(cls):
+        """Registers bundled Instrument Sans, Satoshi, and DM Mono fonts with Windows GDI."""
+        if cls._fonts_registered:
+            return
+        cls._fonts_registered = True
+        try:
+            import os
+            import sys
+            import ctypes
+            from src.core.paths import get_asset_path
+            
+            fonts_dir = get_asset_path("fonts")
+            if os.path.exists(fonts_dir) and sys.platform.startswith("win"):
+                FR_PRIVATE = 0x10
+                for f in os.listdir(fonts_dir):
+                    if f.lower().endswith((".ttf", ".otf")):
+                        font_path = os.path.join(fonts_dir, f)
+                        ctypes.windll.gdi32.AddFontResourceExW(font_path, FR_PRIVATE, 0)
+        except Exception:
+            pass
+
     @classmethod
     def apply_appearance(cls, mode: str = "Dark"):
-        """Sets CustomTkinter global appearance defaults."""
+        """Sets CustomTkinter global appearance defaults and registers custom fonts."""
+        cls.register_custom_fonts()
         import customtkinter as ctk
         ctk.set_appearance_mode(mode)
         ctk.set_default_color_theme("blue")
