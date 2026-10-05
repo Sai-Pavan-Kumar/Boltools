@@ -17,6 +17,7 @@ from typing import List, Dict, Optional, Callable
 
 
 import uuid
+from src.core.paths import get_data_path
 
 EDGE_API_BASE = "https://boltools-api.p-pavansiri.workers.dev"
 PRIMARY_POLL_ENDPOINT = f"{EDGE_API_BASE}/api/poll"
@@ -100,8 +101,8 @@ class CommunityService:
     def fetch_poll(self, on_complete: Optional[Callable[[Dict], None]] = None):
         """Asynchronously fetches active poll with Cloudflare Edge -> GitHub Raw -> Local fallback."""
         def _fetch():
-            # First load local software/poll.json
-            local_poll = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "poll.json")
+            # First load local poll.json
+            local_poll = get_data_path("poll.json")
             if os.path.exists(local_poll):
                 try:
                     with open(local_poll, "r", encoding="utf-8") as f:
@@ -147,7 +148,7 @@ class CommunityService:
                     break
 
         # Also update local poll.json if present
-        local_poll = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "poll.json")
+        local_poll = get_data_path("poll.json")
         if os.path.exists(local_poll):
             try:
                 with open(local_poll, "w", encoding="utf-8") as f:

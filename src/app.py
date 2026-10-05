@@ -22,6 +22,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from src.core.theme import Theme
+from src.core.paths import get_asset_path, get_data_path, get_base_dir
 from src.core.registry import ToolRegistry, ToolDefinition
 from src.core.worker import AsyncWorker
 from src.core.announcements import announcement_service
@@ -53,7 +54,7 @@ class BoltoolsApp(ctk.CTk):
         self.configure(fg_color=Theme.SURFACE_BASE)
 
         # Asset Paths
-        self.assets_dir = os.path.join(parent_dir, "assets")
+        self.assets_dir = get_asset_path()
 
         # Runtime State
         self.worker = AsyncWorker()
