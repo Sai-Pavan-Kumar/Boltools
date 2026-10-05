@@ -1,0 +1,20 @@
+[
+  {
+    "id": "sb_boltools_launch_01",
+    "date": "2026-10-05",
+    "tag": "NEW LAUNCH",
+    "title": "Welcome to Boltools Desktop Suite",
+    "description": "The 100% offline Swiss Army knife for creators, editors, and power users. Zero subscriptions. Zero data leaks.",
+    "cta_text": "Join SurfBoard Community",
+    "cta_url": "https://thesurfboard.in"
+  },
+  {
+    "id": "sb_upcoming_suite_02",
+    "date": "2026-10-05",
+    "tag": "ROADMAP",
+    "title": "The SurfBoard Creator Radar Launching Soon",
+    "description": "Stay tuned for YouTube growth intelligence, automated keyword radars, and AI visual assets.",
+    "cta_text": "View Roadmap",
+    "cta_url": "https://thesurfboard.in"
+  }
+]

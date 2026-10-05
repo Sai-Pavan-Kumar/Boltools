@@ -24,11 +24,13 @@ if parent_dir not in sys.path:
 from src.core.theme import Theme
 from src.core.registry import ToolRegistry, ToolDefinition
 from src.core.worker import AsyncWorker
+from src.core.announcements import announcement_service
 from src.components.header import AppHeader
 from src.components.sidebar import AppSidebar
 from src.components.home_dashboard import HomeDashboard
 from src.components.category_gallery import CategoryGallery
 from src.components.command_palette import CommandPalette
+from src.components.notification_modal import NotificationModal
 
 
 class BoltoolsApp(ctk.CTk):
@@ -63,6 +65,7 @@ class BoltoolsApp(ctk.CTk):
         self._build_shell()
         self._bind_global_shortcuts()
         self.show_home()
+        self._init_announcements()
 
         # Protocol for clean background thread termination
         self.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -73,7 +76,8 @@ class BoltoolsApp(ctk.CTk):
             self,
             assets_dir=self.assets_dir,
             on_search_click=self.open_command_palette,
-            on_home_click=self.show_home
+            on_home_click=self.show_home,
+            on_notification_click=self.open_notification_modal
         )
         self.header.grid(row=0, column=0, columnspan=2, sticky="ew")
 
@@ -206,6 +210,18 @@ class BoltoolsApp(ctk.CTk):
 
     def open_command_palette(self):
         CommandPalette(self, on_tool_select=self.show_tool)
+
+    def open_notification_modal(self):
+        """Displays the announcement hub popover and resets the unread count badge."""
+        NotificationModal(self, on_close=lambda: self.header.set_unread_notifications(0))
+        self.header.set_unread_notifications(0)
+
+    def _init_announcements(self):
+        """Checks for remote announcements silently on a background worker thread."""
+        def _on_complete(unread_count: int):
+            self.after(0, lambda: self.header.set_unread_notifications(unread_count))
+
+        announcement_service.fetch_async(_on_complete)
 
     def _on_close(self):
         self.worker.shutdown()

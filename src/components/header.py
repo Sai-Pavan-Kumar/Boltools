@@ -1,4 +1,4 @@
-"""Top application header with official Boltools branding, dynamic breadcrumbs, and theme toggle."""
+"""Top application header with official Boltools branding, dynamic breadcrumbs, notification bell, and theme toggle."""
 
 import os
 from typing import Callable, Optional, List
@@ -9,7 +9,7 @@ from src.core.theme import Theme
 
 
 class AppHeader(ctk.CTkFrame):
-    """Header toolbar featuring branding, breadcrumbs, search trigger, and theme toggle."""
+    """Header toolbar featuring branding, breadcrumbs, search trigger, notification bell, and theme toggle."""
 
     def __init__(
         self,
@@ -17,6 +17,7 @@ class AppHeader(ctk.CTkFrame):
         assets_dir: str,
         on_search_click: Callable[[], None],
         on_home_click: Callable[[], None],
+        on_notification_click: Optional[Callable[[], None]] = None,
         **kwargs
     ):
         super().__init__(
@@ -32,7 +33,9 @@ class AppHeader(ctk.CTkFrame):
         self.assets_dir = assets_dir
         self.on_search_click = on_search_click
         self.on_home_click = on_home_click
+        self.on_notification_click = on_notification_click
         self.current_theme_mode = "Dark"
+        self.unread_count = 0
 
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
@@ -132,6 +135,23 @@ class AppHeader(ctk.CTkFrame):
         )
         self.search_btn.pack(side="left", padx=(0, Theme.PAD_SM))
 
+        # Notification & Product Launch Bell
+        self.bell_btn = ctk.CTkButton(
+            actions_frame,
+            text="🔔",
+            fg_color=Theme.SURFACE_CARD,
+            hover_color=Theme.SURFACE_CARD_HOVER,
+            text_color=Theme.TEXT_SECONDARY,
+            border_width=1,
+            border_color=Theme.BORDER_SUBTLE,
+            corner_radius=Theme.RADIUS_PILL,
+            font=(Theme.FONT_FAMILY, 13),
+            width=38,
+            height=32,
+            command=self._handle_bell_click
+        )
+        self.bell_btn.pack(side="left", padx=(0, Theme.PAD_SM))
+
         # Dynamic Theme Switcher (Dark / Light)
         self.theme_btn = ctk.CTkButton(
             actions_frame,
@@ -148,6 +168,26 @@ class AppHeader(ctk.CTkFrame):
             command=self._toggle_theme
         )
         self.theme_btn.pack(side="left")
+
+    def set_unread_notifications(self, count: int):
+        """Updates the notification bell with an unread badge dot."""
+        self.unread_count = count
+        if count > 0:
+            self.bell_btn.configure(
+                text=f"🔔 ●",
+                text_color=Theme.BRAND_ACCENT,
+                border_color=Theme.BRAND_ACCENT
+            )
+        else:
+            self.bell_btn.configure(
+                text="🔔",
+                text_color=Theme.TEXT_SECONDARY,
+                border_color=Theme.BORDER_SUBTLE
+            )
+
+    def _handle_bell_click(self):
+        if self.on_notification_click:
+            self.on_notification_click()
 
     def _toggle_theme(self):
         """Switches dynamically between Apple Dark Mode and Light Mode."""
