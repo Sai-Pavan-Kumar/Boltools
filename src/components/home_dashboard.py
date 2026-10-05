@@ -46,7 +46,7 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         # Micro Pill Badge
         badge = ctk.CTkLabel(
             inner,
-            text="BOLTOOLS DESKTOP SUITE  ·  100% LOCAL",
+            text="FREE DESKTOP TOOLKIT  ·  100% OFFLINE",
             font=Theme.FONT_LABEL,
             fg_color=Theme.SURFACE_PILL,
             text_color=Theme.BRAND_ACCENT,
@@ -59,7 +59,7 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         # Title
         title = ctk.CTkLabel(
             inner,
-            text="Swiss Army Knife for Creators & Power Users",
+            text="All-in-One Offline Toolkit for Creators",
             font=Theme.FONT_DISPLAY,
             text_color=Theme.TEXT_PRIMARY,
             anchor="w"
@@ -69,7 +69,7 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         # Subtitle
         desc = ctk.CTkLabel(
             inner,
-            text="57 specialized offline utilities. Zero monthly fees. Zero data leaks. Native performance on your machine.",
+            text="57 fast offline tools. Zero subscriptions. Zero ads. Your files never leave your computer.",
             font=Theme.FONT_BODY,
             text_color=Theme.TEXT_SECONDARY,
             anchor="w"
@@ -81,10 +81,10 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         stats_frame.pack(anchor="w")
 
         metrics = [
-            ("57", "Power Tools"),
-            ("48", "Offline Engines"),
-            ("9", "Web Harvesters"),
-            ("₹0", "Forever Free")
+            ("57", "Free Tools"),
+            ("48", "Offline Tools"),
+            ("9", "Web Tools"),
+            ("₹0", "Free Forever")
         ]
         for val, lbl in metrics:
             item = ctk.CTkFrame(stats_frame, fg_color=Theme.SURFACE_INSET, corner_radius=Theme.RADIUS_BUTTON)
@@ -103,7 +103,7 @@ class HomeDashboard(ctk.CTkScrollableFrame):
 
         lbl = ctk.CTkLabel(
             shelf_frame,
-            text="QUICK LAUNCH SHORTCUTS",
+            text="POPULAR TOOLS",
             font=Theme.FONT_LABEL,
             text_color=Theme.TEXT_MUTED,
             anchor="w"
@@ -115,10 +115,10 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         cards_row.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="shelf")
 
         quick_tool_ids = [
-            ("pdf_first_page", "FIRST-PAGE PRINT", "PDF Studio"),
+            ("pdf_first_page", "PRINT 1ST PAGE", "PDF Studio"),
             ("image_webp_compress", "WEBP COMPRESS", "Image Lab"),
-            ("creator_bolt_down", "STREAM HARVEST", "Creator Intel"),
-            ("video_extractor", "AUDIO EXTRACTOR", "Video Studio")
+            ("creator_bolt_down", "DOWNLOAD VIDEO", "Creator Tools"),
+            ("video_extractor", "EXTRACT AUDIO", "Video & Media")
         ]
 
         for idx, (tid, shortcut_name, suite_name) in enumerate(quick_tool_ids):
@@ -161,7 +161,7 @@ class HomeDashboard(ctk.CTkScrollableFrame):
 
             action_row = ctk.CTkLabel(
                 card_inner,
-                text="Launch Engine  ↗",
+                text="Open Tool  ↗",
                 font=Theme.FONT_CAPTION,
                 text_color=Theme.BRAND_ACCENT,
                 anchor="w",
@@ -180,7 +180,7 @@ class HomeDashboard(ctk.CTkScrollableFrame):
 
         lbl = ctk.CTkLabel(
             domains_frame,
-            text="FUNCTIONAL SUITES & DOMAINS",
+            text="EXPLORE BY CATEGORY",
             font=Theme.FONT_LABEL,
             text_color=Theme.TEXT_MUTED,
             anchor="w"

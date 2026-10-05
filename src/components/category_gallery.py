@@ -37,13 +37,13 @@ class CategoryGallery(ctk.CTkScrollableFrame):
         # Back link
         back_btn = ctk.CTkButton(
             header_frame,
-            text="← Back to Workspace Hub",
+            text="← Back to Home",
             fg_color="transparent",
             hover_color=Theme.SURFACE_CARD_HOVER,
             text_color=Theme.TEXT_SECONDARY,
             font=Theme.FONT_CAPTION,
             height=24,
-            width=140,
+            width=120,
             anchor="w",
             command=self.on_back
         )
@@ -65,7 +65,7 @@ class CategoryGallery(ctk.CTkScrollableFrame):
 
         count_badge = ctk.CTkLabel(
             title_row,
-            text=f"{len(self.tools)} Tools In Suite",
+            text=f"{len(self.tools)} Tools Available",
             font=Theme.FONT_LABEL,
             fg_color=Theme.SURFACE_PILL,
             text_color=Theme.BRAND_ACCENT,
@@ -110,7 +110,7 @@ class CategoryGallery(ctk.CTkScrollableFrame):
             top_bar = ctk.CTkFrame(inner, fg_color="transparent", cursor="hand2")
             top_bar.pack(fill="x")
 
-            status_text = "● READY TO LAUNCH" if tool.is_implemented else "○ PLANNED"
+            status_text = "● READY" if tool.is_implemented else "○ COMING SOON"
             status_col = Theme.STATUS_SUCCESS if tool.is_implemented else Theme.TEXT_MUTED
 
             status_lbl = ctk.CTkLabel(
@@ -151,7 +151,7 @@ class CategoryGallery(ctk.CTkScrollableFrame):
 
             launch_btn = ctk.CTkButton(
                 action_row,
-                text="Launch Tool  ↗",
+                text="Open Tool  ↗",
                 fg_color=Theme.BRAND_PRIMARY if tool.is_implemented else Theme.SURFACE_INSET,
                 hover_color=Theme.BRAND_HOVER,
                 text_color=Theme.TEXT_ON_BRAND if tool.is_implemented else Theme.TEXT_MUTED,

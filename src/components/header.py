@@ -102,7 +102,7 @@ class AppHeader(ctk.CTkFrame):
         self.crumb_container.grid(row=0, column=1, sticky="w", padx=Theme.PAD_MD)
         self.crumb_label = ctk.CTkLabel(
             self.crumb_container,
-            text="Workspace",
+            text="Home",
             font=Theme.FONT_BODY,
             text_color=Theme.TEXT_SECONDARY,
             anchor="w"

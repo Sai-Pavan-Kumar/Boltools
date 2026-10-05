@@ -25,8 +25,8 @@ class TranscriptHarvesterTool(BaseToolFrame):
         super().__init__(
             master=master,
             tool_id="creator_trans_harvest",
-            title="Multi-Language Subtitle & Transcript Harvester",
-            description="Download official and auto-generated transcripts across 20+ languages into clean .txt or .srt.",
+            title="YouTube Subtitle & Transcript Downloader",
+            description="Download video subtitles and spoken transcripts in 20+ languages as .txt or .srt files.",
             **kwargs
         )
 

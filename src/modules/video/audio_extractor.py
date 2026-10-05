@@ -22,8 +22,8 @@ class AudioExtractorTool(BaseToolFrame):
         super().__init__(
             master=master,
             tool_id="video_extractor",
-            title="High-Speed Video-to-Audio Extractor",
-            description="Extract lossless or high-bitrate MP3, WAV, AAC, and FLAC soundtracks from videos in seconds.",
+            title="Video to Audio Extractor",
+            description="Extract clean MP3, WAV, AAC, or FLAC audio from video files in seconds.",
             **kwargs
         )
         self.file_paths: List[str] = []

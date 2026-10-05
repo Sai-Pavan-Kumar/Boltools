@@ -25,8 +25,8 @@ class ThumbnailGrabberTool(BaseToolFrame):
         super().__init__(
             master=master,
             tool_id="creator_thumb_grab",
-            title="Ultra-HD Thumbnail & Meta Grabber",
-            description="Preview and download official 4K/1080p video thumbnails with one-click direct save.",
+            title="YouTube Thumbnail Downloader",
+            description="Preview and download official full-HD video thumbnails with 1-click save.",
             **kwargs
         )
         self.current_img_bytes = None

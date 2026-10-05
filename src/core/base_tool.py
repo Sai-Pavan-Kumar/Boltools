@@ -74,7 +74,7 @@ class BaseToolFrame(ctk.CTkFrame):
         # Top Right Engine Badge
         self.badge_engine = ctk.CTkLabel(
             header_frame,
-            text="● Local Engine Ready",
+            text="● Ready to Use",
             font=Theme.FONT_LABEL,
             fg_color=Theme.SURFACE_CARD,
             text_color=Theme.STATUS_SUCCESS,
@@ -132,7 +132,7 @@ class BaseToolFrame(ctk.CTkFrame):
 
         insp_lbl = ctk.CTkLabel(
             top_bar,
-            text="INSPECTOR & OUTPUT",
+            text="PREVIEW & RESULT",
             font=Theme.FONT_LABEL,
             text_color=Theme.TEXT_MUTED,
             anchor="w"
@@ -141,7 +141,7 @@ class BaseToolFrame(ctk.CTkFrame):
 
         self.status_pill = ctk.CTkLabel(
             top_bar,
-            text="IDLE",
+            text="READY",
             font=(Theme.FONT_FAMILY, 10, "bold"),
             fg_color=Theme.SURFACE_PILL,
             text_color=Theme.TEXT_SECONDARY,
@@ -168,7 +168,7 @@ class BaseToolFrame(ctk.CTkFrame):
 
         feed_title = ctk.CTkLabel(
             feed_header,
-            text="ACTIVITY FEED",
+            text="PROGRESS DETAILS",
             font=Theme.FONT_LABEL,
             text_color=Theme.TEXT_MUTED,
             anchor="w"
@@ -193,7 +193,7 @@ class BaseToolFrame(ctk.CTkFrame):
         self.status_text = ctk.CTkLabel(feed_container, text="Ready", font=Theme.FONT_BODY, text_color=Theme.TEXT_SECONDARY)
         self.btn_open_folder = ctk.CTkButton(
             feed_container,
-            text="Open Destination Folder",
+            text="Show in Folder",
             fg_color="transparent",
             hover_color=Theme.SURFACE_CARD_HOVER,
             text_color=Theme.TEXT_SECONDARY,
@@ -223,7 +223,7 @@ class BaseToolFrame(ctk.CTkFrame):
 
         idle_title = ctk.CTkLabel(
             idle_center,
-            text="Engine Ready for Processing",
+            text="Ready When You Are",
             font=Theme.FONT_TITLE,
             text_color=Theme.TEXT_PRIMARY
         )
@@ -231,7 +231,7 @@ class BaseToolFrame(ctk.CTkFrame):
 
         idle_desc = ctk.CTkLabel(
             idle_center,
-            text="Configure your inputs on the left canvas and launch the pipeline.",
+            text="Choose your files on the left, pick options, and click Start.",
             font=Theme.FONT_BODY,
             text_color=Theme.TEXT_SECONDARY,
             wraplength=320,
@@ -241,7 +241,7 @@ class BaseToolFrame(ctk.CTkFrame):
 
         specs_badge = ctk.CTkLabel(
             idle_center,
-            text="Private • Local Execution • 100% Free",
+            text="100% Private • Works Offline • Free Forever",
             font=Theme.FONT_CAPTION,
             fg_color=Theme.SURFACE_CARD,
             text_color=Theme.TEXT_MUTED,
@@ -258,7 +258,7 @@ class BaseToolFrame(ctk.CTkFrame):
 
         self.running_title = ctk.CTkLabel(
             run_center,
-            text="Processing Pipeline Active...",
+            text="Working on your files...",
             font=Theme.FONT_TITLE,
             text_color=Theme.TEXT_PRIMARY
         )
@@ -290,7 +290,7 @@ class BaseToolFrame(ctk.CTkFrame):
 
         done_badge = ctk.CTkLabel(
             done_center,
-            text="✓ Execution Completed",
+            text="✓ All Done!",
             font=Theme.FONT_TITLE,
             text_color=Theme.STATUS_SUCCESS
         )
@@ -298,7 +298,7 @@ class BaseToolFrame(ctk.CTkFrame):
 
         self.output_info_lbl = ctk.CTkLabel(
             done_center,
-            text="Assets generated and verified successfully.",
+            text="Your file is ready to use.",
             font=Theme.FONT_BODY,
             text_color=Theme.TEXT_SECONDARY,
             wraplength=340,
@@ -325,7 +325,7 @@ class BaseToolFrame(ctk.CTkFrame):
 
         btn_show_folder = ctk.CTkButton(
             action_cluster,
-            text="📁 Reveal in Folder",
+            text="📁 Show in Folder",
             fg_color=Theme.SURFACE_CARD,
             hover_color=Theme.SURFACE_CARD_HOVER,
             text_color=Theme.TEXT_PRIMARY,
@@ -352,14 +352,14 @@ class BaseToolFrame(ctk.CTkFrame):
         def _update():
             self.status_text.configure(text=message)
             if self.is_running:
-                self.status_pill.configure(text="RUNNING", text_color=Theme.STATUS_WARNING, fg_color=Theme.STATUS_WARNING_BG)
+                self.status_pill.configure(text="WORKING...", text_color=Theme.STATUS_WARNING, fg_color=Theme.STATUS_WARNING_BG)
                 self.running_title.configure(text=message)
             elif "Completed" in message or "Finished" in message or "Done" in message:
-                self.status_pill.configure(text="SUCCESS", text_color=Theme.STATUS_SUCCESS, fg_color=Theme.STATUS_SUCCESS_BG)
+                self.status_pill.configure(text="DONE", text_color=Theme.STATUS_SUCCESS, fg_color=Theme.STATUS_SUCCESS_BG)
             elif "Error" in message or "Failed" in message:
-                self.status_pill.configure(text="ERROR", text_color=Theme.STATUS_ERROR, fg_color=Theme.STATUS_ERROR_BG)
+                self.status_pill.configure(text="FAILED", text_color=Theme.STATUS_ERROR, fg_color=Theme.STATUS_ERROR_BG)
             else:
-                self.status_pill.configure(text="IDLE", text_color=Theme.TEXT_SECONDARY, fg_color=Theme.SURFACE_PILL)
+                self.status_pill.configure(text="READY", text_color=Theme.TEXT_SECONDARY, fg_color=Theme.SURFACE_PILL)
         self.after(0, _update)
 
     def set_progress(self, value: float):

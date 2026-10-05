@@ -23,8 +23,8 @@ class StreamHarvesterTool(BaseToolFrame):
         super().__init__(
             master=master,
             tool_id="creator_bolt_down",
-            title="Bolt Web Video & Stream Harvester",
-            description="Download individual videos, shorts, and entire playlists up to 4K 60fps or pure audio.",
+            title="Web Video Downloader",
+            description="Download videos, shorts, and playlists up to 4K 60fps or save audio directly.",
             **kwargs
         )
 
@@ -142,7 +142,7 @@ class StreamHarvesterTool(BaseToolFrame):
         # Execute CTA
         self.btn_execute = ctk.CTkButton(
             container,
-            text="⚡  Start Bolt Download",
+            text="⚡  Start Download",
             fg_color=Theme.BRAND_PRIMARY,
             hover_color=Theme.BRAND_HOVER,
             corner_radius=Theme.RADIUS_BUTTON,

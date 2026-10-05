@@ -25,13 +25,13 @@ class ToolRegistry:
     """Central registry and fuzzy-search provider for Boltools."""
     
     CATEGORIES = {
-        "video": {"name": "Video & Media", "glyph": "▶", "icon": "🎥", "desc": "High-speed lossless video processing"},
-        "audio": {"name": "AI Speech & Audio", "glyph": "●", "icon": "🎙️", "desc": "Transcription, stems and vocal mastering"},
-        "pdf": {"name": "PDF Master Studio", "glyph": "▤", "icon": "📄", "desc": "Document security, conversions and split/merge"},
-        "image": {"name": "Image & Visuals", "glyph": "◈", "icon": "🖼️", "desc": "Background removal, compression and upscaling"},
-        "creator": {"name": "Creator Intel", "glyph": "✦", "icon": "📊", "desc": "Growth radar, streams, mockups and teleprompter"},
-        "design": {"name": "Design & Text", "glyph": "⬡", "icon": "🎨", "desc": "Color contrast, QR studio, diff and text lab"},
-        "system": {"name": "System & Files", "glyph": "⚙", "icon": "🛠️", "desc": "Vault encryption, duplicate hunter and batch tools"},
+        "video": {"name": "Video & Media", "glyph": "▶", "icon": "🎥", "desc": "Trim clips, extract audio, and convert video formats"},
+        "audio": {"name": "Voice & Audio", "glyph": "●", "icon": "🎙️", "desc": "Transcribe speech, clean noise, and isolate vocals"},
+        "pdf": {"name": "PDF Studio", "glyph": "▤", "icon": "📄", "desc": "Merge documents, split pages, lock with passwords, and convert"},
+        "image": {"name": "Image & Photos", "glyph": "◈", "icon": "🖼️", "desc": "Compress photos, resize by KB/MB, and switch formats"},
+        "creator": {"name": "Creator Tools", "glyph": "✦", "icon": "📊", "desc": "Download videos, save HD thumbnails, and grab subtitles"},
+        "design": {"name": "Design & Text", "glyph": "⬡", "icon": "🎨", "desc": "Make QR codes, check color contrast, and edit text"},
+        "system": {"name": "Files & System", "glyph": "⚙", "icon": "🛠️", "desc": "Batch rename files, fix file extensions, and organize folders"},
     }
 
     _tools: Dict[str, ToolDefinition] = {}
@@ -93,9 +93,9 @@ def _init_catalog():
     R(ToolDefinition("video_sub_burner", "Hardcode Subtitle Burner", c, c_name, "Permanently burn SRT subtitles with custom typography and highlights", ["subtitles", "burn", "srt", "captions"]))
     R(ToolDefinition(
         "video_extractor",
-        "High-Speed Video-to-Audio Extractor",
+        "Video to Audio Extractor",
         c, c_name,
-        "Extract lossless MP3, WAV or AAC from any video file in seconds",
+        "Extract clean MP3, WAV, or AAC audio from any video in seconds",
         ["extract", "audio", "mp3", "wav", "sound", "mpverter"],
         factory=lambda: __import__("src.modules.video.audio_extractor", fromlist=["AudioExtractorTool"]).AudioExtractorTool,
         is_implemented=True
@@ -224,27 +224,27 @@ def _init_catalog():
     R(ToolDefinition("creator_stats_radar", "Channel & Competitor Intel Radar", c, c_name, "Analyze channels, engagement metrics and identify viral outlier videos", ["competitor", "stats", "viral outlier", "youtube radar", "intel"]))
     R(ToolDefinition(
         "creator_bolt_down",
-        "Bolt Web Video & Stream Harvester",
+        "Web Video Downloader",
         c, c_name,
-        "Download individual videos and playlists up to 4K 60fps or pure audio",
+        "Download videos, shorts, and playlists up to 4K 60fps or save audio directly",
         ["download video", "bolt", "stream", "4k download", "playlist"],
         factory=lambda: __import__("src.modules.creator.stream_harvester", fromlist=["StreamHarvesterTool"]).StreamHarvesterTool,
         is_implemented=True
     ))
     R(ToolDefinition(
         "creator_thumb_grab",
-        "Ultra-HD Thumbnail & Meta Grabber",
+        "YouTube Thumbnail Downloader",
         c, c_name,
-        "Preview and grab official 4K max-res thumbnails and hidden SEO tags",
+        "Preview and download official full-HD video thumbnails with 1-click save",
         ["thumbnail", "maxres", "tags", "metadata grab"],
         factory=lambda: __import__("src.modules.creator.thumbnail_grabber", fromlist=["ThumbnailGrabberTool"]).ThumbnailGrabberTool,
         is_implemented=True
     ))
     R(ToolDefinition(
         "creator_trans_harvest",
-        "Multi-Language Subtitle & Transcript Harvester",
+        "YouTube Subtitle & Transcript Downloader",
         c, c_name,
-        "Download official and auto captions across 20+ languages cleanly",
+        "Download video subtitles and spoken transcripts in 20+ languages as .txt or .srt files",
         ["transcript", "captions", "ytranscripter", "subtitles download"],
         factory=lambda: __import__("src.modules.creator.transcript_harvester", fromlist=["TranscriptHarvesterTool"]).TranscriptHarvesterTool,
         is_implemented=True

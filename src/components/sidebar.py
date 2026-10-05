@@ -44,13 +44,13 @@ class AppSidebar(ctk.CTkFrame):
         )
         self.nav_scroll.pack(fill="both", expand=True, padx=Theme.PAD_SM, pady=(Theme.PAD_SM, Theme.PAD_XS))
 
-        # Section: WORKSPACE
-        self._build_section_header("WORKSPACE")
+        # Section: MAIN
+        self._build_section_header("MAIN")
 
         # Home Hub Button
         self.home_btn = ctk.CTkButton(
             self.nav_scroll,
-            text="  ⊞   Home Hub",
+            text="  ⊞   Home",
             fg_color=Theme.SURFACE_CARD,
             hover_color=Theme.SURFACE_CARD_HOVER,
             text_color=Theme.TEXT_PRIMARY,
@@ -64,13 +64,13 @@ class AppSidebar(ctk.CTkFrame):
         )
         self.home_btn.pack(fill="x", pady=(2, Theme.PAD_SM))
 
-        # Section: CREATIVE SUITES
-        self._build_section_header("CREATIVE SUITES")
+        # Section: CREATIVE TOOLS
+        self._build_section_header("CREATIVE TOOLS")
         for cat_id in ["video", "audio", "image"]:
             self._build_category_row(cat_id)
 
-        # Section: PRODUCTIVITY & OPS
-        self._build_section_header("PRODUCTIVITY & OPS", pady=(Theme.PAD_SM, 4))
+        # Section: UTILITIES & DOCUMENTS
+        self._build_section_header("UTILITIES & DOCUMENTS", pady=(Theme.PAD_SM, 4))
         for cat_id in ["pdf", "creator", "design", "system"]:
             self._build_category_row(cat_id)
 
@@ -127,7 +127,7 @@ class AppSidebar(ctk.CTkFrame):
 
         status_lbl = ctk.CTkLabel(
             inner,
-            text="● Local Engines Active",
+            text="● Working 100% Offline",
             font=(Theme.FONT_FAMILY, 11, "bold"),
             text_color=Theme.STATUS_SUCCESS,
             anchor="w"
@@ -136,7 +136,7 @@ class AppSidebar(ctk.CTkFrame):
 
         info_lbl = ctk.CTkLabel(
             inner,
-            text="100% Offline • Zero Data Leaks",
+            text="Files never leave your PC",
             font=Theme.FONT_CAPTION,
             text_color=Theme.TEXT_MUTED,
             anchor="w"

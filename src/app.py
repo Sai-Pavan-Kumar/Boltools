@@ -107,7 +107,7 @@ class BoltoolsApp(ctk.CTk):
         self.active_frame.grid(row=0, column=0, sticky="nsew")
 
     def show_home(self):
-        self.header.set_breadcrumb(["Workspace"])
+        self.header.set_breadcrumb(["Home"])
         self.sidebar.active_category = None
         self.sidebar._update_button_states()
         home = HomeDashboard(
@@ -120,7 +120,7 @@ class BoltoolsApp(ctk.CTk):
     def show_category(self, category_id: str):
         meta = ToolRegistry.CATEGORIES.get(category_id, {})
         cat_name = meta.get("name", category_id)
-        self.header.set_breadcrumb(["Workspace", cat_name])
+        self.header.set_breadcrumb(["Home", cat_name])
         self.sidebar.active_category = category_id
         self.sidebar._update_button_states()
         gallery = CategoryGallery(
@@ -132,7 +132,7 @@ class BoltoolsApp(ctk.CTk):
         self._set_active_content(gallery)
 
     def show_tool(self, tool: ToolDefinition):
-        self.header.set_breadcrumb(["Workspace", tool.category_name, tool.name])
+        self.header.set_breadcrumb(["Home", tool.category_name, tool.name])
         self.sidebar.active_category = tool.category_id
         self.sidebar._update_button_states()
 
@@ -219,7 +219,10 @@ class BoltoolsApp(ctk.CTk):
     def _init_announcements(self):
         """Checks for remote announcements silently on a background worker thread."""
         def _on_complete(unread_count: int):
-            self.after(0, lambda: self.header.set_unread_notifications(unread_count))
+            try:
+                self.after(0, lambda: self.header.set_unread_notifications(unread_count))
+            except Exception:
+                pass
 
         announcement_service.fetch_async(_on_complete)
 
