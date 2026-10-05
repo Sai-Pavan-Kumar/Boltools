@@ -110,8 +110,9 @@ class CategoryGallery(ctk.CTkScrollableFrame):
             top_bar = ctk.CTkFrame(inner, fg_color="transparent", cursor="hand2")
             top_bar.pack(fill="x")
 
-            status_text = "● READY" if tool.is_implemented else "○ COMING SOON"
-            status_col = Theme.STATUS_SUCCESS if tool.is_implemented else Theme.TEXT_MUTED
+            is_installed = tool.is_implemented
+            status_text = "● READY" if is_installed else f"○ DROP {tool.batch_drop}"
+            status_col = Theme.STATUS_SUCCESS if is_installed else Theme.BRAND_PRIMARY
 
             status_lbl = ctk.CTkLabel(
                 top_bar,
@@ -125,7 +126,7 @@ class CategoryGallery(ctk.CTkScrollableFrame):
 
             name_lbl = ctk.CTkLabel(
                 inner,
-                text=tool.name,
+                text=f"{tool.num} {tool.name}",
                 font=Theme.FONT_SUBTITLE,
                 text_color=Theme.TEXT_PRIMARY,
                 anchor="w",

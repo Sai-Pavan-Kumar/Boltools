@@ -1,0 +1,33 @@
+{
+  "poll_id": "poll_drop_2_priority",
+  "title": "Community Vote: What should we release in Batch 2?",
+  "description": "Vote for the next power tools you want unlocked in Boltools Drop 2.",
+  "ends_at": "2026-10-20",
+  "options": [
+    {
+      "id": "opt_audio_whisper",
+      "label": "Local Whisper AI Speech-to-Text Transcriber (90+ Languages)",
+      "votes": 342
+    },
+    {
+      "id": "opt_video_trimmer",
+      "label": "Instant Lossless Video Trimmer (Cut clips in <1 sec)",
+      "votes": 289
+    },
+    {
+      "id": "opt_audio_stems",
+      "label": "AI Vocal & Instrumental Stem Separator (Karaoke Maker)",
+      "votes": 412
+    },
+    {
+      "id": "opt_design_qr",
+      "label": "Offline Vector QR Code Studio (WiFi, Links, Custom Colors)",
+      "votes": 195
+    },
+    {
+      "id": "opt_system_dup",
+      "label": "Deep Duplicate File Hunter (Free up disk space)",
+      "votes": 220
+    }
+  ]
+}

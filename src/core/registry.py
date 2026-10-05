@@ -1,6 +1,7 @@
-"""Tool Registry & Lazy-Loader for Boltools.
+"""Tool Registry & Modular Catalog Provider for Boltools.
 
-Maintains metadata for all 57 tools across 7 functional domains.
+Maintains metadata for all 100 tools across 9 functional categories.
+Decouples core application shell from tool releases (The App Store / Hub Model).
 Enforces the strict UI Anti-Tech Name Rule (no raw engine names exposed).
 """
 
@@ -8,9 +9,11 @@ from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional, Type
 import customtkinter as ctk
 
+
 @dataclass
 class ToolDefinition:
     id: str
+    num: str
     name: str
     category_id: str
     category_name: str
@@ -18,20 +21,28 @@ class ToolDefinition:
     keywords: List[str]
     factory: Optional[Callable[[], Type[ctk.CTkFrame]]] = None
     icon: str = "⚡"
+    glyph: str = "●"
     is_implemented: bool = False
+    status: str = "available"  # "installed" | "available"
+    batch_drop: int = 1
+    version: str = "1.0.0"
+    size_mb: int = 5
+    is_offline: bool = True
 
 
 class ToolRegistry:
     """Central registry and fuzzy-search provider for Boltools."""
-    
+
     CATEGORIES = {
-        "video": {"name": "Video & Media", "glyph": "▶", "icon": "🎥", "desc": "Trim clips, extract audio, and convert video formats"},
-        "audio": {"name": "Voice & Audio", "glyph": "●", "icon": "🎙️", "desc": "Transcribe speech, clean noise, and isolate vocals"},
-        "pdf": {"name": "PDF Studio", "glyph": "▤", "icon": "📄", "desc": "Merge documents, split pages, lock with passwords, and convert"},
-        "image": {"name": "Image & Photos", "glyph": "◈", "icon": "🖼️", "desc": "Compress photos, resize by KB/MB, and switch formats"},
-        "creator": {"name": "Creator Tools", "glyph": "✦", "icon": "📊", "desc": "Download videos, save HD thumbnails, and grab subtitles"},
-        "design": {"name": "Design & Text", "glyph": "⬡", "icon": "🎨", "desc": "Make QR codes, check color contrast, and edit text"},
-        "system": {"name": "Files & System", "glyph": "⚙", "icon": "🛠️", "desc": "Batch rename files, fix file extensions, and organize folders"},
+        "video": {"name": "Video & Media", "glyph": "▶", "icon": "🎥", "desc": "Join clips, format vertical reels, compress size, and burn subtitles", "count": 14},
+        "audio": {"name": "AI Speech & Audio", "glyph": "🎙", "icon": "🎙️", "desc": "Offline AI transcription, stem separation, voice cleanup, and TTS", "count": 14},
+        "pdf": {"name": "PDF Master Studio", "glyph": "▤", "icon": "📄", "desc": "Split, merge, encrypt, deskew, and convert documents losslessly", "count": 11},
+        "image": {"name": "Image & Visual Graphics", "glyph": "◈", "icon": "🖼️", "desc": "Lossless WebP compression, target KB sizing, and palette harvesting", "count": 11},
+        "creator": {"name": "Creator Intel & Growth", "glyph": "✦", "icon": "📊", "desc": "Download 4K videos & reels, HD thumbnails, and grab subtitles", "count": 8},
+        "design": {"name": "Design & Text", "glyph": "⬡", "icon": "🎨", "desc": "Offline styled QR codes, font pairing, and typography studios", "count": 8},
+        "system": {"name": "System, File & Security", "glyph": "⚙", "icon": "🛠️", "desc": "Power batch file renamer, extension corrector, and tree scaffolder", "count": 14},
+        "windows": {"name": "Windows God-Mode & Terminal", "glyph": "⊞", "icon": "👑", "desc": "Port killer, context menu manager, battery health, and terminal tools", "count": 15},
+        "recovery": {"name": "Data Recovery & Diagnostics", "glyph": "🛟", "icon": "🛟", "desc": "Deleted file recovery, SSD health, display dead-pixel tester", "count": 5},
     }
 
     _tools: Dict[str, ToolDefinition] = {}
@@ -49,12 +60,20 @@ class ToolRegistry:
         return list(cls._tools.values())
 
     @classmethod
+    def get_installed(cls) -> List[ToolDefinition]:
+        return [t for t in cls._tools.values() if t.status == "installed"]
+
+    @classmethod
+    def get_available(cls) -> List[ToolDefinition]:
+        return [t for t in cls._tools.values() if t.status != "installed"]
+
+    @classmethod
     def get_by_category(cls, category_id: str) -> List[ToolDefinition]:
         return [t for t in cls._tools.values() if t.category_id == category_id]
 
     @classmethod
     def search(cls, query: str) -> List[ToolDefinition]:
-        """Performs fast search across names, categories, descriptions, and keywords."""
+        """Performs fast search across names, categories, descriptions, numbers and keywords."""
         q = query.strip().lower()
         if not q:
             return cls.get_all()
@@ -66,6 +85,8 @@ class ToolRegistry:
                 score += 10
             if q in tool.category_name.lower():
                 score += 5
+            if q == tool.num or tool.num.startswith(q):
+                score += 15
             if any(q in kw.lower() for kw in tool.keywords):
                 score += 8
             if q in tool.description.lower():
@@ -77,228 +98,1525 @@ class ToolRegistry:
         return [tool for _, tool in results]
 
 
-# Initialize the 57-Tool Catalog with consumer-grade names (Zero Tech Leaks)
+# Initialize the Grand 100-Tool Catalog
 def _init_catalog():
     R = ToolRegistry.register
-    
-    # ── Category 1: Video & Media
-    c = "video"
-    c_name = "Video & Media"
-    R(ToolDefinition("video_joiner", "Bulk Playlist Video Joiner", c, c_name, "Merge multi-gigabyte video clips losslessly in seconds", ["merge", "join", "concat", "combine", "playlist"]))
-    R(ToolDefinition("video_shorts_conv", "Smart 9:16 Vertical Video Formatter", c, c_name, "Convert landscape videos to vertical reels with aesthetic blurred bars", ["shorts", "reels", "tiktok", "vertical", "16:9", "9:16"]))
-    R(ToolDefinition("video_compressor", "Target Size Video Compressor", c, c_name, "Compress videos precisely under WhatsApp (16MB/64MB) or Discord (25MB) limits", ["compress", "size", "whatsapp", "discord", "mb"]))
-    R(ToolDefinition("video_gif", "Ultra-HQ Lossless GIF Studio", c, c_name, "Generate smooth, high-fps 256-color animated GIFs from any video", ["gif", "animation", "palette"]))
-    R(ToolDefinition("video_trimmer", "Instant Lossless Video Trimmer", c, c_name, "Cut snippets with zero re-encoding in under 1 second", ["cut", "trim", "snip", "lossless"]))
-    R(ToolDefinition("video_audio_swap", "Audio Stripper & Sound Replacer", c, c_name, "Mute original audio or swap background tracks instantly", ["mute", "replace", "bgm", "soundtrack", "strip"]))
-    R(ToolDefinition("video_sub_burner", "Hardcode Subtitle Burner", c, c_name, "Permanently burn SRT subtitles with custom typography and highlights", ["subtitles", "burn", "srt", "captions"]))
+
     R(ToolDefinition(
-        "video_extractor",
-        "Video to Audio Extractor",
-        c, c_name,
-        "Extract clean MP3, WAV, or AAC audio from any video in seconds",
-        ["extract", "audio", "mp3", "wav", "sound", "mpverter"],
+        id="tool_video_1_1",
+        num="1.1",
+        name="Bulk Playlist Video Joiner (Giant Video Merger)",
+        category_id="video",
+        category_name="Video & Media",
+        description="Folder-based batch merger. Reorders clips alphabetically or via custom sequence. If clips share codec/resolution, joins gigabytes in seconds with zero RAM sp...",
+        keywords=['bulk', 'playlist', 'video', 'joiner', 'giant', 'video', 'merger'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_2",
+        num="1.2",
+        name="16:9 to 9:16 Shorts/Reels Smart Converter",
+        category_id="video",
+        category_name="Video & Media",
+        description="One-click automated conversion. Keeps the 16:9 video centered and crisp, while expanding top and bottom with an aesthetically blurred background.",
+        keywords=['shorts', 'reels', 'smart', 'converter'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_3",
+        num="1.3",
+        name="Target Video Size Compressor (Discord 25MB / WhatsApp Limit Fix)",
+        category_id="video",
+        category_name="Video & Media",
+        description="Mathematical target-size solver. Calculates exact target bitrate: bitrate = (target_bytes * 8) / duration_seconds - audio_bitrate. Guarantees output file hit...",
+        keywords=['target', 'video', 'size', 'compressor', 'discord', '25mb', 'whatsapp', 'limit'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_4",
+        num="1.4",
+        name="High-Framerate Optimized GIF Generator",
+        category_id="video",
+        category_name="Video & Media",
+        description="Two-pass dynamic palette analysis. Generates a custom 256-color palette per video clip, applying optimized Bayer dithering for smooth 30/60fps playback at li...",
+        keywords=['high', 'framerate', 'optimized', 'gif', 'generator'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_5",
+        num="1.5",
+        name="Lossless Fast Video Trimmer",
+        category_id="video",
+        category_name="Video & Media",
+        description="Snaps cuts to nearest keyframe (I-frame) and cuts stream instantly in less than 1 second without re-encoding a single pixel.",
+        keywords=['lossless', 'fast', 'video', 'trimmer'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_6",
+        num="1.6",
+        name="Audio Track Swapper & Stripper",
+        category_id="video",
+        category_name="Video & Media",
+        description="Muxes out unwanted audio stream and maps a new audio file into the video container losslessly in 2 seconds.",
+        keywords=['audio', 'track', 'swapper', 'stripper'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_7",
+        num="1.7",
+        name="Hardcoded Subtitle Burner",
+        category_id="video",
+        category_name="Video & Media",
+        description="Burns .srt subtitles directly into video pixels with custom font face, size, outline stroke, and safe-margin positioning.",
+        keywords=['hardcoded', 'subtitle', 'burner'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="video_audio_extractor",
+        num="1.8",
+        name="Universal Media & Audio Extractor",
+        category_id="video",
+        category_name="Video & Media",
+        description="Single drag-and-drop Swiss Army knife converter with smart codec detection. Transcodes or remuxes any media format into universal .mp4 or .mp3 cleanly.",
+        keywords=['universal', 'media', 'audio', 'extractor'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.video.audio_extractor", fromlist=["AudioExtractorTool"]).AudioExtractorTool,
-        is_implemented=True
     ))
-    R(ToolDefinition("video_chunker", "Auto Video Chunker & Status Splitter", c, c_name, "Slice long videos into 30s status clips or equal parts instantly", ["chunk", "status", "whatsapp status", "slice", "split"]))
-
-    # ── Category 2: AI Speech & Audio Studio
-    c = "audio"
-    c_name = "AI Speech & Audio"
-    R(ToolDefinition("audio_transcribe", "AI Voice-to-Text & Subtitle Studio", c, c_name, "Offline transcription generating timestamped SRT captions in 90+ languages", ["transcribe", "voice to text", "subtitles", "speech"]))
-    R(ToolDefinition("audio_tts", "Natural Voice Speech Generator", c, c_name, "Generate lifelike human speech and voiceovers with zero API keys", ["tts", "speech", "voiceover", "narrator", "ai voice"]))
-    R(ToolDefinition("audio_stem_split", "AI Vocal & Instrumental Stem Separator", c, c_name, "Isolate clean acapella vocals, instrumental karaoke, bass and drums", ["stems", "vocals", "karaoke", "acapella", "isolate"]))
-    R(ToolDefinition("audio_denoise", "AI Studio Voice Enhancer & Noise Purger", c, c_name, "Restore muffled recordings and eradicate fan, hum and room echo", ["noise", "clean", "enhance", "reverb", "clarity"]))
-    R(ToolDefinition("audio_jumpcut", "Auto-Silence & Dead-Air Remover", c, c_name, "Automatically splice out awkward pauses and breaths for snappy pacing", ["silence", "jumpcut", "dead air", "podcast cut"]))
-    R(ToolDefinition("audio_lufs_norm", "Broadcast Loudness Leveler (-14 LUFS)", c, c_name, "Auto-level volume to official platform loudness ceilings without distortion", ["loudness", "normalize", "lufs", "volume level"]))
-    R(ToolDefinition("audio_offline_tts", "Offline Pocket Voice Synthesizer", c, c_name, "Generate speech completely offline on local CPU", ["offline tts", "local speech", "voice"]))
-    R(ToolDefinition("audio_pitch_shift", "Lossless Audio Pitch & Tempo Shifter", c, c_name, "Shift musical keys by semitones or adjust BPM without pitch warping", ["pitch", "key", "bpm", "tempo", "semitone"]))
-    R(ToolDefinition("audio_srt_translate", "Subtitle Multi-Language Translator", c, c_name, "Translate captions while strictly preserving millisecond timestamps", ["translate", "srt", "captions", "languages"]))
-    R(ToolDefinition("audio_id3_tagger", "Batch Audio Tag & Album Art Studio", c, c_name, "Bulk update track metadata, artist credits and embed cover art", ["id3", "tags", "metadata", "album art", "mp3 tag"]))
-
-    # ── Category 3: PDF Master Studio
-    c = "pdf"
-    c_name = "PDF Master Studio"
     R(ToolDefinition(
-        "pdf_first_page",
-        "First-Page Document Extractor & Auto-Printer",
-        c, c_name,
-        "Batch extract page 1 from multiple documents, merge and auto-spool to printer",
-        ["print", "first page", "invoice", "spool", "batch print"],
+        id="tool_video_1_9",
+        num="1.9",
+        name="Audio/Video De-Sync Fixer",
+        category_id="video",
+        category_name="Video & Media",
+        description="Interactive real-time millisecond delay slider (+/- ms). Nudges audio forward or backward to lock mouth movement and audio into perfect sync.",
+        keywords=['audio', 'video', 'sync', 'fixer'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_10",
+        num="1.10",
+        name="Audiogram Waveform Video Generator",
+        category_id="video",
+        category_name="Video & Media",
+        description="Takes an audio snippet + background cover image and renders an animated dynamic audio frequency waveform video clip ready for social sharing.",
+        keywords=['audiogram', 'waveform', 'video', 'generator'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_11",
+        num="1.11",
+        name="Auto-Blur Face, Phone Screen & License Plate in Video",
+        category_id="video",
+        category_name="Video & Media",
+        description="Scans video locally, detects faces, phone screen rectangles, and license plates, and overlays a smooth Gaussian/Pixelate blur box with temporal motion tracking.",
+        keywords=['auto', 'blur', 'face', 'phone', 'screen', 'license', 'plate', 'video'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_12",
+        num="1.12",
+        name="Video Black Bar (Letterbox) Auto-Cropper",
+        category_id="video",
+        category_name="Video & Media",
+        description="Automatically detects active non-black pixel coordinates across frames and cleanly crops out hardcoded black letterboxes without manual dimension guessing.",
+        keywords=['video', 'black', 'bar', 'letterbox', 'auto', 'cropper'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_13",
+        num="1.13",
+        name="Screen Studio Style Mouse Smoother & Auto-Zoom Polisher",
+        category_id="video",
+        category_name="Video & Media",
+        description="Smooths jagged cursor paths into buttery cinematic bezier curves and automatically applies smooth 1.5x spring-eased zoom-in punches at click coordinates with...",
+        keywords=['screen', 'studio', 'style', 'mouse', 'smoother', 'auto', 'zoom', 'polisher'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_video_1_14",
+        num="1.14",
+        name="Kinetic Word-by-Word Bouncing Caption Animator",
+        category_id="video",
+        category_name="Video & Media",
+        description="Takes video + word-level subtitle (.srt / .json). Features an interactive 5-second live scrubbing preview deck, 4 viral preset styles (*The Hormozi Punch*, *...",
+        keywords=['kinetic', 'word', 'word', 'bouncing', 'caption', 'animator'],
+        icon="🎥",
+        glyph="▶",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_1",
+        num="2.1",
+        name="Local Whisper Speech-to-Text Transcriber",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="High-speed local automatic speech recognition. Generates word-accurate .srt, .vtt, .txt, and .json files. Runs 4x faster than standard Whisper on CPU/GPU wit...",
+        keywords=['local', 'whisper', 'speech', 'text', 'transcriber'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_2",
+        num="2.2",
+        name="Edge-TTS Voice Generator (Natural Human Speech)",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Direct access to Microsoft's neural voices (Jenny, Guy, Sonia, plus Telugu voices like Mohan/Shruti). Renders ultra-natural human speech with pitch, rate, an...",
+        keywords=['edge', 'tts', 'voice', 'generator', 'natural', 'human', 'speech'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_3",
+        num="2.3",
+        name="Demucs 4-Stem Audio Splitter (Vocal & Instrument Extractor)",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Splits any full mixed audio track into 4 pristine isolated stems: Vocals, Drums, Bass, and Other Instruments.",
+        keywords=['demucs', 'stem', 'audio', 'splitter', 'vocal', 'instrument', 'extractor'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_4",
+        num="2.4",
+        name="Studio Voice Enhancer & Noise Suppressor (DeepFilterNet)",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Full-band audio denoiser. Separates speech formants from background noise in the frequency domain, completely removing fan whir, street noise, and room hum w...",
+        keywords=['studio', 'voice', 'enhancer', 'noise', 'suppressor', 'deepfilternet'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_5",
+        num="2.5",
+        name="Smart Silence & Dead-Air Trimmer",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Analyzes audio amplitude thresholds (-35dB default) and strips silent gaps exceeding a specified threshold (e.g. >0.6s), producing a tight, fast-paced vocal ...",
+        keywords=['smart', 'silence', 'dead', 'air', 'trimmer'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_6",
+        num="2.6",
+        name="Broadcast LUFS Audio Normalizer",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Professional two-pass loudness normalizer. Measures Integrated Loudness (LUFS), Loudness Range (LRA), and True Peak (dBTP), adjusting dynamics to exact broad...",
+        keywords=['broadcast', 'lufs', 'audio', 'normalizer'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_7",
+        num="2.7",
+        name="Subtitle / SRT Multi-Language Translator",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Parses subtitle blocks, translates text chunks preserving punctuation, and regenerates bit-perfect subtitle files with original millisecond timestamps intact.",
+        keywords=['subtitle', 'srt', 'multi', 'language', 'translator'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_8",
+        num="2.8",
+        name="Confidential Meeting Minutes Extractor",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Runs 100% offline text extraction on local Whisper transcripts: extracts key discussed topics, action items, task allocations, and bulleted summaries with ze...",
+        keywords=['confidential', 'meeting', 'minutes', 'extractor'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_9",
+        num="2.9",
+        name="Procedural Pomodoro Ambient Soundscapes",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Generates 100% procedural offline ambient audio: real-time synthesis of pink noise, rain storm on glass, cafe room hum, and 40Hz focus binaural beats, paired...",
+        keywords=['procedural', 'pomodoro', 'ambient', 'soundscapes'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_10",
+        num="2.10",
+        name="Retro Audio Time-Machine (Batch Cassette / Vinyl / Gramophone DSP)",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Batch audio transformer with 4 historical era profiles: *1920s Gramophone* (78 RPM shellac needle noise & horn resonance), *1950s AM Tube Radio* (vacuum tube...",
+        keywords=['retro', 'audio', 'time', 'machine', 'batch', 'cassette', 'vinyl', 'gramophone'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_11",
+        num="2.11",
+        name="Forced Audio-to-Transcript Timestamp Aligner",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Aligns the audio waveform against the raw text using acoustic phoneme matching, generating bit-perfect synchronized .srt subtitle files with millisecond accu...",
+        keywords=['forced', 'audio', 'transcript', 'timestamp', 'aligner'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_12",
+        num="2.12",
+        name="RetroDeck: Ambient Vintage Visual & Live Audio Streamer",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Takes any YouTube music link or built-in 24/7 retro stream, pipes audio live without saving files to disk, applies real-time vintage era filters (Vinyl/Casse...",
+        keywords=['retrodeck', 'ambient', 'vintage', 'visual', 'live', 'audio', 'streamer'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_13",
+        num="2.13",
+        name="Premium Audiophile HRTF 3D Spatial Audio Studio",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Professional spatial audio engine. Anchors sub-bass and kick drum firmly at center stage to prevent disorientation, and filters vocals, synths, and acoustic ...",
+        keywords=['premium', 'audiophile', 'hrtf', 'spatial', 'audio', 'studio'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_audio_2_14",
+        num="2.14",
+        name="System-Wide \"Hold-to-Talk\" Voice Dictation",
+        category_id="audio",
+        category_name="AI Speech & Audio",
+        description="Press and hold Ctrl + Space anywhere in Windows (WhatsApp Web, VS Code, Word, Chrome), speak naturally, and release the key: typed text appears at your activ...",
+        keywords=['system', 'wide', 'hold', 'talk', 'voice', 'dictation'],
+        icon="🎙️",
+        glyph="🎙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="pdf_first_page",
+        num="3.1",
+        name="First-Page Document Extractor & Auto-Printer",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Folder-level scanner. Scans a directory of 100 PDFs, extracts Page 1 from each file, and merges them into a single continuous Print_Batch.pdf ready for 1-cli...",
+        keywords=['first', 'page', 'document', 'extractor', 'auto', 'printer'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.pdf.first_page_printer", fromlist=["FirstPagePrinterTool"]).FirstPagePrinterTool,
-        is_implemented=True
     ))
     R(ToolDefinition(
-        "pdf_split_merge",
-        "Master Document Split & Merge Hub",
-        c, c_name,
-        "Combine unlimited documents or extract custom page ranges",
-        ["merge", "split", "combine", "extract pages"],
+        id="pdf_split_merge",
+        num="3.2",
+        name="Master Document Split & Merge Hub",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Instant local splitting (by page ranges e.g. 1-3, 5, 8-12) and merging of unlimited files with zero file size limits and zero upload wait times.",
+        keywords=['master', 'document', 'split', 'merge', 'hub'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.pdf.split_merge", fromlist=["PdfSplitMergeTool"]).PdfSplitMergeTool,
-        is_implemented=True
     ))
     R(ToolDefinition(
-        "pdf_page_manager",
-        "Document Page Manager & Deskewer",
-        c, c_name,
-        "Rotate upside-down pages, delete blank sheets and reorder effortlessly",
-        ["rotate", "delete pages", "reorder", "deskew"],
+        id="pdf_page_manager",
+        num="3.3",
+        name="Document Page Manager & Deskewer",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Drag-and-drop thumbnail grid. Rotate individual or all pages (90° / 180°), drag thumbnails to reorder sequence, and click trash icons to delete unneeded pages.",
+        keywords=['document', 'page', 'manager', 'deskewer'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.pdf.page_manager", fromlist=["PdfPageManagerTool"]).PdfPageManagerTool,
-        is_implemented=True
     ))
     R(ToolDefinition(
-        "pdf_security",
-        "Document Security & Encryption Hub",
-        c, c_name,
-        "Lock confidential documents with AES passwords or unlock protected sheets",
-        ["lock", "unlock", "password", "encrypt", "decrypt"],
+        id="pdf_security",
+        num="3.4",
+        name="Document Security & Encryption Hub",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Decrypts password-protected PDFs with user authorization, permanently stripping the password requirement for authorized archiving. Can also apply enterprise ...",
+        keywords=['document', 'security', 'encryption', 'hub'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.pdf.security", fromlist=["PdfSecurityTool"]).PdfSecurityTool,
-        is_implemented=True
     ))
     R(ToolDefinition(
-        "pdf_converter",
-        "Universal Document Converter",
-        c, c_name,
-        "Convert bidirectional between PDF, Word, Excel, PowerPoint and Images",
-        ["convert", "word", "excel", "powerpoint", "docx", "images"],
+        id="pdf_converter",
+        num="3.5",
+        name="Universal Document Converter",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Stamps text or transparent PNG logos diagonally or centered across every page, with opacity, rotation, and font scale controls.",
+        keywords=['universal', 'document', 'converter'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.pdf.converter", fromlist=["PdfConverterTool"]).PdfConverterTool,
-        is_implemented=True
     ))
-    R(ToolDefinition("pdf_watermark", "Document Watermark & Number Stamper", c, c_name, "Stamp confidential marks or dynamic 'Page X of Y' headers and footers", ["watermark", "page numbers", "stamp", "footer"]))
-    R(ToolDefinition("pdf_ocr_search", "Searchable Document OCR Converter", c, c_name, "Inject selectable, searchable text layer into scanned paper PDFs", ["ocr", "searchable", "scanned", "selectable text"]))
-    R(ToolDefinition("pdf_ebook_conv", "Universal eBook & Publication Converter", c, c_name, "Convert novels and books between EPUB, MOBI and cleanly styled PDF", ["epub", "mobi", "kindle", "ebook", "book"]))
-    R(ToolDefinition("pdf_compressor", "Smart Lossless Document Compressor", c, c_name, "Shrink multi-megabyte PDFs down to email-ready size with crisp text", ["compress pdf", "shrink", "downsample", "email size"]))
-
-    # ── Category 4: Image & Visual Graphics
-    c = "image"
-    c_name = "Image & Visuals"
-    R(ToolDefinition("image_bg_remove", "AI Background Remover & Cutout Studio", c, c_name, "One-click portrait, product and asset cutout with transparent PNG export", ["remove bg", "background", "transparent", "cutout"]))
-    R(ToolDefinition("image_ocr", "Smart Text Scanner (OCR)", c, c_name, "Extract unselectable text from screenshots, graphics and photos instantly", ["ocr", "read text", "screenshot to text", "extract text"]))
     R(ToolDefinition(
-        "image_webp_compress",
-        "Smart WebP Batch Compressor",
-        c, c_name,
-        "Bulk compress photos with automatic illustration vs photo detection",
-        ["webp", "compress", "batch images", "optimize"],
+        id="tool_pdf_3_6",
+        num="3.6",
+        name="Searchable PDF OCR (`ocrmypdf`)",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Runs multi-threaded optical character recognition and embeds an invisible, search-accurate text layer directly beneath scanned pages without altering origina...",
+        keywords=['searchable', 'pdf', 'ocr', 'ocrmypdf'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_pdf_3_7",
+        num="3.7",
+        name="Lossless PDF Compressor",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Downsamples high-DPI raster images to screen/print standards (150/300 DPI) and strips redundant metadata, unreferenced objects, and embedded fonts to hit upl...",
+        keywords=['lossless', 'pdf', 'compressor'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_pdf_3_8",
+        num="3.8",
+        name="Mobile Scanner & Document Enhancer (CamScanner Alternative)",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Detects 4 document corners, corrects skewed perspective, eliminates shadows, and applies a clean binarized black-and-white scan filter.",
+        keywords=['mobile', 'scanner', 'document', 'enhancer', 'camscanner', 'alternative'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_pdf_3_9",
+        num="3.9",
+        name="N-Up Slide Grid Print Optimizer (4-in-1 / 6-in-1 Slides)",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Arranges multiple slides onto single sheets (2-up, 4-up, 6-up, or 9-up) with custom thin border lines, saving 75% of paper costs.",
+        keywords=['slide', 'grid', 'print', 'optimizer', 'slides'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_pdf_3_10",
+        num="3.10",
+        name="PII Sanitizer & Auto-Redactor (Aadhaar & PAN Black-Out)",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Scans text for sensitive regex patterns (Aadhaar XXXX-XXXX-1234, PAN card numbers, email addresses, phone numbers) and permanently burns true black vector re...",
+        keywords=['pii', 'sanitizer', 'auto', 'redactor', 'aadhaar', 'pan', 'black', 'out'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_pdf_3_11",
+        num="3.11",
+        name="Scanned Paper Signature Extractor (Transparent Digital Stamp Maker)",
+        category_id="pdf",
+        category_name="PDF Master Studio",
+        description="Isolates ink strokes (blue or black ink) from paper background and shadows, converting the physical signature into a crisp, vector-grade transparent PNG digi...",
+        keywords=['scanned', 'paper', 'signature', 'extractor', 'transparent', 'digital', 'stamp', 'maker'],
+        icon="📄",
+        glyph="▤",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_image_4_1",
+        num="4.1",
+        name="Rembg AI Background Remover",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="100% local, high-precision semantic background removal. Isolates humans, e-commerce products, cars, and animals with clean edge alpha matting.",
+        keywords=['rembg', 'background', 'remover'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_image_4_2",
+        num="4.2",
+        name="Tesseract High-Speed Image OCR",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="Extracts printed text into plain text on your clipboard in under 300 milliseconds.",
+        keywords=['tesseract', 'high', 'speed', 'image', 'ocr'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="image_webp_compress",
+        num="4.3",
+        name="Ultra-Lossless WebP & JPG Compressor",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="Converts entire folders of images to Google WebP format with visual quality slider (default 80%), reducing file weights by 60–80% with zero noticeable visual...",
+        keywords=['ultra', 'lossless', 'webp', 'jpg', 'compressor'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.image.webp_compressor", fromlist=["WebpCompressorTool"]).WebpCompressorTool,
-        is_implemented=True
     ))
     R(ToolDefinition(
-        "image_target_size",
-        "Target Size (KB/MB) & Dimension Resizer",
-        c, c_name,
-        "Fit images exactly under strict job portal and passport byte limits",
-        ["target size", "kb", "passport size", "resize dimension"],
+        id="image_target_size",
+        num="4.4",
+        name="Target Byte-Size Image Compressor",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="Automatically scales resolution and JPEG quantization matrices using binary search until the file lands exactly within the required size boundaries.",
+        keywords=['target', 'byte', 'size', 'image', 'compressor'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.image.target_size_resizer", fromlist=["TargetSizeResizerTool"]).TargetSizeResizerTool,
-        is_implemented=True
     ))
     R(ToolDefinition(
-        "image_format_switch",
-        "Universal Image Format Switcher",
-        c, c_name,
-        "Lossless cross-conversion among PNG, JPG, WebP, BMP, TIFF and ICO",
-        ["convert image", "png to jpg", "ico", "webp to png"],
+        id="tool_image_4_5",
+        num="4.5",
+        name="Bulk Image Watermarker & Copyright Stamper",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="Batch watermarker. Stamps text or transparent PNG logo across 100 photos in 3 seconds, with 9-point anchor alignment, margin padding, and opacity sliders.",
+        keywords=['bulk', 'image', 'watermarker', 'copyright', 'stamper'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_image_4_6",
+        num="4.6",
+        name="Real-ESRGAN 4x AI Image Upscaler",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="Generative image super-resolution. Hallucinates realistic high-frequency detail, upscaling images 4x (e.g. 500x500 to 2000x2000) while removing JPEG compress...",
+        keywords=['real', 'esrgan', 'image', 'upscaler'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_image_4_7",
+        num="4.7",
+        name="Bitmap to Clean SVG Vectorizer (`vtracer`)",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="Traces bitmap raster edges and converts pixel data into scalable vector .svg paths with smooth bezier curves and layer grouping.",
+        keywords=['bitmap', 'clean', 'svg', 'vectorizer', 'vtracer'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="image_format_switch",
+        num="4.8",
+        name="Universal Image Format Switcher",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="Takes one master 1024x1024 image and exports structured, production-ready asset packages for iOS, Android, and Web in 1 second.",
+        keywords=['universal', 'image', 'format', 'switcher'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.image.format_switcher", fromlist=["ImageFormatSwitcherTool"]).ImageFormatSwitcherTool,
-        is_implemented=True
     ))
-    R(ToolDefinition("image_watermark", "Batch Logo & Watermark Stamper", c, c_name, "Batch stamp transparent branding across 100+ photos with corner anchoring", ["watermark image", "logo stamp", "brand photos"]))
-    R(ToolDefinition("image_upscale_4k", "AI 4K Super-Resolution Image Upscaler", c, c_name, "Upscale low-resolution 480p/720p graphics 4x into crisp 4K detail", ["upscale", "super resolution", "enhance photo", "4k"]))
     R(ToolDefinition(
-        "image_palette_harvest",
-        "Dominant Color Palette Harvester",
-        c, c_name,
-        "Extract top 5 aesthetic colors with one-click Hex, RGB and CSS variables",
-        ["colors", "palette", "hex", "swatch", "eyedropper"],
+        id="tool_image_4_9",
+        num="4.9",
+        name="iPhone HEIC to JPG Batch Converter",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="Batch converts .heic folders into standard .jpg or .png images, preserving original EXIF camera metadata and orientation tags.",
+        keywords=['iphone', 'heic', 'jpg', 'batch', 'converter'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="image_palette_harvest",
+        num="4.10",
+        name="Dominant Color Palette Harvester",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="Interactive click-to-delete flood fill. Click inside any enclosed shape to delete enclosed background islands to transparency with tolerance thresholds.",
+        keywords=['dominant', 'color', 'palette', 'harvester'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.image.palette_harvester", fromlist=["PaletteHarvesterTool"]).PaletteHarvesterTool,
-        is_implemented=True
     ))
-    R(ToolDefinition("image_vectorize", "Raster to Scalable Vector Converter", c, c_name, "Trace pixelated icons, sketches and logos into infinitely scalable SVG", ["vectorize", "svg", "trace", "vector"]))
-    R(ToolDefinition("image_app_icon_gen", "Multi-Platform App Icon & Favicon Studio", c, c_name, "Export all required iOS, Android, Windows and Web icon sizes from one image", ["icon", "favicon", "app icon", "manifest", "android icon"]))
-    R(ToolDefinition("image_heic_fixer", "Mobile HEIC to JPG/PNG Bulk Converter", c, c_name, "Batch convert smartphone HEIC photos to standard formats with full metadata", ["heic", "iphone photos", "heic to jpg", "apple photos"]))
-    R(ToolDefinition("image_lut_stamper", "Cinematic Color Grade & Filter Stamper", c, c_name, "Apply consistent 3D color grade aesthetics across dozens of images in seconds", ["lut", "filter", "color grade", "aesthetic", "cube"]))
-    R(ToolDefinition("image_boundary_eraser", "Smart Contiguous Background Eraser", c, c_name, "Erase solid backdrops while keeping subject interiors (teeth, rings, gaps) intact", ["magic wand", "contiguous", "ring hole", "solid color eraser"]))
-
-    # ── Category 5: Creator Intel & Growth Radar
-    c = "creator"
-    c_name = "Creator Intel"
-    R(ToolDefinition("creator_stats_radar", "Channel & Competitor Intel Radar", c, c_name, "Analyze channels, engagement metrics and identify viral outlier videos", ["competitor", "stats", "viral outlier", "youtube radar", "intel"]))
     R(ToolDefinition(
-        "creator_bolt_down",
-        "Web Video Downloader",
-        c, c_name,
-        "Download videos, shorts, and playlists up to 4K 60fps or save audio directly",
-        ["download video", "bolt", "stream", "4k download", "playlist"],
+        id="tool_image_4_11",
+        num="4.11",
+        name="Local Content-Aware Watermark & Object Eraser",
+        category_id="image",
+        category_name="Image & Visual Graphics",
+        description="Brush over any unwanted watermark or object on the image: local LaMa ONNX neural model reconstructs the underlying background texture (grass, sky, skin, bric...",
+        keywords=['local', 'content', 'aware', 'watermark', 'object', 'eraser'],
+        icon="🖼️",
+        glyph="◈",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_creator_5_1",
+        num="5.1",
+        name="YouTube Channel & Competitor Stats Radar",
+        category_id="creator",
+        category_name="Creator Intel & Growth",
+        description="Scrapes public channel metadata: provides recent 30-day upload velocities, views-per-video averages, upload schedule patterns, and tags used.",
+        keywords=['youtube', 'channel', 'competitor', 'stats', 'radar'],
+        icon="📊",
+        glyph="✦",
+        is_implemented=False,
+        status="available",
+        batch_drop=2,
+        is_offline=False,
+    ))
+    R(ToolDefinition(
+        id="creator_bolt_down",
+        num="5.2",
+        name="Web Video Downloader",
+        category_id="creator",
+        category_name="Creator Intel & Growth",
+        description="Clean local desktop GUI around yt-dlp. Downloads individual videos or complete playlists at maximum unthrottled internet speeds in up to 4K resolution, auto-...",
+        keywords=['web', 'video', 'downloader'],
+        icon="📊",
+        glyph="✦",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=False,
         factory=lambda: __import__("src.modules.creator.stream_harvester", fromlist=["StreamHarvesterTool"]).StreamHarvesterTool,
-        is_implemented=True
     ))
     R(ToolDefinition(
-        "creator_thumb_grab",
-        "YouTube Thumbnail Downloader",
-        c, c_name,
-        "Preview and download official full-HD video thumbnails with 1-click save",
-        ["thumbnail", "maxres", "tags", "metadata grab"],
+        id="creator_thumb_grab",
+        num="5.3",
+        name="YouTube Thumbnail Downloader",
+        category_id="creator",
+        category_name="Creator Intel & Growth",
+        description="Instantly extracts the uncompressed maximum-resolution thumbnail (1280x720 or 1920x1080), title, video tags, and description.",
+        keywords=['youtube', 'thumbnail', 'downloader'],
+        icon="📊",
+        glyph="✦",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=False,
         factory=lambda: __import__("src.modules.creator.thumbnail_grabber", fromlist=["ThumbnailGrabberTool"]).ThumbnailGrabberTool,
-        is_implemented=True
     ))
     R(ToolDefinition(
-        "creator_trans_harvest",
-        "YouTube Subtitle & Transcript Downloader",
-        c, c_name,
-        "Download video subtitles and spoken transcripts in 20+ languages as .txt or .srt files",
-        ["transcript", "captions", "ytranscripter", "subtitles download"],
+        id="creator_trans_harvest",
+        num="5.4",
+        name="YouTube Subtitle & Transcript Downloader",
+        category_id="creator",
+        category_name="Creator Intel & Growth",
+        description="Extracts official human or auto-generated subtitles across all available languages, outputting clean readable text with or without timestamps.",
+        keywords=['youtube', 'subtitle', 'transcript', 'downloader'],
+        icon="📊",
+        glyph="✦",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=False,
         factory=lambda: __import__("src.modules.creator.transcript_harvester", fromlist=["TranscriptHarvesterTool"]).TranscriptHarvesterTool,
-        is_implemented=True
     ))
-    R(ToolDefinition("creator_fullpage_cap", "Full-Page Scrolling Webpage Capture", c, c_name, "Capture entire top-to-bottom long webpage screenshots or crisp PDFs", ["screenshot", "full page", "scrolling capture", "web to pdf"]))
-    R(ToolDefinition("creator_feed_tester", "Feed & Mobile Viewport Mockup Tester", c, c_name, "Simulate live mobile feeds to test thumbnail contrast and legibility", ["mockup", "mrbeast test", "thumbnail test", "mobile preview"]))
-    R(ToolDefinition("creator_auto_chapters", "Auto Video Chapter & Timestamp Generator", c, c_name, "Analyze transcripts to generate copy-paste description chapters", ["chapters", "timestamps", "youtube description", "segments"]))
-    R(ToolDefinition("creator_teleprompter", "Floating Camera-Eye Teleprompter", c, c_name, "Semi-transparent overlay prompter floating directly beside your webcam", ["teleprompter", "prompter", "speech notes", "script overlay"]))
-
-    # ── Category 6: Design, Text & Everyday Utilities
-    c = "design"
-    c_name = "Design & Text"
-    R(ToolDefinition("design_contrast_lab", "Hex Color Studio & Accessibility Inspector", c, c_name, "Real-time WCAG contrast ratios, color conversions and CSS snippets", ["contrast", "wcag", "color picker", "hex", "accessibility"]))
-    R(ToolDefinition("design_text_lab", "Quick Text Lab & Word Counter", c, c_name, "Real-time word, character, speaking time metrics and case converters", ["words", "chars", "counter", "case converter", "slug"]))
-    R(ToolDefinition("design_qr_studio", "Offline Secure QR Code Studio", c, c_name, "Permanent direct-link QR codes for URLs, Wi-Fi keys, and text with custom styling", ["qr code", "wifi qr", "direct link", "offline qr"]))
-    R(ToolDefinition("design_markdown_pdf", "Markdown to Styled Document Studio", c, c_name, "Render technical notes into publication-grade styled PDFs or clean HTML", ["markdown", "md to pdf", "syntax highlight", "docs"]))
-    R(ToolDefinition("design_data_studio", "Offline JSON, YAML & Data Format Studio", c, c_name, "Validate, format and convert data structures without external network leaks", ["json", "yaml", "xml", "formatter", "beautify"]))
-    R(ToolDefinition("design_diff_compare", "Side-by-Side Visual Script & Text Diff Comparator", c, c_name, "Compare script drafts and code revisions with side-by-side color highlights", ["diff", "compare text", "revisions", "changes"]))
-
-    # ── Category 7: System, File & Security Utilities
-    c = "system"
-    c_name = "System & Files"
-    R(ToolDefinition("system_exif_strip", "Privacy Guard & EXIF Metadata Purger", c, c_name, "Inspect and permanently scrub GPS home tags and camera serials from media", ["exif", "privacy", "gps wipe", "metadata stripper"]))
     R(ToolDefinition(
-        "system_batch_rename",
-        "Power Batch File Renamer",
-        c, c_name,
-        "Batch prefix, suffix, sequence numbering and find-and-replace with live preview",
-        ["rename", "batch rename", "numbering", "prefix"],
+        id="tool_creator_5_5",
+        num="5.5",
+        name="Full-Page Scrolling Webpage Capture",
+        category_id="creator",
+        category_name="Creator Intel & Growth",
+        description="Emulates full scrolling down the entire page height, stitches viewport buffers, and exports a pixel-perfect full-height 4K PNG or PDF.",
+        keywords=['full', 'page', 'scrolling', 'webpage', 'capture'],
+        icon="📊",
+        glyph="✦",
+        is_implemented=False,
+        status="available",
+        batch_drop=2,
+        is_offline=False,
+    ))
+    R(ToolDefinition(
+        id="tool_creator_5_6",
+        num="5.6",
+        name="YouTube Mobile & Desktop Mockup Previewer",
+        category_id="creator",
+        category_name="Creator Intel & Growth",
+        description="Real-time preview simulator. Previews your thumbnail image inside realistic YouTube Mobile feed, Desktop home grid, and Sidebar recommendation mockups with t...",
+        keywords=['youtube', 'mobile', 'desktop', 'mockup', 'previewer'],
+        icon="📊",
+        glyph="✦",
+        is_implemented=False,
+        status="available",
+        batch_drop=2,
+        is_offline=False,
+    ))
+    R(ToolDefinition(
+        id="tool_creator_5_7",
+        num="5.7",
+        name="AI-Free Auto Chapter Timestamp Generator",
+        category_id="creator",
+        category_name="Creator Intel & Growth",
+        description="Analyzes visual slide/scene transitions in screen recordings and presentations, auto-generating clean timestamp markers (00:00 Intro, 02:45 Architecture).",
+        keywords=['free', 'auto', 'chapter', 'timestamp', 'generator'],
+        icon="📊",
+        glyph="✦",
+        is_implemented=False,
+        status="available",
+        batch_drop=2,
+        is_offline=False,
+    ))
+    R(ToolDefinition(
+        id="tool_creator_5_8",
+        num="5.8",
+        name="Social Share OpenGraph & Link Card Previewer",
+        category_id="creator",
+        category_name="Creator Intel & Growth",
+        description="Renders accurate simulated link preview cards across WhatsApp, Twitter, Discord, and iMessage, verifying title character limits and image aspect-ratio croppi...",
+        keywords=['social', 'share', 'opengraph', 'link', 'card', 'previewer'],
+        icon="📊",
+        glyph="✦",
+        is_implemented=False,
+        status="available",
+        batch_drop=2,
+        is_offline=False,
+    ))
+    R(ToolDefinition(
+        id="tool_design_6_1",
+        num="6.1",
+        name="Dynamic Vector QR Code Studio",
+        category_id="design",
+        category_name="Design, Text & Everyday",
+        description="Generates permanent, ad-free vector QR codes (URLs, Wi-Fi login credentials, vCards, UPI payment strings). Supports custom brand colors, high error correctio...",
+        keywords=['dynamic', 'vector', 'code', 'studio'],
+        icon="🎨",
+        glyph="⬡",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_design_6_2",
+        num="6.2",
+        name="Markdown to Styled Academic PDF",
+        category_id="design",
+        category_name="Design, Text & Everyday",
+        description="Renders Markdown files into beautifully typeset PDFs using custom CSS styling, syntax-highlighted code blocks, and page-number headers/footers.",
+        keywords=['markdown', 'styled', 'academic', 'pdf'],
+        icon="🎨",
+        glyph="⬡",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_design_6_3",
+        num="6.3",
+        name="ATS-Proof LaTeX/Typst Resume Studio",
+        category_id="design",
+        category_name="Design, Text & Everyday",
+        description="Compiles structured Typst templates into lightweight, ATS-score-perfect PDFs. Generates clean single-column selectable text that passes ATS parsers with 100%...",
+        keywords=['ats', 'proof', 'latex', 'typst', 'resume', 'studio'],
+        icon="🎨",
+        glyph="⬡",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_design_6_4",
+        num="6.4",
+        name="Instant LaTeX Math Formula to SVG/PNG",
+        category_id="design",
+        category_name="Design, Text & Everyday",
+        description="Typeset raw LaTeX mathematical expressions (E = mc^2, calculus integrals, matrices) directly into crystal-clear scalable vector .svg or transparent 300 DPI ....",
+        keywords=['instant', 'latex', 'math', 'formula', 'svg', 'png'],
+        icon="🎨",
+        glyph="⬡",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_design_6_5",
+        num="6.5",
+        name="Mechanical Keyboard Sound Simulator (MechVibes Offline Engine)",
+        category_id="design",
+        category_name="Design, Text & Everyday",
+        description="Plays authentic, satisfying mechanical switch sounds (*Cherry MX Blue*, *Holy Panda creamy thock*, *IBM Model M 1985 clicky*) in your headphones on every phy...",
+        keywords=['mechanical', 'keyboard', 'sound', 'simulator', 'mechvibes', 'offline', 'engine'],
+        icon="🎨",
+        glyph="⬡",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_design_6_6",
+        num="6.6",
+        name="Local Desktop Screen QR Code Reader (Snip-to-Read)",
+        category_id="design",
+        category_name="Design, Text & Everyday",
+        description="Drag a selection box over any QR code visible anywhere on your computer screen: decodes the link/data instantly to your clipboard or opens it in your default...",
+        keywords=['local', 'desktop', 'screen', 'code', 'reader', 'snip', 'read'],
+        icon="🎨",
+        glyph="⬡",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_design_6_7",
+        num="6.7",
+        name="AirWave: Analog FM & World Transistor Radio Player",
+        category_id="design",
+        category_name="Design, Text & Everyday",
+        description="Vintage transistor radio dashboard with an interactive analog frequency tuning dial (88.0 MHz – 108.0 MHz). Playing authentic static tuning noise (ksssshh-ch...",
+        keywords=['airwave', 'analog', 'world', 'transistor', 'radio', 'player'],
+        icon="🎨",
+        glyph="⬡",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_design_6_8",
+        num="6.8",
+        name="Screen Snip to LaTeX Math Formula Converter",
+        category_id="design",
+        category_name="Design, Text & Everyday",
+        description="Snip any math equation or physics formula on your screen: extracts the mathematical symbols and copies clean, compilable LaTeX code (\\frac{-b \\pm \\sqrt{b^2-4...",
+        keywords=['screen', 'snip', 'latex', 'math', 'formula', 'converter'],
+        icon="🎨",
+        glyph="⬡",
+        is_implemented=False,
+        status="available",
+        batch_drop=3,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_system_7_1",
+        num="7.1",
+        name="ExifTool Privacy & Metadata Stripper",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Strips 100% of EXIF, XMP, IPTC, and GPS location tags from images, videos, and PDFs in bulk before sharing.",
+        keywords=['exiftool', 'privacy', 'metadata', 'stripper'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="system_batch_rename",
+        num="7.2",
+        name="Power Batch File Renamer",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Visual multi-rule batch renamer. Supports regex pattern replacement, sequential number padding (001, 002), date-taken prefixing, and extension case normaliza...",
+        keywords=['power', 'batch', 'file', 'renamer'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.system.batch_renamer", fromlist=["BatchRenamerTool"]).BatchRenamerTool,
-        is_implemented=True
     ))
     R(ToolDefinition(
-        "system_ext_switcher",
-        "Smart File Extension Corrector",
-        c, c_name,
-        "Detect true file headers and safely repair damaged or misnamed extensions",
-        ["extension", "extenger", "fix extension", "file type"],
+        id="system_ext_switcher",
+        num="7.3",
+        name="Smart File Extension Corrector",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Clean category-based batch extension converter. Selects files, picks target valid extension format, and safely switches extensions with automatic casing norm...",
+        keywords=['smart', 'file', 'extension', 'corrector'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.system.ext_switcher", fromlist=["ExtensionCorrectorTool"]).ExtensionCorrectorTool,
-        is_implemented=True
     ))
     R(ToolDefinition(
-        "system_tree_scaffold",
-        "Project Tree Structure Scaffolder",
-        c, c_name,
-        "Paste any ASCII project tree diagram and automatically generate all folders & files on disk",
-        ["foldermaker", "tree", "scaffold", "project structure", "folders"],
+        id="system_tree_scaffold",
+        num="7.4",
+        name="Project Tree Structure Scaffolder",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Two-stage duplicate finder. Fast-scans by file size first, then calculates SHA-256 block hashes on potential matches to identify true bit-for-bit duplicate f...",
+        keywords=['project', 'tree', 'structure', 'scaffolder'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=True,
+        status="installed",
+        batch_drop=1,
+        is_offline=True,
         factory=lambda: __import__("src.modules.system.tree_scaffolder", fromlist=["TreeScaffolderTool"]).TreeScaffolderTool,
-        is_implemented=True
     ))
-    R(ToolDefinition("system_dup_hunter", "Deep Storage Duplicate File Hunter", c, c_name, "Byte-level hash scanner to identify exact duplicate files and reclaim storage", ["duplicate", "clean disk", "free storage", "hash match"]))
-    R(ToolDefinition("system_link_unshorten", "Safe Link Destination & Redirect Inspector", c, c_name, "Uncover final scam/redirect destinations of shortened URLs safely", ["unshorten", "safe link", "redirect trace", "url check"]))
-    R(ToolDefinition("system_net_ping", "Ad-Free Network Ping & Connection Monitor", c, c_name, "Zero-ad instant latency, jitter and bandwidth diagnostic in under 5 seconds", ["speed test", "ping", "latency", "network"]))
-    R(ToolDefinition("system_file_vault", "Encrypted File & Folder Vault", c, c_name, "Lock private files into encrypted vault containers with instant in-app restore", ["vault", "encrypt folder", "lock files", "secure"]))
-    R(ToolDefinition("system_clean_empty", "Zero-Byte & Empty Directory Sweeper", c, c_name, "Recursively purge empty ghost directories and orphaned zero-byte files", ["empty folders", "clean ssd", "zero byte", "sweep"]))
+    R(ToolDefinition(
+        id="tool_system_7_5",
+        num="7.5",
+        name="Safe Link Unshortener & Redirect Inspector",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Traces HTTP redirect headers (301/302) without running browser JavaScript or executing downloads, revealing the final destination URL and intermediate tracki...",
+        keywords=['safe', 'link', 'unshortener', 'redirect', 'inspector'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_system_7_6",
+        num="7.6",
+        name="Integrated App-Lock File & Folder Vault",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Military-grade AES-256 encryption. Encrypts selected folders into single encrypted .vault archives protected by a master password; decrypts only when authori...",
+        keywords=['integrated', 'app', 'lock', 'file', 'folder', 'vault'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_system_7_7",
+        num="7.7",
+        name="PPTX / DOCX / XLSX High-Res Asset Ripper",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Unpacks OOXML container structures directly, extracting all embedded original master assets (PNGs, JPEGs, SVGs, audio clips) at native 100% uncompressed qual...",
+        keywords=['pptx', 'docx', 'xlsx', 'high', 'res', 'asset', 'ripper'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_system_7_8",
+        num="7.8",
+        name="Excel & CSV Smart Data Normalizer",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Automatic data scrubber. Standardizes date columns, strips whitespace, fixes mojibake encoding errors, and normalizes phone numbers into clean spreadsheet data.",
+        keywords=['excel', 'csv', 'smart', 'data', 'normalizer'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_system_7_9",
+        num="7.9",
+        name="Smart Auto-Organizer (Downloads Folder Sorter)",
+        category_id="system",
+        category_name="System, File & Security",
+        description="1-Click organizer. Sorts files into clean subdirectories (Images, PDFs, Documents, Software, Archives, Media) by extension and date, complete with a 1-click ...",
+        keywords=['smart', 'auto', 'organizer', 'downloads', 'folder', 'sorter'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_system_7_10",
+        num="7.10",
+        name="Visual Disk Space Hog Hunter",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Visual disk space analyzer. Scans folders and renders color-coded hierarchical treemaps showing the exact largest folders and files eating storage space.",
+        keywords=['visual', 'disk', 'space', 'hog', 'hunter'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_system_7_11",
+        num="7.11",
+        name="High-Speed Incremental Folder Sync (Robocopy GUI)",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Modern GUI wrapper around Microsoft's robust robocopy multi-threaded engine. Copies only modified or new files, mirrors directory structures, and resumes int...",
+        keywords=['high', 'speed', 'incremental', 'folder', 'sync', 'robocopy', 'gui'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_system_7_12",
+        num="7.12",
+        name="Locked File Handle Releaser & Deleter",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Identifies the exact locking background Process ID (PID) holding the file open, safely closes the file handle, and deletes or releases the file cleanly.",
+        keywords=['locked', 'file', 'handle', 'releaser', 'deleter'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_system_7_13",
+        num="7.13",
+        name="Android & iPhone High-Speed USB Media Transfer",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Bypasses buggy Windows MTP subsystem, opening direct high-speed hardware data streams to copy phone photos/videos at maximum USB hardware bandwidth without f...",
+        keywords=['android', 'iphone', 'high', 'speed', 'usb', 'media', 'transfer'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_system_7_14",
+        num="7.14",
+        name="Steganography Secret Vault (Hide in Photo Pixels)",
+        category_id="system",
+        category_name="System, File & Security",
+        description="Mathematically embeds encrypted files inside the pixel noise of a normal .png image. The image displays as an ordinary photo in any photo viewer, but enterin...",
+        keywords=['steganography', 'secret', 'vault', 'hide', 'photo', 'pixels'],
+        icon="🛠️",
+        glyph="⚙",
+        is_implemented=False,
+        status="available",
+        batch_drop=4,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_1",
+        num="8.1",
+        name="Unlock Hidden \"Ultimate Performance\" Power Plan",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="1-Click unhides and activates Windows' most aggressive performance power plan, disabling CPU sleep micro-latencies and locking all cores at maximum responsiv...",
+        keywords=['unlock', 'hidden', 'ultimate', 'performance', 'power', 'plan'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_2",
+        num="8.2",
+        name="One-Click All-Apps Bulk Updater (Winget Engine)",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Runs winget upgrade --all silently in the background, updating every installed desktop software to the latest official release in one unified sweep.",
+        keywords=['one', 'click', 'all', 'apps', 'bulk', 'updater', 'winget', 'engine'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_3",
+        num="8.3",
+        name="Deep WinSxS Component Storage Purger",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Safely deletes superseded Windows update versions and resets the component store base, recovering gigabytes of critical SSD storage.",
+        keywords=['deep', 'winsxs', 'component', 'storage', 'purger'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_4",
+        num="8.4",
+        name="Saved Wi-Fi Password Revealer & Phone QR Code",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Extracts plain-text security keys for all saved Wi-Fi profiles and instantly renders a scan-to-connect Wi-Fi QR code for smartphone cameras.",
+        keywords=['saved', 'password', 'revealer', 'phone', 'code'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_5",
+        num="8.5",
+        name="Who Is On My Wi-Fi? (Hidden Device Scanner)",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Scans the local ARP table in 1 second, listing IP addresses, MAC hardware addresses, and device interface types for all devices active on your local network.",
+        keywords=['who', 'hidden', 'device', 'scanner'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_6",
+        num="8.6",
+        name="Secure Free Space Sanitizer (Multi-Pass DoD Overwrite)",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Cryptographically overwrites unallocated free space across a selected directory or drive volume with zeros, ones, and random data patterns (DoD compliant sta...",
+        keywords=['secure', 'free', 'space', 'sanitizer', 'multi', 'pass', 'dod', 'overwrite'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_7",
+        num="8.7",
+        name="1-Click Windows Auto-Repair (SFC & DISM Subsystem)",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Automatically audits core Windows system files, downloads bit-perfect replacements directly from Microsoft update manifests, and repairs OS integrity.",
+        keywords=['click', 'windows', 'auto', 'repair', 'sfc', 'dism', 'subsystem'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_8",
+        num="8.8",
+        name="Real Battery Health & Cycle Degradation Diagnostic",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Generates a detailed hardware diagnostic showing original factory milliwatt-hour design capacity vs current full-charge capacity and lifetime charging cycle ...",
+        keywords=['real', 'battery', 'health', 'cycle', 'degradation', 'diagnostic'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_9",
+        num="8.9",
+        name="Instant Local Wi-Fi File Sharing Web Server",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Instantly hosts any selected folder on your local Wi-Fi network and generates an on-screen QR code: scan with your phone camera to download files directly at...",
+        keywords=['instant', 'local', 'file', 'sharing', 'web', 'server'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_10",
+        num="8.10",
+        name="Developer Port 3000 / 8080 Process Releaser",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Scans active localhost ports, identifies the locking PID, and safely terminates the zombie background process with one click.",
+        keywords=['developer', 'port', '3000', '8080', 'process', 'releaser'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_11",
+        num="8.11",
+        name="Laptop Hardware Serial Number & Specs Extractor",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Extracts Motherboard Serial Number, Machine Model Name, BIOS version, and exact RAM speeds into a clean 1-click clipboard copy card.",
+        keywords=['laptop', 'hardware', 'serial', 'number', 'specs', 'extractor'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_12",
+        num="8.12",
+        name="Local Hosts File Distraction Blocker & Dev Domain Manager",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Hardware-level distraction block via the OS hosts file that browser extensions cannot bypass. Toggles deep study focus on/off in 1 click, and lets developers...",
+        keywords=['local', 'hosts', 'file', 'distraction', 'blocker', 'dev', 'domain', 'manager'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_13",
+        num="8.13",
+        name="Windows Sandbox 1-Click Suspicious File Detonator",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Automatically spins up an isolated, disposable Windows Sandbox virtual environment in 1 click, passes the suspicious file inside, and launches it safely. Onc...",
+        keywords=['windows', 'sandbox', 'click', 'suspicious', 'file', 'detonator'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_14",
+        num="8.14",
+        name="Bluetooth TWS Earbuds & Case Battery Monitor",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Reads Bluetooth battery service telemetry and displays a sleek HUD card showing Left Earbud (%), Right Earbud (%), and Case Battery (%) with low-battery warn...",
+        keywords=['bluetooth', 'tws', 'earbuds', 'case', 'battery', 'monitor'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_windows_8_15",
+        num="8.15",
+        name="Active App Keyboard Shortcut CheatSheet HUD",
+        category_id="windows",
+        category_name="Windows God-Mode & Terminal",
+        description="Hold Alt for 1 second in ANY active program: an elegant, minimal floating HUD appears displaying all keyboard shortcuts specific to that running application....",
+        keywords=['active', 'app', 'keyboard', 'shortcut', 'cheatsheet', 'hud'],
+        icon="👑",
+        glyph="⊞",
+        is_implemented=False,
+        status="available",
+        batch_drop=5,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_recovery_9_1",
+        num="9.1",
+        name="Microsoft Official File Recovery GUI (`winfr` Native Engine)",
+        category_id="recovery",
+        category_name="Data Recovery & Diagnostics",
+        description="Provides a clean modern GUI around Microsoft's official winfr recovery engine: select drive, pick file types (Photos, Videos, Documents), scan, and restore f...",
+        keywords=['microsoft', 'official', 'file', 'recovery', 'gui', 'winfr', 'native', 'engine'],
+        icon="🛟",
+        glyph="🛟",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_recovery_9_2",
+        num="9.2",
+        name="Deep Raw Signature Carver (PhotoRec Core)",
+        category_id="recovery",
+        category_name="Data Recovery & Diagnostics",
+        description="Scans raw physical storage sectors and carves out files based on cryptographic file signatures (JPEG, MP4, PNG, DOCX, ZIP headers), rescuing media from forma...",
+        keywords=['deep', 'raw', 'signature', 'carver', 'photorec', 'core'],
+        icon="🛟",
+        glyph="🛟",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_recovery_9_3",
+        num="9.3",
+        name="Windows Shadow Copy \"Time Machine\" Restorer (`vssadmin`)",
+        category_id="recovery",
+        category_name="Data Recovery & Diagnostics",
+        description="Mounts Windows hidden Volume Shadow snapshots created during system restore points and extracts previous versions of files or folders from yesterday or last ...",
+        keywords=['windows', 'shadow', 'copy', 'time', 'machine', 'restorer', 'vssadmin'],
+        icon="🛟",
+        glyph="🛟",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_recovery_9_4",
+        num="9.4",
+        name="SSD Health & S.M.A.R.T. Lifespan Diagnostic",
+        category_id="recovery",
+        category_name="Data Recovery & Diagnostics",
+        description="Reads drive controller S.M.A.R.T. hardware sensors directly: displays Health Percentage (e.g. 96% Good · 18% Remaining Life), Total Terabytes Written (TBW), ...",
+        keywords=['ssd', 'health', 'lifespan', 'diagnostic'],
+        icon="🛟",
+        glyph="🛟",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
+    R(ToolDefinition(
+        id="tool_recovery_9_5",
+        num="9.5",
+        name="1-Click Windows Driver Backup & Offline Restorer",
+        category_id="recovery",
+        category_name="Data Recovery & Diagnostics",
+        description="Exports all active third-party hardware drivers (Wi-Fi, Bluetooth, Realtek Audio, NVIDIA/AMD) into a structured offline backup folder in 1 click. After fresh...",
+        keywords=['click', 'windows', 'driver', 'backup', 'offline', 'restorer'],
+        icon="🛟",
+        glyph="🛟",
+        is_implemented=False,
+        status="available",
+        batch_drop=6,
+        is_offline=True,
+    ))
 
 _init_catalog()

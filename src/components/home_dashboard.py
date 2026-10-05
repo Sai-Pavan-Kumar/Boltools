@@ -15,6 +15,8 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         master,
         on_tool_select: Callable[[ToolDefinition], None],
         on_category_select: Callable[[str], None],
+        on_directory_click: Optional[Callable[[], None]] = None,
+        on_poll_click: Optional[Callable[[], None]] = None,
         **kwargs
     ):
         super().__init__(
@@ -25,8 +27,11 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         )
         self.on_tool_select = on_tool_select
         self.on_category_select = on_category_select
+        self.on_directory_click = on_directory_click
+        self.on_poll_click = on_poll_click
 
         self._build_hero()
+        self._build_community_banner()
         self._build_featured_shelf()
         self._build_domains_bento()
 
@@ -69,7 +74,7 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         # Subtitle
         desc = ctk.CTkLabel(
             inner,
-            text="57 fast offline tools. Zero subscriptions. Zero ads. Your files never leave your computer.",
+            text="100 specialized offline tools across 9 suites. Zero subscriptions. Zero ads. 100% private.",
             font=Theme.FONT_BODY,
             text_color=Theme.TEXT_SECONDARY,
             anchor="w"
@@ -81,9 +86,9 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         stats_frame.pack(anchor="w")
 
         metrics = [
-            ("57", "Free Tools"),
-            ("48", "Offline Tools"),
-            ("9", "Web Tools"),
+            ("100", "Total Catalog"),
+            ("16", "Genesis Ready"),
+            ("84", "In Hub Drops"),
             ("₹0", "Free Forever")
         ]
         for val, lbl in metrics:
@@ -95,6 +100,77 @@ class HomeDashboard(ctk.CTkScrollableFrame):
             
             sub_lbl = ctk.CTkLabel(item, text=f"{lbl} ", font=Theme.FONT_CAPTION, text_color=Theme.TEXT_MUTED)
             sub_lbl.pack(side="left", padx=(0, 8), pady=4)
+
+    def _build_community_banner(self):
+        """Displays community roadmap banner and Tool Directory quick access."""
+        banner = ctk.CTkFrame(
+            self,
+            fg_color=Theme.SURFACE_CARD,
+            corner_radius=Theme.RADIUS_CARD,
+            border_width=1,
+            border_color=Theme.BORDER_SUBTLE
+        )
+        banner.pack(fill="x", padx=Theme.PAD_LG, pady=(0, Theme.PAD_MD))
+
+        inner = ctk.CTkFrame(banner, fg_color="transparent")
+        inner.pack(fill="both", padx=Theme.PAD_LG, pady=Theme.PAD_MD)
+        inner.grid_columnconfigure(0, weight=1)
+        inner.grid_columnconfigure(1, weight=0)
+
+        # Left Info
+        info_col = ctk.CTkFrame(inner, fg_color="transparent")
+        info_col.grid(row=0, column=0, sticky="w")
+
+        title_lbl = ctk.CTkLabel(
+            info_col,
+            text="🗳️ Community Roadmap Vote  ·  Drop 2 Pipeline Active",
+            font=Theme.FONT_SUBTITLE,
+            text_color=Theme.TEXT_PRIMARY,
+            anchor="w"
+        )
+        title_lbl.pack(anchor="w")
+
+        desc_lbl = ctk.CTkLabel(
+            info_col,
+            text="16 tools live now. Help choose which AI, media, and system tools get unlocked in the next release.",
+            font=Theme.FONT_BODY,
+            text_color=Theme.TEXT_SECONDARY,
+            anchor="w"
+        )
+        desc_lbl.pack(anchor="w", pady=(2, 0))
+
+        # Right Action Buttons
+        btn_col = ctk.CTkFrame(inner, fg_color="transparent")
+        btn_col.grid(row=0, column=1, sticky="e")
+
+        if self.on_poll_click:
+            btn_vote = ctk.CTkButton(
+                btn_col,
+                text="Vote in Poll 🗳️",
+                font=Theme.FONT_BODY_BOLD,
+                fg_color=Theme.BRAND_PRIMARY,
+                hover_color=Theme.BRAND_HOVER,
+                corner_radius=Theme.RADIUS_BUTTON,
+                height=34,
+                command=self.on_poll_click
+            )
+            btn_vote.pack(side="left", padx=(0, Theme.PAD_SM))
+
+        if self.on_directory_click:
+            btn_dir = ctk.CTkButton(
+                btn_col,
+                text="Explore All 100 Tools ⬡",
+                font=Theme.FONT_BODY_BOLD,
+                fg_color=Theme.SURFACE_INSET,
+                hover_color=Theme.SURFACE_CARD_HOVER,
+                text_color=Theme.TEXT_PRIMARY,
+                border_width=1,
+                border_color=Theme.BORDER_SUBTLE,
+                corner_radius=Theme.RADIUS_BUTTON,
+                height=34,
+                command=self.on_directory_click
+            )
+            btn_dir.pack(side="left")
 
     def _build_featured_shelf(self):
         """Displays quick-launch shortcut cards for highest-utility tools."""

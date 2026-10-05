@@ -46,3 +46,4 @@ desktop.ini
 # Logs & Databases
 *.log
 *.sqlite3
+.wrangler/

@@ -25,12 +25,16 @@ from src.core.theme import Theme
 from src.core.registry import ToolRegistry, ToolDefinition
 from src.core.worker import AsyncWorker
 from src.core.announcements import announcement_service
+from src.core.community import community_service
 from src.components.header import AppHeader
 from src.components.sidebar import AppSidebar
 from src.components.home_dashboard import HomeDashboard
 from src.components.category_gallery import CategoryGallery
 from src.components.command_palette import CommandPalette
 from src.components.notification_modal import NotificationModal
+from src.components.tool_directory import ToolDirectoryView
+from src.components.poll_modal import CommunityPollModal
+from src.components.request_tool_modal import RequestToolModal
 
 
 class BoltoolsApp(ctk.CTk):
@@ -85,7 +89,8 @@ class BoltoolsApp(ctk.CTk):
         self.sidebar = AppSidebar(
             self,
             on_select_category=self.show_category,
-            on_select_home=self.show_home
+            on_select_home=self.show_home,
+            on_select_directory=self.show_directory
         )
         self.sidebar.grid(row=1, column=0, sticky="nsew")
 
@@ -109,20 +114,37 @@ class BoltoolsApp(ctk.CTk):
     def show_home(self):
         self.header.set_breadcrumb(["Home"])
         self.sidebar.active_category = None
-        self.sidebar._update_button_states()
+        self.sidebar._update_button_states("home")
         home = HomeDashboard(
             self.content_area,
             on_tool_select=self.show_tool,
-            on_category_select=self.show_category
+            on_category_select=self.show_category,
+            on_directory_click=self.show_directory,
+            on_poll_click=self.open_poll_modal
         )
         self._set_active_content(home)
+
+    def show_directory(self):
+        self.header.set_breadcrumb(["Home", "Tool Directory"])
+        self.sidebar.active_category = None
+        self.sidebar._update_button_states("directory")
+        directory_view = ToolDirectoryView(
+            self.content_area,
+            on_select_tool=self.show_tool_by_id
+        )
+        self._set_active_content(directory_view)
+
+    def show_tool_by_id(self, tool_id: str):
+        tool = ToolRegistry.get(tool_id)
+        if tool:
+            self.show_tool(tool)
 
     def show_category(self, category_id: str):
         meta = ToolRegistry.CATEGORIES.get(category_id, {})
         cat_name = meta.get("name", category_id)
         self.header.set_breadcrumb(["Home", cat_name])
         self.sidebar.active_category = category_id
-        self.sidebar._update_button_states()
+        self.sidebar._update_button_states(category_id)
         gallery = CategoryGallery(
             self.content_area,
             category_id=category_id,
@@ -216,8 +238,16 @@ class BoltoolsApp(ctk.CTk):
         NotificationModal(self, on_close=lambda: self.header.set_unread_notifications(0))
         self.header.set_unread_notifications(0)
 
+    def open_poll_modal(self):
+        """Opens community roadmap voting modal."""
+        CommunityPollModal(self)
+
+    def open_request_modal(self):
+        """Opens tool request modal."""
+        RequestToolModal(self)
+
     def _init_announcements(self):
-        """Checks for remote announcements silently on a background worker thread."""
+        """Checks for remote announcements and community polls silently on background threads."""
         def _on_complete(unread_count: int):
             try:
                 self.after(0, lambda: self.header.set_unread_notifications(unread_count))
@@ -225,6 +255,7 @@ class BoltoolsApp(ctk.CTk):
                 pass
 
         announcement_service.fetch_async(_on_complete)
+        community_service.fetch_poll()
 
     def _on_close(self):
         self.worker.shutdown()

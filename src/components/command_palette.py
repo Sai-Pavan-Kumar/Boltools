@@ -61,7 +61,7 @@ class CommandPalette(ctk.CTkToplevel):
         self.search_entry = ctk.CTkEntry(
             search_frame,
             textvariable=self.entry_var,
-            placeholder_text="Type tool name, format, or task... (e.g. compress, pdf, video)",
+            placeholder_text="Search all 100 tools... (e.g. 1.8, pdf, whisper, compress)",
             font=(Theme.FONT_FAMILY, 14),
             fg_color=Theme.SURFACE_INSET,
             text_color=Theme.TEXT_PRIMARY,
@@ -122,7 +122,7 @@ class CommandPalette(ctk.CTkToplevel):
             return
 
         for idx, tool in enumerate(self.results):
-            btn_text = f"{tool.name}  [{tool.category_name}]\n{tool.description}"
+            btn_text = f"{tool.num} {tool.name}  [{tool.glyph} {tool.category_name}]\n{tool.description}"
             btn = ctk.CTkButton(
                 self.results_frame,
                 text=btn_text,

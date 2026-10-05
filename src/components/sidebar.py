@@ -15,6 +15,7 @@ class AppSidebar(ctk.CTkFrame):
         master,
         on_select_category: Callable[[str], None],
         on_select_home: Callable[[], None],
+        on_select_directory: Optional[Callable[[], None]] = None,
         **kwargs
     ):
         super().__init__(
@@ -29,6 +30,7 @@ class AppSidebar(ctk.CTkFrame):
         self.grid_propagate(False)
         self.on_select_category = on_select_category
         self.on_select_home = on_select_home
+        self.on_select_directory = on_select_directory
 
         self.active_category: Optional[str] = None
         self.buttons: Dict[str, ctk.CTkButton] = {}
@@ -62,16 +64,36 @@ class AppSidebar(ctk.CTkFrame):
             corner_radius=Theme.RADIUS_BUTTON,
             command=self._handle_home_click
         )
-        self.home_btn.pack(fill="x", pady=(2, Theme.PAD_SM))
+        self.home_btn.pack(fill="x", pady=(2, Theme.PAD_XS))
 
-        # Section: CREATIVE TOOLS
-        self._build_section_header("CREATIVE TOOLS")
+        # Tool Directory / Store Button
+        self.directory_btn = ctk.CTkButton(
+            self.nav_scroll,
+            text="  ⬡   Tool Directory  · 100",
+            fg_color="transparent",
+            hover_color=Theme.SURFACE_CARD_HOVER,
+            text_color=Theme.TEXT_SECONDARY,
+            anchor="w",
+            font=Theme.FONT_BODY_BOLD,
+            height=34,
+            corner_radius=Theme.RADIUS_BUTTON,
+            command=self._handle_directory_click
+        )
+        self.directory_btn.pack(fill="x", pady=(0, Theme.PAD_SM))
+
+        # Section: CREATIVE & MEDIA
+        self._build_section_header("CREATIVE & MEDIA")
         for cat_id in ["video", "audio", "image"]:
             self._build_category_row(cat_id)
 
-        # Section: UTILITIES & DOCUMENTS
-        self._build_section_header("UTILITIES & DOCUMENTS", pady=(Theme.PAD_SM, 4))
-        for cat_id in ["pdf", "creator", "design", "system"]:
+        # Section: CREATOR & DESIGN
+        self._build_section_header("CREATOR & DESIGN", pady=(Theme.PAD_SM, 4))
+        for cat_id in ["creator", "design"]:
+            self._build_category_row(cat_id)
+
+        # Section: SYSTEM & POWER
+        self._build_section_header("SYSTEM & POWER", pady=(Theme.PAD_SM, 4))
+        for cat_id in ["pdf", "system", "windows", "recovery"]:
             self._build_category_row(cat_id)
 
         # Bottom System Status Badge
@@ -145,31 +167,42 @@ class AppSidebar(ctk.CTkFrame):
 
     def _handle_home_click(self):
         self.active_category = None
-        self._update_button_states()
+        self._update_button_states("home")
         self.on_select_home()
+
+    def _handle_directory_click(self):
+        self.active_category = None
+        self._update_button_states("directory")
+        if self.on_select_directory:
+            self.on_select_directory()
 
     def _handle_cat_click(self, cat_id: str):
         self.active_category = cat_id
-        self._update_button_states()
+        self._update_button_states(cat_id)
         self.on_select_category(cat_id)
 
-    def _update_button_states(self):
-        if self.active_category is None:
-            self.home_btn.configure(
-                fg_color=Theme.SURFACE_CARD,
-                text_color=Theme.TEXT_PRIMARY,
-                border_width=1,
-                border_color=Theme.BORDER_SUBTLE
-            )
-        else:
-            self.home_btn.configure(
-                fg_color="transparent",
-                text_color=Theme.TEXT_SECONDARY,
-                border_width=0
-            )
+    def _update_button_states(self, active_key: str = "home"):
+        # Home button
+        is_home = (active_key == "home")
+        self.home_btn.configure(
+            fg_color=Theme.SURFACE_CARD if is_home else "transparent",
+            text_color=Theme.TEXT_PRIMARY if is_home else Theme.TEXT_SECONDARY,
+            border_width=1 if is_home else 0,
+            border_color=Theme.BORDER_SUBTLE
+        )
 
+        # Directory button
+        is_dir = (active_key == "directory")
+        self.directory_btn.configure(
+            fg_color=Theme.SURFACE_CARD if is_dir else "transparent",
+            text_color=Theme.TEXT_PRIMARY if is_dir else Theme.TEXT_SECONDARY,
+            border_width=1 if is_dir else 0,
+            border_color=Theme.BORDER_SUBTLE
+        )
+
+        # Categories
         for cid, btn in self.buttons.items():
-            if cid == self.active_category:
+            if cid == active_key:
                 btn.configure(
                     fg_color=Theme.SURFACE_CARD,
                     text_color=Theme.TEXT_PRIMARY,
@@ -180,5 +213,7 @@ class AppSidebar(ctk.CTkFrame):
                 btn.configure(
                     fg_color="transparent",
                     text_color=Theme.TEXT_SECONDARY,
-                    border_width=0
+                    border_width=0,
+                    border_color=Theme.BORDER_SUBTLE
                 )
+
