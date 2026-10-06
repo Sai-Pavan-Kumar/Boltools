@@ -62,8 +62,8 @@ class AppHeader(ctk.CTkFrame):
         brand_frame.grid(row=0, column=0, sticky="w", padx=(Theme.PAD_MD, Theme.PAD_SM), pady=Theme.PAD_XS)
         brand_frame.bind("<Button-1>", lambda e: self.on_home_click())
 
-        # Monogram Bolt Logo
-        bolt_img = self._load_image("bolt_logo.webp", (28, 28))
+        # Monogram Bolt Logo (Enlarged and crystal clear)
+        bolt_img = self._load_image("Boltools_logo.webp", (36, 36)) or self._load_image("bolt_logo.webp", (36, 36))
         if bolt_img:
             bolt_label = ctk.CTkLabel(brand_frame, image=bolt_img, text="", cursor="hand2")
             bolt_label.pack(side="left", padx=(0, Theme.PAD_SM))

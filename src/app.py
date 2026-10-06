@@ -56,6 +56,14 @@ class BoltoolsApp(ctk.CTk):
         # Asset Paths
         self.assets_dir = get_asset_path()
 
+        # Native Window Icon
+        ico_file = os.path.join(self.assets_dir, "boltools.ico")
+        if os.path.exists(ico_file):
+            try:
+                self.iconbitmap(ico_file)
+            except Exception:
+                pass
+
         # Runtime State
         self.worker = AsyncWorker()
         self.active_frame: Optional[ctk.CTkFrame] = None
