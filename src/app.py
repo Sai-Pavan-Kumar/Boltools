@@ -134,7 +134,7 @@ class BoltoolsApp(ctk.CTk):
         self._set_active_content(home)
 
     def show_directory(self):
-        self.header.set_breadcrumb(["Home", "Tool Directory"])
+        self.header.set_breadcrumb(["Home", "Tool Hub"])
         self.sidebar.active_category = None
         self.sidebar._update_button_states("directory")
         directory_view = ToolDirectoryView(

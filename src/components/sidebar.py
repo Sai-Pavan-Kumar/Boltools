@@ -66,10 +66,10 @@ class AppSidebar(ctk.CTkFrame):
         )
         self.home_btn.pack(fill="x", pady=(2, Theme.PAD_XS))
 
-        # Tool Directory / Store Button
+        # Tool Hub / Directory Button
         self.directory_btn = ctk.CTkButton(
             self.nav_scroll,
-            text="  ⬡   Tool Directory  · 100",
+            text="  ⬡   Tool Hub  · 100",
             fg_color="transparent",
             hover_color=Theme.SURFACE_CARD_HOVER,
             text_color=Theme.TEXT_SECONDARY,

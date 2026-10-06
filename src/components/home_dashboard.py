@@ -85,10 +85,14 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         stats_frame = ctk.CTkFrame(inner, fg_color="transparent")
         stats_frame.pack(anchor="w")
 
+        all_tools = ToolRegistry.get_all()
+        installed_count = len(ToolRegistry.get_installed())
+        available_count = len(all_tools) - installed_count
+
         metrics = [
-            ("100", "Total Catalog"),
-            ("16", "Genesis Ready"),
-            ("84", "In Hub Drops"),
+            (str(len(all_tools)), "Total Catalog"),
+            (str(installed_count), "Ready to Use"),
+            (str(available_count), "In Tool Hub"),
             ("₹0", "Free Forever")
         ]
         for val, lbl in metrics:
@@ -117,13 +121,16 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         inner.grid_columnconfigure(0, weight=1)
         inner.grid_columnconfigure(1, weight=0)
 
+        all_tools = ToolRegistry.get_all()
+        installed_count = len(ToolRegistry.get_installed())
+
         # Left Info
         info_col = ctk.CTkFrame(inner, fg_color="transparent")
         info_col.grid(row=0, column=0, sticky="w")
 
         title_lbl = ctk.CTkLabel(
             info_col,
-            text="🗳️ Community Roadmap Vote  ·  Drop 2 Pipeline Active",
+            text="🗳️ Community Roadmap Vote  ·  Tool Drops Active",
             font=Theme.FONT_SUBTITLE,
             text_color=Theme.TEXT_PRIMARY,
             anchor="w"
@@ -132,7 +139,7 @@ class HomeDashboard(ctk.CTkScrollableFrame):
 
         desc_lbl = ctk.CTkLabel(
             info_col,
-            text="16 tools live now. Help choose which AI, media, and system tools get unlocked in the next release.",
+            text=f"{installed_count} power tools ready now. Explore all {len(all_tools)} tools in the Tool Hub, or vote on upcoming community tools.",
             font=Theme.FONT_BODY,
             text_color=Theme.TEXT_SECONDARY,
             anchor="w"
@@ -159,7 +166,7 @@ class HomeDashboard(ctk.CTkScrollableFrame):
         if self.on_directory_click:
             btn_dir = ctk.CTkButton(
                 btn_col,
-                text="Explore All 100 Tools ⬡",
+                text="Explore Tool Hub (100) ⬡",
                 font=Theme.FONT_BODY_BOLD,
                 fg_color=Theme.SURFACE_INSET,
                 hover_color=Theme.SURFACE_CARD_HOVER,

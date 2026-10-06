@@ -51,7 +51,7 @@ class ToolDirectoryView(ctk.CTkFrame):
 
         title_lbl = ctk.CTkLabel(
             left_col,
-            text="Tool Directory & Hub",
+            text="Tool Hub & Directory",
             font=Theme.FONT_DISPLAY,
             text_color=Theme.TEXT_PRIMARY,
             anchor="w"
