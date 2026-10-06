@@ -48,6 +48,7 @@ class PdfConverterTool(BaseToolFrame):
         self.combo_mode = ctk.CTkComboBox(
             container,
             values=[
+                "PDF to Word Document (.docx)",
                 "PDF to Images (PNG)",
                 "PDF to Images (JPG)",
                 "Images to PDF Document",
@@ -245,7 +246,24 @@ class PdfConverterTool(BaseToolFrame):
                 base_name = os.path.splitext(os.path.basename(p))[0]
                 doc = pymupdf.open(p)
 
-                if "PDF to Images" in mode:
+                if "Word Document" in mode:
+                    import zipfile, xml.sax.saxutils
+                    out_docx = os.path.join(out_folder, f"{base_name}.docx")
+                    all_lines = []
+                    for page in doc:
+                        text = page.get_text()
+                        for line in text.splitlines():
+                            all_lines.append(line)
+                        all_lines.append("") # paragraph break per page
+
+                    with zipfile.ZipFile(out_docx, "w", zipfile.ZIP_DEFLATED) as z:
+                        z.writestr("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')
+                        z.writestr("_rels/.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')
+                        p_xml = "".join([f'<w:p><w:r><w:t>{xml.sax.saxutils.escape(l)}</w:t></w:r></w:p>' for l in all_lines])
+                        z.writestr("word/document.xml", f'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{p_xml}</w:body></w:document>')
+                    self.log(f"✓ Created editable Word document: {os.path.basename(out_docx)}")
+
+                elif "PDF to Images" in mode:
                     ext = "png" if "PNG" in mode else "jpg"
                     self.log(f"Rendering {base_name} ({len(doc)} pages) to {ext.upper()}...")
                     for page_num in range(len(doc)):

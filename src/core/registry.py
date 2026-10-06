@@ -143,7 +143,7 @@ def _init_catalog():
         icon="🎥",
         glyph="▶",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=3,
         is_offline=True,
     ))
@@ -629,7 +629,7 @@ def _init_catalog():
         icon="📄",
         glyph="▤",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=5,
         is_offline=True,
     ))
@@ -644,7 +644,7 @@ def _init_catalog():
         icon="📄",
         glyph="▤",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=5,
         is_offline=True,
     ))
@@ -674,7 +674,7 @@ def _init_catalog():
         icon="📄",
         glyph="▤",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=5,
         is_offline=True,
     ))
@@ -719,7 +719,7 @@ def _init_catalog():
         icon="🖼️",
         glyph="◈",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=6,
         is_offline=True,
     ))
@@ -827,7 +827,7 @@ def _init_catalog():
         icon="🖼️",
         glyph="◈",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=6,
         is_offline=True,
     ))
@@ -1131,7 +1131,7 @@ def _init_catalog():
         icon="🛠️",
         glyph="⚙",
         is_implemented=True,
-        status="installed",
+        status="available",
         batch_drop=1,
         is_offline=True,
         factory=lambda: __import__("src.modules.system.batch_renamer", fromlist=["BatchRenamerTool"]).BatchRenamerTool,
@@ -1163,7 +1163,7 @@ def _init_catalog():
         icon="🛠️",
         glyph="⚙",
         is_implemented=True,
-        status="installed",
+        status="available",
         batch_drop=1,
         is_offline=True,
         factory=lambda: __import__("src.modules.system.tree_scaffolder", fromlist=["TreeScaffolderTool"]).TreeScaffolderTool,
@@ -1239,7 +1239,7 @@ def _init_catalog():
         icon="🛠️",
         glyph="⚙",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=4,
         is_offline=True,
     ))
@@ -1284,7 +1284,7 @@ def _init_catalog():
         icon="🛠️",
         glyph="⚙",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=4,
         is_offline=True,
     ))
@@ -1374,7 +1374,7 @@ def _init_catalog():
         icon="👑",
         glyph="⊞",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=5,
         is_offline=True,
     ))
@@ -1434,7 +1434,7 @@ def _init_catalog():
         icon="👑",
         glyph="⊞",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=5,
         is_offline=True,
     ))
@@ -1449,7 +1449,7 @@ def _init_catalog():
         icon="👑",
         glyph="⊞",
         is_implemented=False,
-        status="available",
+        status="installed",
         batch_drop=5,
         is_offline=True,
     ))
