@@ -142,10 +142,11 @@ def _init_catalog():
         keywords=['target', 'video', 'size', 'compressor', 'discord', '25mb', 'whatsapp', 'limit'],
         icon="🎥",
         glyph="▶",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=3,
         is_offline=True,
+        factory=lambda: __import__("src.modules.video.video_compressor", fromlist=["VideoCompressorTool"]).VideoCompressorTool
     ))
     R(ToolDefinition(
         id="tool_video_1_4",
@@ -628,10 +629,11 @@ def _init_catalog():
         keywords=['lossless', 'pdf', 'compressor'],
         icon="📄",
         glyph="▤",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=5,
         is_offline=True,
+        factory=lambda: __import__("src.modules.pdf.compressor", fromlist=["PdfCompressorTool"]).PdfCompressorTool
     ))
     R(ToolDefinition(
         id="tool_pdf_3_8",
@@ -643,10 +645,11 @@ def _init_catalog():
         keywords=['mobile', 'scanner', 'document', 'enhancer', 'camscanner', 'alternative'],
         icon="📄",
         glyph="▤",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=5,
         is_offline=True,
+        factory=lambda: __import__("src.modules.pdf.scanner", fromlist=["MobileDocScannerTool"]).MobileDocScannerTool
     ))
     R(ToolDefinition(
         id="tool_pdf_3_9",
@@ -673,10 +676,11 @@ def _init_catalog():
         keywords=['pii', 'sanitizer', 'auto', 'redactor', 'aadhaar', 'pan', 'black', 'out'],
         icon="📄",
         glyph="▤",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=5,
         is_offline=True,
+        factory=lambda: __import__("src.modules.pdf.redactor", fromlist=["PiiRedactorTool"]).PiiRedactorTool
     ))
     R(ToolDefinition(
         id="tool_pdf_3_11",
@@ -718,10 +722,11 @@ def _init_catalog():
         keywords=['tesseract', 'high', 'speed', 'image', 'ocr'],
         icon="🖼️",
         glyph="◈",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=6,
         is_offline=True,
+        factory=lambda: __import__("src.modules.image.ocr_extractor", fromlist=["ImageOcrTool"]).ImageOcrTool
     ))
     R(ToolDefinition(
         id="image_webp_compress",
@@ -826,10 +831,11 @@ def _init_catalog():
         keywords=['iphone', 'heic', 'jpg', 'batch', 'converter'],
         icon="🖼️",
         glyph="◈",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=6,
         is_offline=True,
+        factory=lambda: __import__("src.modules.image.heic_converter", fromlist=["HeicConverterTool"]).HeicConverterTool
     ))
     R(ToolDefinition(
         id="image_palette_harvest",
@@ -1238,10 +1244,11 @@ def _init_catalog():
         keywords=['smart', 'auto', 'organizer', 'downloads', 'folder', 'sorter'],
         icon="🛠️",
         glyph="⚙",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=4,
         is_offline=True,
+        factory=lambda: __import__("src.modules.system.auto_organizer", fromlist=["AutoOrganizerTool"]).AutoOrganizerTool
     ))
     R(ToolDefinition(
         id="tool_system_7_10",
@@ -1283,10 +1290,11 @@ def _init_catalog():
         keywords=['locked', 'file', 'handle', 'releaser', 'deleter'],
         icon="🛠️",
         glyph="⚙",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=4,
         is_offline=True,
+        factory=lambda: __import__("src.modules.system.handle_releaser", fromlist=["LockedFileReleaserTool"]).LockedFileReleaserTool
     ))
     R(ToolDefinition(
         id="tool_system_7_13",
@@ -1373,10 +1381,11 @@ def _init_catalog():
         keywords=['saved', 'password', 'revealer', 'phone', 'code'],
         icon="👑",
         glyph="⊞",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=5,
         is_offline=True,
+        factory=lambda: __import__("src.modules.windows.wifi_revealer", fromlist=["WifiPasswordRevealerTool"]).WifiPasswordRevealerTool
     ))
     R(ToolDefinition(
         id="tool_windows_8_5",
@@ -1433,10 +1442,11 @@ def _init_catalog():
         keywords=['real', 'battery', 'health', 'cycle', 'degradation', 'diagnostic'],
         icon="👑",
         glyph="⊞",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=5,
         is_offline=True,
+        factory=lambda: __import__("src.modules.windows.battery_diagnostic", fromlist=["BatteryDiagnosticTool"]).BatteryDiagnosticTool
     ))
     R(ToolDefinition(
         id="tool_windows_8_9",
@@ -1448,10 +1458,11 @@ def _init_catalog():
         keywords=['instant', 'local', 'file', 'sharing', 'web', 'server'],
         icon="👑",
         glyph="⊞",
-        is_implemented=False,
+        is_implemented=True,
         status="installed",
         batch_drop=5,
         is_offline=True,
+        factory=lambda: __import__("src.modules.windows.wifi_sharing", fromlist=["WifiSharingTool"]).WifiSharingTool
     ))
     R(ToolDefinition(
         id="tool_windows_8_10",
