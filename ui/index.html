@@ -74,6 +74,17 @@
         <kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">Ctrl K</kbd>
       </button>
 
+      <!-- Notification Bell -->
+      <button 
+        id="btn-bell"
+        onclick="toggleAnnouncementsModal()" 
+        title="Updates & Announcements"
+        class="relative w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <span id="bell-dot" class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[var(--brand-primary)] ring-2 ring-[var(--surface-sidebar)]"></span>
+      </button>
+
       <!-- Theme Switcher -->
       <button 
         id="btn-theme-toggle"
@@ -222,6 +233,30 @@
       <div class="flex justify-end pt-2">
         <button onclick="closeUninstallModal()" class="px-4 py-2 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-colors">
           Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Announcements Modal -->
+  <div id="modal-announcements" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="w-full max-w-lg p-6 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+        <div class="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--brand-primary)]"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <h3 class="text-sm font-bold font-display text-[var(--text-primary)]">Updates & Announcements</h3>
+        </div>
+        <button onclick="closeAnnouncementsModal()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs p-1">✕</button>
+      </div>
+
+      <div id="announcements-list" class="max-h-80 overflow-y-auto space-y-3 pr-1">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)]">
+        <span>The SurfBoard Studio</span>
+        <button onclick="closeAnnouncementsModal()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] text-[var(--text-primary)]">
+          Close
         </button>
       </div>
     </div>

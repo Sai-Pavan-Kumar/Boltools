@@ -3,15 +3,78 @@
  * 100% Offline, Pixel-Perfect Linear / Apple Standard
  */
 
+// ── Default Fallback Categories & Tools (Immediate 0ms Offline Render) ────────
+const DEFAULT_CATEGORIES = [
+  { id: "video", name: "Video & Media", desc: "Fast offline video compression, extraction, and formatting", icon: "video", accent: "#2563EB" },
+  { id: "pdf", name: "Documents & PDF", desc: "Offline conversion, splitting, merging, and document protection", icon: "file-text", accent: "#DC2626" },
+  { id: "image", name: "Images & Visuals", desc: "Batch WebP compression, target sizing, and color extraction", icon: "image", accent: "#059669" },
+  { id: "system", name: "System & Files", desc: "Power file renaming, extension repair, and organization", icon: "sliders", accent: "#475569" }
+];
+
+const DEFAULT_TOOLS = [
+  {
+    id: "media_audio_extractor",
+    name: "Audio Extractor",
+    category_id: "video",
+    category_name: "Video & Media",
+    description: "Extract studio-grade MP3, WAV, AAC, FLAC, or direct stream audio from any video.",
+    icon: "music",
+    is_implemented: true,
+    status: "installed"
+  },
+  {
+    id: "video_compressor",
+    name: "Video Compressor",
+    category_id: "video",
+    category_name: "Video & Media",
+    description: "Reduce video file size while maintaining crisp 1080p/720p quality. 100% offline via local FFmpeg.",
+    icon: "video",
+    is_implemented: true,
+    status: "installed"
+  },
+  {
+    id: "pdf_converter",
+    name: "Document Converter",
+    category_id: "pdf",
+    category_name: "Documents & PDF",
+    description: "Convert PDF documents to high-resolution images, plain text, or combine photos into PDF. 100% offline.",
+    icon: "file-text",
+    is_implemented: true,
+    status: "installed"
+  },
+  {
+    id: "image_webp_compress",
+    name: "WebP Compressor",
+    category_id: "image",
+    category_name: "Images & Visuals",
+    description: "Bulk compress images into high-efficiency WebP with automatic photo vs illustration optimization.",
+    icon: "image",
+    is_implemented: true,
+    status: "installed"
+  },
+  {
+    id: "system_batch_rename",
+    name: "Batch File Renamer",
+    category_id: "system",
+    category_name: "System & Files",
+    description: "Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace.",
+    icon: "sliders",
+    is_implemented: true,
+    status: "installed"
+  }
+];
+
 // ── Application State ────────────────────────────────────────────────────────
 const state = {
   theme: localStorage.getItem('boltools-theme') || 'dark',
   currentView: 'home',
   activeToolId: null,
   navHistory: ['home'],
-  categories: [],
-  tools: [],
+  categories: DEFAULT_CATEGORIES,
+  tools: DEFAULT_TOOLS,
   favorites: [],
+  announcements: [],
+  unreadAnnouncementsCount: 0,
   systemStats: { cpu: 12, ram: 45, disk: 38 },
   defaultDownloads: '',
   searchQuery: '',
@@ -1110,24 +1173,77 @@ async function confirmUninstall(purgeData) {
   }
 }
 
+// ── Announcements Modal & Notification System ──────────────────────────────
+function updateBellBadge(count) {
+  state.unreadAnnouncementsCount = Math.max(0, count);
+  const dot = document.getElementById('bell-dot');
+  if (dot) {
+    dot.style.display = state.unreadAnnouncementsCount > 0 ? 'block' : 'none';
+  }
+}
+
+function toggleAnnouncementsModal() {
+  const modal = document.getElementById('modal-announcements');
+  if (!modal) return;
+  if (modal.classList.contains('hidden')) {
+    openAnnouncementsModal();
+  } else {
+    closeAnnouncementsModal();
+  }
+}
+
+function openAnnouncementsModal() {
+  const modal = document.getElementById('modal-announcements');
+  const list = document.getElementById('announcements-list');
+  if (!modal || !list) return;
+
+  const items = state.announcements && state.announcements.length > 0 ? state.announcements : [
+    {
+      id: "sb_boltools_v1_live",
+      tag: "READY",
+      date: "2026-10-07",
+      title: "5 Offline Creator Tools Ready",
+      description: "Audio Extractor, WebP Compressor, Video Compressor, Document Converter, and Batch Renamer are fully active.",
+      cta_text: "Browse Tool Hub",
+      cta_url: ""
+    }
+  ];
+
+  list.innerHTML = items.map(a => `
+    <div class="p-3.5 rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] space-y-1.5">
+      <div class="flex items-center justify-between">
+        <span class="px-2 py-0.5 text-[9px] font-bold rounded bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${a.tag || 'UPDATE'}</span>
+        <span class="text-[10px] text-[var(--text-muted)]">${a.date || ''}</span>
+      </div>
+      <h4 class="text-xs font-semibold text-[var(--text-primary)]">${a.title}</h4>
+      <p class="text-[11px] text-[var(--text-secondary)] leading-relaxed">${a.description}</p>
+      ${a.cta_url ? `
+        <div class="pt-1">
+          <a href="${a.cta_url}" target="_blank" class="text-[11px] font-medium text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1">
+            <span>${a.cta_text || 'Learn more'}</span>
+            ${getIcon('chevron-right', 'w-3 h-3')}
+          </a>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+
+  // Mark all seen
+  const seenIds = items.map(i => i.id);
+  localStorage.setItem('boltools-seen-announcements', JSON.stringify(seenIds));
+  updateBellBadge(0);
+
+  modal.classList.remove('hidden');
+}
+
+function closeAnnouncementsModal() {
+  const modal = document.getElementById('modal-announcements');
+  if (modal) modal.classList.add('hidden');
+}
+
 // ── Application Bootstrapper ─────────────────────────────────────────────────
 async function initApp() {
   applyTheme(state.theme);
-
-  // Fetch initial state from bridge (with fast retry if bridge was still connecting)
-  let data = await callBridge('get_initial_data');
-  if (!data) {
-    await new Promise(r => setTimeout(r, 120));
-    data = await callBridge('get_initial_data');
-  }
-
-  if (data) {
-    state.categories = data.categories || [];
-    state.tools = data.tools || [];
-    state.favorites = data.favorites || [];
-    state.systemStats = data.system_stats || { cpu: 12, ram: 45, disk: 38 };
-    state.defaultDownloads = data.default_downloads || '';
-  }
 
   // Bind shortcuts & global click dismissals
   document.addEventListener('click', (e) => {
@@ -1144,12 +1260,46 @@ async function initApp() {
     if (e.key === 'Escape') {
       closeCommandPalette();
       closeUninstallModal();
+      closeAnnouncementsModal();
       closeAllCustomDropdowns();
     }
   });
 
-  // Render initial view
+  // Render initial view immediately with guaranteed defaults (0ms UI latency)
   navigateTo('home', null, false);
+
+  // Background bridge synchronization loop
+  async function syncBridgeData() {
+    let attempts = 0;
+    while (attempts < 40) {
+      const data = await callBridge('get_initial_data');
+      if (data) {
+        if (data.categories && data.categories.length) state.categories = data.categories;
+        if (data.tools && data.tools.length) state.tools = data.tools;
+        if (data.favorites) state.favorites = data.favorites;
+        if (data.announcements && data.announcements.length) state.announcements = data.announcements;
+        if (data.system_stats) state.systemStats = data.system_stats;
+        if (data.default_downloads) state.defaultDownloads = data.default_downloads;
+
+        // Check unread announcements
+        const seenIds = JSON.parse(localStorage.getItem('boltools-seen-announcements') || '[]');
+        const unread = (state.announcements || []).filter(a => !seenIds.includes(a.id)).length;
+        updateBellBadge(unread > 0 ? unread : 0);
+
+        // Re-render to reflect synced state
+        const container = document.getElementById('main-content');
+        if (container) {
+          if (state.currentView === 'home') renderHome(container);
+          else if (state.currentView === 'tool_hub') renderToolHub(container);
+          else if (state.currentView === 'favorites') renderFavorites(container);
+        }
+        break;
+      }
+      attempts++;
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }
+  syncBridgeData();
 
   // Start system monitor ticker
   setInterval(async () => {
@@ -1176,6 +1326,5 @@ async function bootstrapApp() {
 
 window.addEventListener('pywebviewready', bootstrapApp);
 document.addEventListener('DOMContentLoaded', () => {
-  // Fallback in case pywebviewready already fired or was delayed
-  setTimeout(bootstrapApp, 50);
+  setTimeout(bootstrapApp, 20);
 });
