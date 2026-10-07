@@ -13,17 +13,7 @@ import threading
 from typing import List, Dict, Optional, Callable
 
 
-DEFAULT_ANNOUNCEMENTS = [
-    {
-        "id": "surfboard_welcome_01",
-        "date": "2026-10-05",
-        "tag": "WELCOME",
-        "title": "Welcome to Boltools Desktop Suite",
-        "description": "57 high-speed offline engines built for creators and power users. 100% private with zero subscriptions.",
-        "cta_text": "Join SurfBoard Community",
-        "cta_url": "https://thesurfboard.in"
-    }
-]
+DEFAULT_ANNOUNCEMENTS = []
 
 # Remote endpoint pointing to repository / marketing announcements file
 ANNOUNCEMENTS_ENDPOINT = "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/announcements.json"

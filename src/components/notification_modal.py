@@ -7,6 +7,8 @@ import customtkinter as ctk
 
 from src.core.theme import Theme
 from src.core.announcements import announcement_service
+from src.core.community import community_service
+from src.components.poll_modal import CommunityPollModal
 
 
 class NotificationModal(ctk.CTkToplevel):
@@ -85,8 +87,12 @@ class NotificationModal(ctk.CTkToplevel):
         )
         scroll_frame.pack(fill="both", expand=True, padx=Theme.PAD_SM, pady=Theme.PAD_XS)
 
+        has_poll = community_service.has_active_poll()
+        if has_poll:
+            self._build_poll_card(scroll_frame, community_service.cached_poll)
+
         items = announcement_service.cached_announcements
-        if not items:
+        if not items and not has_poll:
             empty_lbl = ctk.CTkLabel(
                 scroll_frame,
                 text="You're all caught up!\nNo new updates at this time.",
@@ -190,6 +196,74 @@ class NotificationModal(ctk.CTkToplevel):
                 command=lambda u=cta_url: webbrowser.open(u)
             )
             cta_btn.pack(anchor="w")
+
+    def _build_poll_card(self, parent: ctk.CTkScrollableFrame, poll: dict):
+        """Displays active community roadmap poll inside the notification center."""
+        card = ctk.CTkFrame(
+            parent,
+            fg_color=Theme.SURFACE_INSET,
+            corner_radius=Theme.RADIUS_CARD,
+            border_width=1,
+            border_color=Theme.BORDER_SUBTLE
+        )
+        card.pack(fill="x", pady=Theme.PAD_XS, padx=Theme.PAD_XS)
+
+        inner = ctk.CTkFrame(card, fg_color="transparent")
+        inner.pack(fill="both", expand=True, padx=Theme.PAD_MD, pady=Theme.PAD_MD)
+
+        meta_row = ctk.CTkFrame(inner, fg_color="transparent")
+        meta_row.pack(fill="x", pady=(0, 4))
+
+        tag_pill = ctk.CTkLabel(
+            meta_row,
+            text=" COMMUNITY POLL ",
+            font=Theme.FONT_CAPTION,
+            fg_color=Theme.SURFACE_PILL,
+            text_color=Theme.BRAND_ACCENT,
+            corner_radius=Theme.RADIUS_PILL,
+            padx=8,
+            pady=2
+        )
+        tag_pill.pack(side="left")
+
+        t_lbl = ctk.CTkLabel(
+            inner,
+            text=poll.get("title", "Community Roadmap Poll"),
+            font=Theme.FONT_SUBTITLE,
+            text_color=Theme.TEXT_PRIMARY,
+            anchor="w",
+            justify="left",
+            wraplength=480
+        )
+        t_lbl.pack(fill="x", pady=(2, 4))
+
+        d_lbl = ctk.CTkLabel(
+            inner,
+            text=poll.get("description", "Cast your vote for upcoming power tools."),
+            font=Theme.FONT_BODY,
+            text_color=Theme.TEXT_SECONDARY,
+            anchor="w",
+            justify="left",
+            wraplength=480
+        )
+        d_lbl.pack(fill="x", pady=(0, Theme.PAD_SM))
+
+        btn_vote = ctk.CTkButton(
+            inner,
+            text="Vote in Poll  ›",
+            fg_color=Theme.BRAND_PRIMARY,
+            hover_color=Theme.BRAND_HOVER,
+            text_color=Theme.TEXT_ON_BRAND,
+            font=Theme.FONT_BODY_BOLD,
+            height=28,
+            corner_radius=Theme.RADIUS_BUTTON,
+            command=self._open_poll_dialog
+        )
+        btn_vote.pack(anchor="w")
+
+    def _open_poll_dialog(self):
+        self._dismiss()
+        CommunityPollModal(self.master)
 
     def _bind_keys(self):
         self.bind("<Escape>", lambda e: self._dismiss())

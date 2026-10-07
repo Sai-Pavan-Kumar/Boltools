@@ -1,15 +1,14 @@
-"""Top application header with official Boltools branding, dynamic breadcrumbs, notification bell, and theme toggle."""
+"""Clean, minimalist application header with breadcrumbs and Spotlight trigger."""
 
 import os
 from typing import Callable, Optional, List
 import customtkinter as ctk
-from PIL import Image
 
 from src.core.theme import Theme
 
 
 class AppHeader(ctk.CTkFrame):
-    """Header toolbar featuring branding, breadcrumbs, search trigger, notification bell, and theme toggle."""
+    """Header toolbar featuring breadcrumbs, compact search trigger, and theme toggle."""
 
     def __init__(
         self,
@@ -18,12 +17,13 @@ class AppHeader(ctk.CTkFrame):
         on_search_click: Callable[[], None],
         on_home_click: Callable[[], None],
         on_notification_click: Optional[Callable[[], None]] = None,
+        on_back_click: Optional[Callable[[], None]] = None,
         **kwargs
     ):
         super().__init__(
             master,
             fg_color=Theme.SURFACE_SIDEBAR,
-            height=56,
+            height=46,
             corner_radius=0,
             border_width=1,
             border_color=Theme.BORDER_SUBTLE,
@@ -34,91 +34,98 @@ class AppHeader(ctk.CTkFrame):
         self.on_search_click = on_search_click
         self.on_home_click = on_home_click
         self.on_notification_click = on_notification_click
-        self.current_theme_mode = "Dark"
+        self.on_back_click = on_back_click
         self.unread_count = 0
+        self.current_theme_mode = "Dark"
 
-        self.grid_columnconfigure(0, weight=0)
-        self.grid_columnconfigure(1, weight=1)
-        self.grid_columnconfigure(2, weight=0)
+        self.grid_columnconfigure(0, weight=1)  # Left Breadcrumbs
+        self.grid_columnconfigure(1, weight=0)  # Right Actions
         self.grid_rowconfigure(0, weight=1)
 
-        self._build_branding()
         self._build_breadcrumbs()
         self._build_actions()
 
-    def _load_image(self, filename: str, size: tuple[int, int]) -> Optional[ctk.CTkImage]:
-        path = os.path.join(self.assets_dir, filename)
-        if os.path.exists(path):
-            try:
-                pil_img = Image.open(path)
-                return ctk.CTkImage(light_image=pil_img, dark_image=pil_img, size=size)
-            except Exception as e:
-                print(f"[Boltools Asset Error] Failed to load {filename}: {e}")
-        return None
-
-    def _build_branding(self):
-        # Clickable brand container returning to Home
-        brand_frame = ctk.CTkFrame(self, fg_color="transparent", cursor="hand2")
-        brand_frame.grid(row=0, column=0, sticky="w", padx=(Theme.PAD_MD, Theme.PAD_SM), pady=Theme.PAD_XS)
-        brand_frame.bind("<Button-1>", lambda e: self.on_home_click())
-
-        # Monogram Bolt Logo (Enlarged and crystal clear)
-        bolt_img = self._load_image("Boltools_logo.webp", (36, 36)) or self._load_image("bolt_logo.webp", (36, 36))
-        if bolt_img:
-            bolt_label = ctk.CTkLabel(brand_frame, image=bolt_img, text="", cursor="hand2")
-            bolt_label.pack(side="left", padx=(0, Theme.PAD_SM))
-            bolt_label.bind("<Button-1>", lambda e: self.on_home_click())
-
-        # Title + Pro Badge
-        title_box = ctk.CTkFrame(brand_frame, fg_color="transparent", cursor="hand2")
-        title_box.pack(side="left")
-        title_box.bind("<Button-1>", lambda e: self.on_home_click())
-
-        title_lbl = ctk.CTkLabel(
-            title_box,
-            text="BOLTOOLS",
-            font=Theme.FONT_TITLE,
-            text_color=Theme.TEXT_PRIMARY,
-            anchor="w",
-            cursor="hand2"
-        )
-        title_lbl.pack(side="left", padx=(0, 6))
-        title_lbl.bind("<Button-1>", lambda e: self.on_home_click())
-
-        studio_badge = ctk.CTkLabel(
-            title_box,
-            text="PRO",
-            font=(Theme.FONT_FAMILY, 9, "bold"),
-            fg_color=Theme.SURFACE_PILL,
-            text_color=Theme.BRAND_ACCENT,
-            corner_radius=Theme.RADIUS_PILL,
-            width=36,
-            height=18
-        )
-        studio_badge.pack(side="left")
-
     def _build_breadcrumbs(self):
         self.crumb_container = ctk.CTkFrame(self, fg_color="transparent")
-        self.crumb_container.grid(row=0, column=1, sticky="w", padx=Theme.PAD_MD)
-        self.crumb_label = ctk.CTkLabel(
-            self.crumb_container,
-            text="Home",
-            font=Theme.FONT_BODY,
-            text_color=Theme.TEXT_SECONDARY,
-            anchor="w"
-        )
-        self.crumb_label.pack(side="left")
+        self.crumb_container.grid(row=0, column=0, sticky="w", padx=Theme.PAD_MD)
+        self.set_breadcrumb(["Home"])
 
-    def set_breadcrumb(self, segments: List[str]):
-        """Updates the active path navigation indicator."""
-        trail = "  ›  ".join(segments)
-        self.crumb_label.configure(text=trail)
+    def set_breadcrumb(
+        self,
+        segments: List[str],
+        on_home: Optional[Callable[[], None]] = None,
+        on_category: Optional[Callable[[], None]] = None,
+        on_back: Optional[Callable[[], None]] = None,
+        **kwargs
+    ):
+        """Updates the active path navigation indicator with back button and clickable crumbs."""
+        for w in self.crumb_container.winfo_children():
+            w.destroy()
+
+        is_subpage = len(segments) > 1
+
+        if is_subpage:
+            back_cmd = on_back or self.on_back_click or on_home
+            if back_cmd:
+                back_btn = ctk.CTkButton(
+                    self.crumb_container,
+                    text="← Back",
+                    font=Theme.FONT_CAPTION,
+                    fg_color=Theme.SURFACE_CARD,
+                    hover_color=Theme.SURFACE_CARD_HOVER,
+                    text_color=Theme.TEXT_PRIMARY,
+                    border_width=1,
+                    border_color=Theme.BORDER_SUBTLE,
+                    corner_radius=Theme.RADIUS_BUTTON,
+                    width=60,
+                    height=26,
+                    command=back_cmd
+                )
+                back_btn.pack(side="left", padx=(0, Theme.PAD_SM))
+
+        total = len(segments)
+        for idx, text in enumerate(segments):
+            is_last = (idx == total - 1)
+            cmd = None
+            if idx == 0 and not is_last and on_home:
+                cmd = on_home
+            elif idx == 1 and not is_last and on_category:
+                cmd = on_category
+
+            if cmd:
+                lbl = ctk.CTkLabel(
+                    self.crumb_container,
+                    text=text,
+                    font=Theme.FONT_BODY,
+                    text_color=Theme.BRAND_PRIMARY,
+                    cursor="hand2"
+                )
+                lbl.pack(side="left")
+                lbl.bind("<Button-1>", lambda e, c=cmd: c())
+            else:
+                lbl = ctk.CTkLabel(
+                    self.crumb_container,
+                    text=text,
+                    font=Theme.FONT_BODY_BOLD if is_last else Theme.FONT_BODY,
+                    text_color=Theme.TEXT_PRIMARY if is_last else Theme.TEXT_MUTED
+                )
+                lbl.pack(side="left")
+
+            if not is_last:
+                sep = ctk.CTkLabel(
+                    self.crumb_container,
+                    text="  /  ",
+                    font=Theme.FONT_CAPTION,
+                    text_color=Theme.TEXT_MUTED
+                )
+                sep.pack(side="left")
 
     def _build_actions(self):
+        """Right action buttons: Search trigger, Announcement Bell, and Theme Toggle."""
         actions_frame = ctk.CTkFrame(self, fg_color="transparent")
-        actions_frame.grid(row=0, column=2, sticky="e", padx=Theme.PAD_MD)
+        actions_frame.grid(row=0, column=1, sticky="e", padx=Theme.PAD_MD)
 
-        # Raycast / Spotlight Style Search Trigger
+        # Search Trigger Pill
         self.search_btn = ctk.CTkButton(
             actions_frame,
             text="Search tools...   Ctrl + K",
@@ -127,28 +134,28 @@ class AppHeader(ctk.CTkFrame):
             text_color=Theme.TEXT_MUTED,
             border_width=1,
             border_color=Theme.BORDER_SUBTLE,
-            corner_radius=Theme.RADIUS_PILL,
-            font=Theme.FONT_BODY,
-            height=32,
-            width=210,
+            corner_radius=Theme.RADIUS_BUTTON,
+            font=Theme.FONT_CAPTION,
+            height=28,
+            width=180,
             command=self.on_search_click
         )
         self.search_btn.pack(side="left", padx=(0, Theme.PAD_SM))
 
-        # Notification & Product Launch Bell
+        # Notification & Community Hub Bell
         self.bell_btn = ctk.CTkButton(
             actions_frame,
             text="🔔",
             fg_color=Theme.SURFACE_CARD,
             hover_color=Theme.SURFACE_CARD_HOVER,
-            text_color=Theme.TEXT_SECONDARY,
+            text_color=Theme.TEXT_PRIMARY,
             border_width=1,
             border_color=Theme.BORDER_SUBTLE,
-            corner_radius=Theme.RADIUS_PILL,
-            font=(Theme.FONT_FAMILY, 13),
-            width=38,
-            height=32,
-            command=self._handle_bell_click
+            corner_radius=Theme.RADIUS_BUTTON,
+            font=(Theme.FONT_FAMILY, 11),
+            width=28,
+            height=28,
+            command=self._handle_notification_click
         )
         self.bell_btn.pack(side="left", padx=(0, Theme.PAD_SM))
 
@@ -161,41 +168,39 @@ class AppHeader(ctk.CTkFrame):
             text_color=Theme.TEXT_PRIMARY,
             border_width=1,
             border_color=Theme.BORDER_SUBTLE,
-            corner_radius=Theme.RADIUS_PILL,
-            font=(Theme.FONT_FAMILY, 14),
-            width=36,
-            height=32,
+            corner_radius=Theme.RADIUS_BUTTON,
+            font=(Theme.FONT_FAMILY, 12),
+            width=28,
+            height=28,
             command=self._toggle_theme
         )
         self.theme_btn.pack(side="left")
 
+    def _handle_notification_click(self):
+        if self.on_notification_click:
+            self.on_notification_click()
+
     def set_unread_notifications(self, count: int):
-        """Updates the notification bell with an unread badge dot."""
-        self.unread_count = count
-        if count > 0:
+        """Updates unread badge display on the bell button. 0 unread removes any badge text."""
+        self.unread_count = max(0, count)
+        if self.unread_count > 0:
+            badge_text = f"🔔 {self.unread_count}" if self.unread_count < 10 else "🔔 9+"
             self.bell_btn.configure(
-                text=f"🔔 ●",
+                text=badge_text,
+                width=46,
                 text_color=Theme.BRAND_ACCENT,
-                border_color=Theme.BRAND_ACCENT
+                border_color=Theme.BRAND_PRIMARY
             )
         else:
             self.bell_btn.configure(
                 text="🔔",
-                text_color=Theme.TEXT_SECONDARY,
+                width=28,
+                text_color=Theme.TEXT_PRIMARY,
                 border_color=Theme.BORDER_SUBTLE
             )
 
-    def _handle_bell_click(self):
-        if self.on_notification_click:
-            self.on_notification_click()
-
     def _toggle_theme(self):
-        """Switches dynamically between Apple Dark Mode and Light Mode."""
-        if self.current_theme_mode == "Dark":
-            self.current_theme_mode = "Light"
-            ctk.set_appearance_mode("Light")
-            self.theme_btn.configure(text="☾")
-        else:
-            self.current_theme_mode = "Dark"
-            ctk.set_appearance_mode("Dark")
-            self.theme_btn.configure(text="☀")
+        new_mode = "Light" if self.current_theme_mode == "Dark" else "Dark"
+        self.current_theme_mode = new_mode
+        self.theme_btn.configure(text="☾" if new_mode == "Light" else "☀")
+        Theme.apply_appearance(new_mode, window=self.winfo_toplevel())

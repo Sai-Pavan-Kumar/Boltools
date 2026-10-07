@@ -32,8 +32,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-*.manifest
 *.spec
+!Boltools.spec
 
 # PyInstaller / Packaging output
 *.exe

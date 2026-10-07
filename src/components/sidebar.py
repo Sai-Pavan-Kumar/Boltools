@@ -1,219 +1,271 @@
-"""Sidebar navigation panel for Boltools with Apple macOS-grade hierarchy."""
+"""Clean, professional application sidebar for Boltools.
 
+Enforces:
+- Apple Pro / Linear minimalist desktop standards
+- High information density (compact 32px items)
+- Zero cartoon emojis, zero fake notification/update badges
+- Native real-time Win32 System Resource meters at the bottom
+"""
+
+import os
 from typing import Callable, Optional, Dict
 import customtkinter as ctk
+from PIL import Image
 
 from src.core.theme import Theme
-from src.core.registry import ToolRegistry
+from src.core.paths import get_asset_path
+from src.core.system_monitor import system_monitor
 
 
 class AppSidebar(ctk.CTkFrame):
-    """Left sidebar offering category navigation, clean section groups, and live engine status."""
+    """Left navigation panel featuring brand heading, primary navigation, and live system metrics."""
 
     def __init__(
         self,
         master,
-        on_select_category: Callable[[str], None],
         on_select_home: Callable[[], None],
+        on_select_tools: Optional[Callable[[], None]] = None,
         on_select_directory: Optional[Callable[[], None]] = None,
+        on_select_category: Optional[Callable[[str], None]] = None,
+        on_select_favorites: Optional[Callable[[], None]] = None,
+        on_select_settings: Optional[Callable[[], None]] = None,
         **kwargs
     ):
         super().__init__(
             master,
             fg_color=Theme.SURFACE_SIDEBAR,
-            width=230,
+            width=210,
             corner_radius=0,
             border_width=1,
             border_color=Theme.BORDER_SUBTLE,
             **kwargs
         )
         self.grid_propagate(False)
-        self.on_select_category = on_select_category
         self.on_select_home = on_select_home
-        self.on_select_directory = on_select_directory
+        self.on_select_tools = on_select_tools or on_select_directory or on_select_home
+        self.on_select_directory = on_select_directory or self.on_select_tools
+        self.on_select_category = on_select_category
+        self.on_select_favorites = on_select_favorites or self.on_select_tools
+        self.on_select_settings = on_select_settings or on_select_home
 
-        self.active_category: Optional[str] = None
-        self.buttons: Dict[str, ctk.CTkButton] = {}
+        self.active_item: str = "home"
+        self.buttons: Dict[str, ctk.CTkFrame] = {}
+        self.assets_dir = get_asset_path()
 
-        self._build_ui()
+        # Layout grids (Row 0: Navigation, Row 1: System Monitor)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_columnconfigure(0, weight=1)
 
-    def _build_ui(self):
-        # Top Container for Navigation Items
-        self.nav_scroll = ctk.CTkScrollableFrame(
-            self,
-            fg_color="transparent",
-            corner_radius=0
-        )
-        self.nav_scroll.pack(fill="both", expand=True, padx=Theme.PAD_SM, pady=(Theme.PAD_SM, Theme.PAD_XS))
+        self._build_nav()
+        self._build_system_monitor()
 
-        # Section: MAIN
-        self._build_section_header("MAIN")
+        # Connect live system monitor
+        system_monitor.subscribe(self._on_system_stats_update)
 
-        # Home Hub Button
-        self.home_btn = ctk.CTkButton(
-            self.nav_scroll,
-            text="  ⊞   Home",
-            fg_color=Theme.SURFACE_CARD,
-            hover_color=Theme.SURFACE_CARD_HOVER,
-            text_color=Theme.TEXT_PRIMARY,
-            border_width=1,
-            border_color=Theme.BORDER_SUBTLE,
-            anchor="w",
-            font=Theme.FONT_BODY_BOLD,
-            height=34,
-            corner_radius=Theme.RADIUS_BUTTON,
-            command=self._handle_home_click
-        )
-        self.home_btn.pack(fill="x", pady=(2, Theme.PAD_XS))
+    def _build_nav(self):
+        nav_container = ctk.CTkFrame(self, fg_color="transparent")
+        nav_container.grid(row=0, column=0, sticky="nsew", padx=Theme.PAD_SM, pady=Theme.PAD_SM)
 
-        # Tool Hub / Directory Button
-        self.directory_btn = ctk.CTkButton(
-            self.nav_scroll,
-            text="  ⬡   Tool Hub  · 100",
-            fg_color="transparent",
-            hover_color=Theme.SURFACE_CARD_HOVER,
-            text_color=Theme.TEXT_SECONDARY,
-            anchor="w",
-            font=Theme.FONT_BODY_BOLD,
-            height=34,
-            corner_radius=Theme.RADIUS_BUTTON,
-            command=self._handle_directory_click
-        )
-        self.directory_btn.pack(fill="x", pady=(0, Theme.PAD_SM))
+        # ── Brand Header
+        self._build_brand_header(nav_container)
 
-        # Section: CREATIVE & MEDIA
-        self._build_section_header("CREATIVE & MEDIA")
-        for cat_id in ["video", "audio", "image"]:
-            self._build_category_row(cat_id)
-
-        # Section: CREATOR & DESIGN
-        self._build_section_header("CREATOR & DESIGN", pady=(Theme.PAD_SM, 4))
-        for cat_id in ["creator", "design"]:
-            self._build_category_row(cat_id)
-
-        # Section: SYSTEM & POWER
-        self._build_section_header("SYSTEM & POWER", pady=(Theme.PAD_SM, 4))
-        for cat_id in ["pdf", "system", "windows", "recovery"]:
-            self._build_category_row(cat_id)
-
-        # Bottom System Status Badge
-        self._build_footer_status()
-
-    def _build_section_header(self, title: str, pady=(Theme.PAD_XS, 4)):
-        lbl = ctk.CTkLabel(
-            self.nav_scroll,
-            text=title,
-            font=Theme.FONT_LABEL,
+        # ── Primary Section Label
+        lbl_sec = ctk.CTkLabel(
+            nav_container,
+            text="NAVIGATION",
+            font=(Theme.FONT_FAMILY, 9, "bold"),
             text_color=Theme.TEXT_MUTED,
             anchor="w"
         )
-        lbl.pack(fill="x", padx=Theme.PAD_SM, pady=pady)
+        lbl_sec.pack(fill="x", padx=Theme.PAD_SM, pady=(Theme.PAD_SM, 4))
 
-    def _build_category_row(self, cat_id: str):
-        meta = ToolRegistry.CATEGORIES.get(cat_id)
-        if not meta:
-            return
+        # ── Navigation Items (Zero fake badges)
+        self._add_nav_item(nav_container, "home", "Home", self._handle_home_click)
+        self._add_nav_item(nav_container, "tools", "Tools", self._handle_tools_click)
+        self._add_nav_item(nav_container, "favorites", "Favorites", self._handle_favorites_click)
+        self._add_nav_item(nav_container, "settings", "Settings", self._handle_settings_click)
 
-        count = len(ToolRegistry.get_by_category(cat_id))
-        glyph = meta.get("glyph", "●")
-        name = meta["name"]
+    def _build_brand_header(self, parent: ctk.CTkFrame):
+        brand_row = ctk.CTkFrame(parent, fg_color="transparent", cursor="hand2")
+        brand_row.pack(fill="x", padx=Theme.PAD_SM, pady=(Theme.PAD_XS, Theme.PAD_MD))
+        brand_row.bind("<Button-1>", lambda e: self._handle_home_click())
 
-        # Container row
-        row_btn = ctk.CTkButton(
-            self.nav_scroll,
-            text=f"  {glyph}   {name}   ·  {count}",
-            fg_color="transparent",
-            hover_color=Theme.SURFACE_CARD_HOVER,
-            text_color=Theme.TEXT_SECONDARY,
-            anchor="w",
-            font=Theme.FONT_BODY,
-            height=32,
-            corner_radius=Theme.RADIUS_BUTTON,
-            command=lambda cid=cat_id: self._handle_cat_click(cid)
+        # Monogram Bolt Logo
+        logo_path = os.path.join(self.assets_dir, "Boltools_logo.webp")
+        logo_img = None
+        if os.path.exists(logo_path):
+            try:
+                pil = Image.open(logo_path)
+                logo_img = ctk.CTkImage(light_image=pil, dark_image=pil, size=(22, 22))
+            except Exception:
+                pass
+
+        if logo_img:
+            lbl_ico = ctk.CTkLabel(brand_row, image=logo_img, text="", cursor="hand2")
+            lbl_ico.pack(side="left", padx=(0, 8))
+            lbl_ico.bind("<Button-1>", lambda e: self._handle_home_click())
+
+        lbl_txt = ctk.CTkLabel(
+            brand_row,
+            text="Boltools",
+            font=Theme.FONT_TITLE,
+            text_color=Theme.TEXT_PRIMARY,
+            cursor="hand2"
         )
-        row_btn.pack(fill="x", pady=1)
-        self.buttons[cat_id] = row_btn
+        lbl_txt.pack(side="left")
+        lbl_txt.bind("<Button-1>", lambda e: self._handle_home_click())
 
-    def _build_footer_status(self):
-        footer_frame = ctk.CTkFrame(
+        badge = ctk.CTkLabel(
+            brand_row,
+            text="v1.0",
+            font=(Theme.FONT_FAMILY, 9),
+            text_color=Theme.TEXT_MUTED,
+            fg_color=Theme.SURFACE_PILL,
+            corner_radius=Theme.RADIUS_PILL,
+            padx=6,
+            pady=1
+        )
+        badge.pack(side="right")
+
+    def _add_nav_item(self, parent: ctk.CTkFrame, key: str, label: str, command: Callable):
+        is_active = (key == self.active_item)
+
+        btn = ctk.CTkFrame(
+            parent,
+            fg_color=Theme.SURFACE_CARD if is_active else "transparent",
+            corner_radius=Theme.RADIUS_BUTTON,
+            border_width=1 if is_active else 0,
+            border_color=Theme.BORDER_SUBTLE,
+            cursor="hand2",
+            height=32
+        )
+        btn.pack(fill="x", pady=1)
+        btn.pack_propagate(False)
+
+        lbl = ctk.CTkLabel(
+            btn,
+            text=f"  {label}",
+            font=Theme.FONT_BODY_BOLD if is_active else Theme.FONT_BODY,
+            text_color=Theme.TEXT_PRIMARY if is_active else Theme.TEXT_SECONDARY,
+            anchor="w",
+            cursor="hand2"
+        )
+        lbl.pack(fill="both", expand=True, padx=Theme.PAD_SM)
+
+        for w in [btn, lbl]:
+            w.bind("<Button-1>", lambda e: command())
+
+        self.buttons[key] = btn
+
+    def _build_system_monitor(self):
+        """Compact Win32 hardware monitor widget docked at the bottom."""
+        mon_card = ctk.CTkFrame(
             self,
             fg_color=Theme.SURFACE_CARD,
-            corner_radius=Theme.RADIUS_BUTTON,
+            corner_radius=Theme.RADIUS_CARD,
             border_width=1,
             border_color=Theme.BORDER_SUBTLE
         )
-        footer_frame.pack(fill="x", padx=Theme.PAD_SM, pady=Theme.PAD_SM)
+        mon_card.grid(row=1, column=0, sticky="ew", padx=Theme.PAD_SM, pady=Theme.PAD_SM)
 
-        inner = ctk.CTkFrame(footer_frame, fg_color="transparent")
+        inner = ctk.CTkFrame(mon_card, fg_color="transparent")
         inner.pack(fill="both", padx=Theme.PAD_SM, pady=Theme.PAD_SM)
 
-        status_lbl = ctk.CTkLabel(
-            inner,
-            text="● Working 100% Offline",
-            font=(Theme.FONT_FAMILY, 11, "bold"),
-            text_color=Theme.STATUS_SUCCESS,
-            anchor="w"
-        )
-        status_lbl.pack(anchor="w")
+        # Title
+        title_row = ctk.CTkFrame(inner, fg_color="transparent")
+        title_row.pack(fill="x", pady=(0, 4))
 
-        info_lbl = ctk.CTkLabel(
-            inner,
-            text="Files never leave your PC",
-            font=Theme.FONT_CAPTION,
-            text_color=Theme.TEXT_MUTED,
-            anchor="w"
+        dot = ctk.CTkLabel(title_row, text="●", font=(Theme.FONT_FAMILY, 8), text_color=Theme.STATUS_SUCCESS)
+        dot.pack(side="left", padx=(0, 4))
+
+        title = ctk.CTkLabel(
+            title_row,
+            text="RESOURCES",
+            font=(Theme.FONT_FAMILY, 9, "bold"),
+            text_color=Theme.TEXT_MUTED
         )
-        info_lbl.pack(anchor="w", pady=(1, 0))
+        title.pack(side="left")
+
+        # Gauges
+        self.cpu_lbl, self.cpu_bar = self._create_gauge_row(inner, "CPU", 12)
+        self.ram_lbl, self.ram_bar = self._create_gauge_row(inner, "RAM", 45)
+        self.disk_lbl, self.disk_bar = self._create_gauge_row(inner, "Disk", 38)
+
+    def _create_gauge_row(self, parent: ctk.CTkFrame, label: str, init_val: int):
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill="x", pady=2)
+        row.grid_columnconfigure(0, weight=0)
+        row.grid_columnconfigure(1, weight=1)
+        row.grid_columnconfigure(2, weight=0)
+
+        name = ctk.CTkLabel(row, text=label, font=Theme.FONT_CAPTION, text_color=Theme.TEXT_MUTED, width=28, anchor="w")
+        name.grid(row=0, column=0, sticky="w")
+
+        bar = ctk.CTkProgressBar(
+            row,
+            height=5,
+            corner_radius=2,
+            progress_color=Theme.STATUS_SUCCESS,
+            fg_color=Theme.SURFACE_INSET
+        )
+        bar.set(init_val / 100.0)
+        bar.grid(row=0, column=1, sticky="ew", padx=6)
+
+        val = ctk.CTkLabel(row, text=f"{init_val}%", font=(Theme.FONT_FAMILY, 9), text_color=Theme.TEXT_SECONDARY, width=28, anchor="e")
+        val.grid(row=0, column=2, sticky="e")
+
+        return val, bar
+
+    def _on_system_stats_update(self, cpu: int, ram: int, disk: int):
+        try:
+            self.after(0, self._apply_stats, cpu, ram, disk)
+        except Exception:
+            pass
+
+    def _apply_stats(self, cpu: int, ram: int, disk: int):
+        if not self.winfo_exists():
+            return
+        self.cpu_lbl.configure(text=f"{cpu}%")
+        self.cpu_bar.set(cpu / 100.0)
+        self.ram_lbl.configure(text=f"{ram}%")
+        self.ram_bar.set(ram / 100.0)
+        self.disk_lbl.configure(text=f"{disk}%")
+        self.disk_bar.set(disk / 100.0)
 
     def _handle_home_click(self):
-        self.active_category = None
-        self._update_button_states("home")
+        self._set_active("home")
         self.on_select_home()
 
-    def _handle_directory_click(self):
-        self.active_category = None
-        self._update_button_states("directory")
-        if self.on_select_directory:
-            self.on_select_directory()
+    def _handle_tools_click(self):
+        self._set_active("tools")
+        self.on_select_tools()
 
-    def _handle_cat_click(self, cat_id: str):
-        self.active_category = cat_id
-        self._update_button_states(cat_id)
-        self.on_select_category(cat_id)
+    def _handle_favorites_click(self):
+        self._set_active("favorites")
+        self.on_select_favorites()
 
-    def _update_button_states(self, active_key: str = "home"):
-        # Home button
-        is_home = (active_key == "home")
-        self.home_btn.configure(
-            fg_color=Theme.SURFACE_CARD if is_home else "transparent",
-            text_color=Theme.TEXT_PRIMARY if is_home else Theme.TEXT_SECONDARY,
-            border_width=1 if is_home else 0,
-            border_color=Theme.BORDER_SUBTLE
-        )
+    def _handle_settings_click(self):
+        self._set_active("settings")
+        self.on_select_settings()
 
-        # Directory button
-        is_dir = (active_key == "directory")
-        self.directory_btn.configure(
-            fg_color=Theme.SURFACE_CARD if is_dir else "transparent",
-            text_color=Theme.TEXT_PRIMARY if is_dir else Theme.TEXT_SECONDARY,
-            border_width=1 if is_dir else 0,
-            border_color=Theme.BORDER_SUBTLE
-        )
+    def _set_active(self, key: str):
+        self.active_item = key
+        for k, btn in self.buttons.items():
+            is_cur = (k == key)
+            btn.configure(
+                fg_color=Theme.SURFACE_CARD if is_cur else "transparent",
+                border_width=1 if is_cur else 0
+            )
+            for w in btn.winfo_children():
+                if isinstance(w, ctk.CTkLabel):
+                    w.configure(
+                        text_color=Theme.TEXT_PRIMARY if is_cur else Theme.TEXT_SECONDARY,
+                        font=Theme.FONT_BODY_BOLD if is_cur else Theme.FONT_BODY
+                    )
 
-        # Categories
-        for cid, btn in self.buttons.items():
-            if cid == active_key:
-                btn.configure(
-                    fg_color=Theme.SURFACE_CARD,
-                    text_color=Theme.TEXT_PRIMARY,
-                    border_width=1,
-                    border_color=Theme.BORDER_SUBTLE
-                )
-            else:
-                btn.configure(
-                    fg_color="transparent",
-                    text_color=Theme.TEXT_SECONDARY,
-                    border_width=0,
-                    border_color=Theme.BORDER_SUBTLE
-                )
+    def set_active_key(self, key: str):
+        self._set_active(key)
 
+    def _update_selection(self):
+        self._set_active(self.active_item)

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en" class="dark selection:bg-[#005AE0] selection:text-white">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Boltools — Built by The SurfBoard</title>
+  <link rel="icon" type="image/x-icon" href="assets/boltools.ico">
+  
+  <!-- Tailwind CSS CDN (cached locally via WebView2) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Satoshi', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            display: ['Instrument Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['DM Mono', 'Consolas', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Synchronized SurfBoard Design System Tokens -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-hover);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+
+    /* Sidebar Active Item */
+    .sidebar-nav-btn.active {
+      background-color: var(--surface-card);
+      border-color: var(--border-subtle);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="bg-[var(--surface-base)] text-[var(--text-primary)] font-sans antialiased h-screen overflow-hidden flex flex-col select-none">
+
+  <!-- =========================================================================
+       1. TOP HEADER BAR
+       ========================================================================= -->
+  <header class="h-13 bg-[var(--surface-sidebar)] border-b border-[var(--border-subtle)] px-4 flex items-center justify-between shrink-0 z-30">
+    <!-- Left Breadcrumbs -->
+    <div id="header-breadcrumb" class="flex items-center">
+      <span class="text-xs font-semibold text-[var(--text-primary)]">Home</span>
+    </div>
+
+    <!-- Right Actions -->
+    <div class="flex items-center gap-2">
+      <!-- Search Trigger Pill -->
+      <button 
+        onclick="openCommandPalette()"
+        class="flex items-center gap-3 px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-muted)] transition-all cursor-pointer"
+      >
+        <span>Search utilities...</span>
+        <kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">Ctrl K</kbd>
+      </button>
+
+      <!-- Theme Switcher -->
+      <button 
+        id="btn-theme-toggle"
+        onclick="toggleTheme()" 
+        title="Toggle Dark / Light Theme"
+        class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       2. WORKSPACE BODY: SIDEBAR + MAIN CANVAS
+       ========================================================================= -->
+  <div class="flex-1 flex overflow-hidden">
+    <!-- Left Navigation Sidebar -->
+    <aside class="w-56 bg-[var(--surface-sidebar)] border-r border-[var(--border-subtle)] flex flex-col justify-between shrink-0 p-3">
+      <div class="space-y-4">
+        <!-- Monogram Brand Row -->
+        <div onclick="navigateTo('home')" class="flex items-center justify-between px-2 py-1 cursor-pointer">
+          <div class="flex items-center gap-2.5">
+            <img src="assets/Boltools_logo.webp" alt="Boltools" class="w-6 h-6 object-contain" />
+            <span class="font-display font-bold text-sm tracking-tight text-[var(--text-primary)]">Boltools</span>
+          </div>
+          <span class="px-2 py-0.5 text-[9px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--text-muted)]">v1.0</span>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="space-y-1">
+          <span class="px-2 text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">Navigation</span>
+          
+          <button onclick="navigateTo('home')" data-key="home" class="sidebar-nav-btn active w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Home</span>
+          </button>
+
+          <button onclick="navigateTo('tool_hub')" data-key="tools" class="sidebar-nav-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+            <span>Tool Hub</span>
+          </button>
+
+          <button onclick="navigateTo('favorites')" data-key="favorites" class="sidebar-nav-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            <span>Favorites</span>
+          </button>
+
+          <button onclick="navigateTo('settings')" data-key="settings" class="sidebar-nav-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Settings</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Native Win32 Resource Monitor Card -->
+      <div class="p-3 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2">
+        <div class="flex items-center justify-between text-[10px] font-semibold text-[var(--text-muted)]">
+          <span class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>RESOURCES</span>
+          </span>
+          <span class="text-[9px]">LOCAL PC</span>
+        </div>
+
+        <div class="space-y-1.5 text-[11px]">
+          <!-- CPU -->
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[var(--text-secondary)] font-mono text-[10px] w-7">CPU</span>
+            <div class="flex-1 bg-[var(--surface-inset)] h-1.5 rounded-full overflow-hidden">
+              <div id="mon-cpu-fill" class="bg-emerald-500 h-full w-[12%] transition-all duration-500"></div>
+            </div>
+          </div>
+          <!-- RAM -->
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[var(--text-secondary)] font-mono text-[10px] w-7">RAM</span>
+            <div class="flex-1 bg-[var(--surface-inset)] h-1.5 rounded-full overflow-hidden">
+              <div id="mon-ram-fill" class="bg-emerald-500 h-full w-[45%] transition-all duration-500"></div>
+            </div>
+          </div>
+          <!-- DISK -->
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[var(--text-secondary)] font-mono text-[10px] w-7">DISK</span>
+            <div class="flex-1 bg-[var(--surface-inset)] h-1.5 rounded-full overflow-hidden">
+              <div id="mon-disk-fill" class="bg-emerald-500 h-full w-[38%] transition-all duration-500"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Canvas (Scrollable Viewport) -->
+    <main id="main-content" class="flex-1 overflow-y-auto p-6">
+      <!-- Dynamic views injected here by app.js -->
+    </main>
+  </div>
+
+  <!-- =========================================================================
+       3. MODALS: RAYCAST COMMAND PALETTE & 2-TIER UNINSTALL
+       ========================================================================= -->
+  <!-- Command Palette Modal -->
+  <div id="modal-command-palette" class="hidden fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60 backdrop-blur-sm">
+    <div class="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div class="p-3 border-b border-[var(--border-subtle)] flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--text-muted)]"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input 
+          type="text" 
+          id="cmd-palette-input" 
+          placeholder="Search all tools and utilities..." 
+          oninput="renderPaletteResults(this.value)" 
+          class="w-full text-xs bg-transparent border-none outline-none text-[var(--text-primary)] placeholder-[var(--text-muted)]" 
+        />
+        <button onclick="closeCommandPalette()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs">Esc</button>
+      </div>
+      <div id="cmd-palette-list" class="max-h-72 overflow-y-auto p-2 space-y-1"></div>
+    </div>
+  </div>
+
+  <!-- 2-Tier Uninstall Modal -->
+  <div id="modal-uninstall" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="w-full max-w-md p-6 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+      <div>
+        <h3 class="text-base font-bold font-display text-[var(--text-primary)]">Remove Utility?</h3>
+        <p class="text-xs text-[var(--text-secondary)] mt-1">Choose how you'd like to uninstall <span id="uninstall-tool-name" class="font-semibold text-[var(--text-primary)]">this tool</span>.</p>
+      </div>
+
+      <div class="space-y-2.5">
+        <!-- Tier 1: Keep Settings & Work -->
+        <div onclick="confirmUninstall(false)" class="p-3 rounded-xl border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] bg-[var(--surface-inset)] cursor-pointer transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-[var(--text-primary)]">Keep Work & Settings</span>
+            <span class="text-[10px] text-emerald-500 font-medium">Recommended</span>
+          </div>
+          <p class="text-[11px] text-[var(--text-secondary)] mt-0.5">Removes the module binary to free disk space, but keeps your presets and conversion history.</p>
+        </div>
+
+        <!-- Tier 2: Complete Purge -->
+        <div onclick="confirmUninstall(true)" class="p-3 rounded-xl border border-[var(--border-subtle)] hover:border-red-500 bg-[var(--surface-inset)] cursor-pointer transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-red-500">Delete Tool & Completely Purge</span>
+            <span class="text-[10px] text-red-500 font-medium">Full Wipe</span>
+          </div>
+          <p class="text-[11px] text-[var(--text-secondary)] mt-0.5">Erases the tool and completely wipes all local configurations and cached temp files.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeUninstallModal()" class="px-4 py-2 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-colors">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/icons.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

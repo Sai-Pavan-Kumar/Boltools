@@ -23,19 +23,7 @@ EDGE_API_BASE = "https://boltools-api.p-pavansiri.workers.dev"
 PRIMARY_POLL_ENDPOINT = f"{EDGE_API_BASE}/api/poll"
 FALLBACK_POLL_ENDPOINT = "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/poll.json"
 
-DEFAULT_POLL = {
-    "poll_id": "poll_drop_2_priority",
-    "title": "Community Vote: What should we release in Batch 2?",
-    "description": "Vote for the next power tools you want unlocked in Boltools Drop 2.",
-    "ends_at": "2026-10-20",
-    "options": [
-        {"id": "opt_audio_whisper", "label": "Local Whisper AI Speech-to-Text Transcriber (90+ Languages)", "votes": 342},
-        {"id": "opt_video_trimmer", "label": "Instant Lossless Video Trimmer (Cut clips in <1 sec)", "votes": 289},
-        {"id": "opt_audio_stems", "label": "AI Vocal & Instrumental Stem Separator (Karaoke Maker)", "votes": 412},
-        {"id": "opt_design_qr", "label": "Offline Vector QR Code Studio (WiFi, Links, Custom Colors)", "votes": 195},
-        {"id": "opt_system_dup", "label": "Deep Duplicate File Hunter (Free up disk space)", "votes": 220}
-    ]
-}
+DEFAULT_POLL = None
 
 
 class CommunityService:
@@ -53,9 +41,12 @@ class CommunityService:
         self.client_id_file = os.path.join(self.state_dir, "client_id.txt")
 
         self.client_id = self._get_or_create_client_id()
-        self.cached_poll: Dict = DEFAULT_POLL.copy()
+        self.cached_poll: Optional[Dict] = DEFAULT_POLL
         self.voted_polls = self._load_voted_polls()
         self.tool_overrides = self._load_tool_overrides()
+
+    def has_active_poll(self) -> bool:
+        return bool(self.cached_poll and isinstance(self.cached_poll, dict) and self.cached_poll.get("options"))
 
     def _get_or_create_client_id(self) -> str:
         """Retrieves or creates an anonymous persistent hardware/installation UUID."""
