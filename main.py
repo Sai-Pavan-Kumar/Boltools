@@ -37,8 +37,27 @@ import webview
 from src.desktop_bridge import desktop_bridge
 
 
+def _apply_win_icon(window):
+    """Sets custom taskbar and titlebar icon via Win32 API to override Python runtime icon."""
+    try:
+        import time
+        import ctypes
+        time.sleep(0.3)
+        icon_path = os.path.join(root_dir, "assets", "boltools.ico")
+        if os.path.exists(icon_path):
+            hwnd = ctypes.windll.user32.FindWindowW(None, "Boltools")
+            if hwnd:
+                h_icon = ctypes.windll.user32.LoadImageW(None, icon_path, 1, 0, 0, 0x00000010 | 0x00000040)
+                if h_icon:
+                    ctypes.windll.user32.SendMessageW(hwnd, 0x0080, 0, h_icon) # ICON_SMALL
+                    ctypes.windll.user32.SendMessageW(hwnd, 0x0080, 1, h_icon) # ICON_BIG
+    except Exception:
+        pass
+
+
 def main():
     ui_html_path = os.path.join(root_dir, "ui", "index.html")
+    icon_path = os.path.join(root_dir, "assets", "boltools.ico")
 
     # Create native Windows WebView2 window
     window = webview.create_window(
@@ -52,8 +71,14 @@ def main():
     )
     desktop_bridge.set_window(window)
 
-    # Launch Edge Chromium (WebView2)
-    webview.start(gui="edgechromium", debug=False)
+    # Launch Edge Chromium (WebView2) with custom window icon
+    webview.start(
+        _apply_win_icon,
+        window,
+        icon=icon_path if os.path.exists(icon_path) else None,
+        gui="edgechromium",
+        debug=False
+    )
 
 
 if __name__ == "__main__":

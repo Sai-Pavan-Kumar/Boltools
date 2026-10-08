@@ -43,12 +43,16 @@
       background: var(--text-muted);
     }
 
-    /* Sidebar Active Item */
-    .sidebar-nav-btn.active {
-      background-color: var(--surface-card);
-      border-color: var(--border-subtle);
-      color: var(--text-primary);
-      font-weight: 600;
+    /* Sidebar Active Items */
+    .sidebar-nav-btn.active,
+    .sidebar-cat-btn.active {
+      background-color: var(--surface-card) !important;
+      border-color: var(--border-subtle) !important;
+      color: var(--text-primary) !important;
+      font-weight: 600 !important;
+    }
+    .sidebar-cat-btn.active svg {
+      transform: scale(1.15);
     }
   </style>
 </head>
@@ -57,7 +61,7 @@
   <!-- =========================================================================
        1. TOP HEADER BAR
        ========================================================================= -->
-  <header class="h-13 bg-[var(--surface-sidebar)] border-b border-[var(--border-subtle)] px-4 flex items-center justify-between shrink-0 z-30">
+  <header class="h-14 py-2.5 px-4 bg-[var(--surface-sidebar)] border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0 z-30">
     <!-- Left Breadcrumbs -->
     <div id="header-breadcrumb" class="flex items-center">
       <span class="text-xs font-semibold text-[var(--text-primary)]">Home</span>
@@ -108,9 +112,14 @@
         <div onclick="navigateTo('home')" class="flex items-center justify-between px-2 py-1 cursor-pointer">
           <div class="flex items-center gap-2.5">
             <img src="assets/Boltools_logo.webp" alt="Boltools" class="w-6 h-6 object-contain" />
-            <span class="font-display font-bold text-sm tracking-tight text-[var(--text-primary)]">Boltools</span>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-display font-bold text-sm tracking-tight text-[var(--text-primary)]">Boltools</span>
+                <span class="px-1.5 py-0.5 text-[8px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--text-muted)]">v1.0</span>
+              </div>
+              <p class="text-[10px] text-[var(--text-muted)] tracking-wide">built by <span class="font-bold text-[#005ae0]">The SurfBoard</span></p>
+            </div>
           </div>
-          <span class="px-2 py-0.5 text-[9px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--text-muted)]">v1.0</span>
         </div>
 
         <!-- Navigation Links -->
@@ -136,6 +145,29 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
             <span>Settings</span>
           </button>
+
+          <!-- Tool Categories -->
+          <div class="pt-3">
+            <span class="px-2 text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">Categories</span>
+            <div class="mt-1 space-y-1">
+              <button onclick="navigateToCategory('video')" data-cat="video" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><polygon points="23 7 16 12 23 17 23 7"/><rect width="14" height="14" x="1" y="5" rx="2" ry="2"/></svg>
+                <span class="truncate">Video & Media</span>
+              </button>
+              <button onclick="navigateToCategory('pdf')" data-cat="pdf" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span class="truncate">Documents & PDF</span>
+              </button>
+              <button onclick="navigateToCategory('image')" data-cat="image" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                <span class="truncate">Images & Visuals</span>
+              </button>
+              <button onclick="navigateToCategory('system')" data-cat="system" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/></svg>
+                <span class="truncate">System & Files</span>
+              </button>
+            </div>
+          </div>
         </nav>
       </div>
 
@@ -185,8 +217,8 @@
        3. MODALS: RAYCAST COMMAND PALETTE & 2-TIER UNINSTALL
        ========================================================================= -->
   <!-- Command Palette Modal -->
-  <div id="modal-command-palette" class="hidden fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60 backdrop-blur-sm">
-    <div class="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  <div id="modal-command-palette" onclick="if (event.target === this) closeCommandPalette()" class="hidden fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60 backdrop-blur-sm">
+    <div onclick="event.stopPropagation()" class="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       <div class="p-3 border-b border-[var(--border-subtle)] flex items-center gap-2.5">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--text-muted)]"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input 
@@ -203,8 +235,8 @@
   </div>
 
   <!-- 2-Tier Uninstall Modal -->
-  <div id="modal-uninstall" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-    <div class="w-full max-w-md p-6 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+  <div id="modal-uninstall" onclick="if (event.target === this) closeUninstallModal()" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div onclick="event.stopPropagation()" class="w-full max-w-md p-6 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
       <div>
         <h3 class="text-base font-bold font-display text-[var(--text-primary)]">Remove Utility?</h3>
         <p class="text-xs text-[var(--text-secondary)] mt-1">Choose how you'd like to uninstall <span id="uninstall-tool-name" class="font-semibold text-[var(--text-primary)]">this tool</span>.</p>
@@ -239,8 +271,8 @@
   </div>
 
   <!-- Announcements Modal -->
-  <div id="modal-announcements" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-    <div class="w-full max-w-lg p-6 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+  <div id="modal-announcements" onclick="if (event.target === this) closeAnnouncementsModal()" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div onclick="event.stopPropagation()" class="w-full max-w-lg p-6 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
       <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
         <div class="flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--brand-primary)]"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>

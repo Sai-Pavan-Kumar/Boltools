@@ -27,8 +27,8 @@ class PdfConverterTool(BaseToolFrame):
         super().__init__(
             master=master,
             tool_id="pdf_converter",
-            title="Document Converter",
-            description="Convert PDF documents to high-resolution images, plain text, or merge photos into PDF. 100% offline.",
+            title="PDF to Editable Word / DOCX Converter",
+            description="Convert PDF documents into clean, fully editable Word DOCX files preserving paragraph flows and tables.",
             category_id="pdf",
             **kwargs
         )

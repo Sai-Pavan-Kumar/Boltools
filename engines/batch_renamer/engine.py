@@ -22,7 +22,7 @@ def main():
     rule = options.get("rule", "Add Suffix")
     text1 = options.get("text1", "")
     text2 = options.get("text2", "")
-    op_mode = options.get("op_mode", "Rename In-Place")
+    op_mode = options.get("op_mode", "Save to Destination")
 
     if not input_files:
         send({"type": "error", "message": "No files selected."})

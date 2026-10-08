@@ -30,8 +30,8 @@ class VideoCompressorTool(BaseToolFrame):
         super().__init__(
             master=master,
             tool_id="video_compressor",
-            title="Video Compressor",
-            description="Reduce video file size while maintaining great quality. 100% offline via local FFmpeg.",
+            title="Target Video Size Compressor",
+            description="Mathematically compress videos to fit exact upload caps (WhatsApp 16MB, Discord 25MB) without bitrate guesswork.",
             category_id="video",
             **kwargs
         )

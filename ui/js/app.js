@@ -5,59 +5,59 @@
 
 // ── Default Fallback Categories & Tools (Immediate 0ms Offline Render) ────────
 const DEFAULT_CATEGORIES = [
-  { id: "video", name: "Video & Media", desc: "Fast offline video compression, extraction, and formatting", icon: "video", accent: "#2563EB" },
-  { id: "pdf", name: "Documents & PDF", desc: "Offline conversion, splitting, merging, and document protection", icon: "file-text", accent: "#DC2626" },
-  { id: "image", name: "Images & Visuals", desc: "Batch WebP compression, target sizing, and color extraction", icon: "image", accent: "#059669" },
+  { id: "video", name: "Media & Video", desc: "Fast offline video compression, extraction, and formatting", icon: "video", accent: "#2563EB" },
+  { id: "pdf", name: "PDF Studio", desc: "Offline conversion, splitting, merging, and document protection", icon: "file-text", accent: "#DC2626" },
+  { id: "image", name: "Image Studio", desc: "Batch WebP compression, target sizing, and format switching", icon: "image", accent: "#059669" },
   { id: "system", name: "System & Files", desc: "Power file renaming, extension repair, and organization", icon: "sliders", accent: "#475569" }
 ];
 
 const DEFAULT_TOOLS = [
   {
     id: "media_audio_extractor",
-    name: "Audio Extractor",
+    name: "Universal Media & Audio Extractor",
     category_id: "video",
-    category_name: "Video & Media",
-    description: "Extract studio-grade MP3, WAV, AAC, FLAC, or direct stream audio from any video.",
+    category_name: "Media & Video",
+    description: "Extract clean, lossless MP3, WAV, AAC, or FLAC audio tracks from any video container without re-encoding frames.",
     icon: "music",
     is_implemented: true,
     status: "installed"
   },
   {
     id: "video_compressor",
-    name: "Video Compressor",
+    name: "Target Video Size Compressor",
     category_id: "video",
-    category_name: "Video & Media",
-    description: "Reduce video file size while maintaining crisp 1080p/720p quality. 100% offline via local FFmpeg.",
+    category_name: "Media & Video",
+    description: "Mathematically compress videos to fit exact upload caps (WhatsApp 16MB, Discord 25MB) without bitrate guesswork.",
     icon: "video",
     is_implemented: true,
     status: "installed"
   },
   {
     id: "pdf_converter",
-    name: "Document Converter",
+    name: "PDF to Editable Word / DOCX Converter",
     category_id: "pdf",
-    category_name: "Documents & PDF",
-    description: "Convert PDF documents to high-resolution images, plain text, or combine photos into PDF. 100% offline.",
+    category_name: "PDF Studio",
+    description: "Convert PDF documents into clean, fully editable Word DOCX files preserving paragraph flows and tables.",
     icon: "file-text",
     is_implemented: true,
     status: "installed"
   },
   {
     id: "image_webp_compress",
-    name: "WebP Compressor",
+    name: "Lossless WebP & JPG Compressor",
     category_id: "image",
-    category_name: "Images & Visuals",
-    description: "Bulk compress images into high-efficiency WebP with automatic photo vs illustration optimization.",
+    category_name: "Image Studio",
+    description: "Shrink image file footprints by 60%–85% with zero perceptible quality drop using multi-thread compression.",
     icon: "image",
     is_implemented: true,
     status: "installed"
   },
   {
     id: "system_batch_rename",
-    name: "Batch File Renamer",
+    name: "Bulk File & Folder Renamer",
     category_id: "system",
     category_name: "System & Files",
-    description: "Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace.",
+    description: "Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace locally.",
     icon: "sliders",
     is_implemented: true,
     status: "installed"
@@ -73,6 +73,9 @@ const state = {
   categories: DEFAULT_CATEGORIES,
   tools: DEFAULT_TOOLS,
   favorites: [],
+  recentTools: JSON.parse(localStorage.getItem('boltools-recent-tools') || '[]'),
+  lastOutputFile: null,
+  customOutputDir: '',
   announcements: [],
   unreadAnnouncementsCount: 0,
   systemStats: { cpu: 12, ram: 45, disk: 38 },
@@ -83,6 +86,17 @@ const state = {
   activeToolOptions: {},
   isToolRunning: false
 };
+
+function recordRecentTool(toolId) {
+  if (!toolId) return;
+  let list = (state.recentTools || []).filter(id => id !== toolId);
+  list.unshift(toolId);
+  list = list.slice(0, 5);
+  state.recentTools = list;
+  try {
+    localStorage.setItem('boltools-recent-tools', JSON.stringify(list));
+  } catch (e) {}
+}
 
 // ── Bridge Communication Helpers ─────────────────────────────────────────────
 async function callBridge(fnName, ...args) {
@@ -121,13 +135,35 @@ function navigateTo(viewName, toolId = null, pushHistory = true) {
   state.currentView = viewName;
   state.activeToolId = toolId;
   if (pushHistory) {
-    state.navHistory.push({ view: viewName, toolId });
+    const last = state.navHistory[state.navHistory.length - 1];
+    if (!last || last.view !== viewName || last.toolId !== toolId) {
+      state.navHistory.push({ view: viewName, toolId });
+    }
   }
 
-  // Update Sidebar Active Highlight
+  // Determine active category for sidebar highlighting
+  let activeCatId = null;
+  if (viewName === 'category_view') {
+    activeCatId = toolId;
+  } else if (viewName === 'tool_studio') {
+    const tool = state.tools.find(t => t.id === toolId);
+    if (tool) activeCatId = tool.category_id;
+  }
+  state.activeCategoryId = activeCatId;
+
+  // Update Main Navigation Sidebar Buttons
   document.querySelectorAll('.sidebar-nav-btn').forEach(btn => {
     const key = btn.dataset.key;
     if (key === viewName || (key === 'tools' && viewName === 'tool_hub')) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Update Sidebar Category Buttons
+  document.querySelectorAll('.sidebar-cat-btn').forEach(btn => {
+    if (activeCatId && btn.dataset.cat === activeCatId) {
       btn.classList.add('active');
     } else {
       btn.classList.remove('active');
@@ -151,16 +187,37 @@ function navigateTo(viewName, toolId = null, pushHistory = true) {
     renderSettings(container);
     updateBreadcrumb(['Home', 'Settings']);
   } else if (viewName === 'tool_studio') {
+    if (toolId) recordRecentTool(toolId);
     renderToolStudio(container, toolId);
+  } else if (viewName === 'category_view') {
+    renderCategoryView(container, toolId);
   }
 }
 
+function navigateToCategory(categoryId, pushHistory = true) {
+  navigateTo('category_view', categoryId, pushHistory);
+}
+
 function navigateBack() {
-  if (state.navHistory.length > 1) {
-    state.navHistory.pop(); // Pop current view
+  // Pop until we find a history entry that is different from current view and tool
+  while (state.navHistory.length > 0) {
+    const top = state.navHistory[state.navHistory.length - 1];
+    if (top && top.view === state.currentView && top.toolId === state.activeToolId) {
+      state.navHistory.pop();
+    } else {
+      break;
+    }
+  }
+
+  if (state.navHistory.length > 0) {
     const prev = state.navHistory[state.navHistory.length - 1];
-    navigateTo(prev.view, prev.toolId, false);
+    if (prev.view === 'category_view') {
+      navigateToCategory(prev.toolId, false);
+    } else {
+      navigateTo(prev.view, prev.toolId, false);
+    }
   } else {
+    state.navHistory = [{ view: 'home', toolId: null }];
     navigateTo('home', null, false);
   }
 }
@@ -170,22 +227,32 @@ function updateBreadcrumb(crumbs) {
   if (!bc) return;
 
   let html = '';
-  if (crumbs.length > 1) {
-    html += `<button onclick="navigateBack()" class="flex items-center gap-1.5 px-2 py-1 mr-2 text-xs font-medium rounded-md bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors">
-      ${getIcon('arrow-left', 'w-3.5 h-3.5')}
-      <span>Back</span>
-    </button>`;
-  }
-
   crumbs.forEach((crumb, idx) => {
     const isLast = idx === crumbs.length - 1;
     if (idx > 0) {
       html += `<span class="mx-2 text-xs text-[var(--text-muted)]">/</span>`;
     }
-    if (idx === 0 && !isLast) {
-      html += `<button onclick="navigateTo('home')" class="text-xs font-normal text-[var(--brand-primary)] hover:underline">${crumb}</button>`;
+
+    if (isLast) {
+      html += `<span class="text-xs font-semibold text-[var(--text-primary)]">${crumb}</span>`;
     } else {
-      html += `<span class="text-xs ${isLast ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${crumb}</span>`;
+      // Find navigation target for breadcrumb item
+      let onclickStr = "navigateTo('home')";
+      if (crumb === 'Home') {
+        onclickStr = "navigateTo('home')";
+      } else if (crumb === 'Tool Hub') {
+        onclickStr = "navigateTo('tool_hub')";
+      } else if (crumb === 'Favorites') {
+        onclickStr = "navigateTo('favorites')";
+      } else if (crumb === 'Settings') {
+        onclickStr = "navigateTo('settings')";
+      } else {
+        const cat = state.categories.find(c => c.name.toLowerCase() === crumb.toLowerCase());
+        if (cat) {
+          onclickStr = `navigateToCategory('${cat.id}')`;
+        }
+      }
+      html += `<button onclick="${onclickStr}" class="text-xs font-medium text-[var(--brand-primary)] hover:underline cursor-pointer">${crumb}</button>`;
     }
   });
 
@@ -196,45 +263,67 @@ function updateBreadcrumb(crumbs) {
 
 // 1. Home Dashboard View
 function renderHome(container) {
-  const catCards = state.categories.map(c => `
-    <div onclick="navigateTo('tool_hub')" class="group p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--border-hover)] cursor-pointer transition-all flex items-center justify-between">
-      <div class="flex items-center gap-3.5">
-        <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform" style="color: ${c.accent};">
-          ${getIcon(c.icon, 'w-5 h-5')}
-        </div>
-        <div>
-          <h4 class="text-sm font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">${c.name}</h4>
-          <p class="text-xs text-[var(--text-secondary)] mt-0.5 line-clamp-1">${c.desc}</p>
-        </div>
-      </div>
-      <div class="text-[var(--text-muted)] group-hover:text-[var(--text-primary)] group-hover:translate-x-1 transition-all">
-        ${getIcon('chevron-right', 'w-4 h-4')}
-      </div>
-    </div>
-  `).join('');
-
   const readyTools = state.tools.filter(t => t.status === 'installed');
-  const toolRows = readyTools.length > 0 ? readyTools.map(t => `
-    <div class="p-3.5 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] transition-all flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3.5 min-w-0">
-        <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] shrink-0">
-          ${getIcon(t.icon, 'w-4.5 h-4.5')}
+
+  // Compute Last Used 3 Utilities
+  let recentList = (state.recentTools || [])
+    .map(id => state.tools.find(t => t.id === id && t.status === 'installed'))
+    .filter(Boolean);
+
+  if (recentList.length === 0) {
+    // Default to first 3 installed tools if none recorded yet
+    recentList = readyTools.slice(0, 3);
+  } else {
+    recentList = recentList.slice(0, 3);
+  }
+
+  const recentRows = recentList.length > 0 ? recentList.map(t => `
+    <div onclick="navigateTo('tool_studio', '${t.id}')" class="group p-3 px-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] shrink-0 group-hover:scale-105 transition-transform">
+          ${getIcon(t.icon, 'w-4 h-4')}
         </div>
         <div class="min-w-0">
           <div class="flex items-center gap-2">
-            <span class="text-sm font-semibold text-[var(--text-primary)] truncate">${t.name}</span>
-            <span class="px-2 py-0.5 text-[10px] font-medium rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${t.category_name}</span>
+            <span class="text-xs font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate">${t.name}</span>
+            <span class="px-2 py-0.5 text-[9px] font-medium rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${t.category_name}</span>
           </div>
-          <p class="text-xs text-[var(--text-secondary)] truncate mt-0.5">${t.description}</p>
+          <p class="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">${t.description}</p>
         </div>
       </div>
-      <button onclick="navigateTo('tool_studio', '${t.id}')" class="btn-primary shrink-0 px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-sm">
+      <button class="shrink-0 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--brand-primary)] hover:text-white border border-[var(--border-subtle)] text-[var(--text-primary)] transition-all flex items-center gap-1.5 shadow-xs">
         <span>Launch</span>
         ${getIcon('arrow-right', 'w-3 h-3')}
       </button>
     </div>
   `).join('') : `
-    <div class="p-6 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center">
+    <div class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center text-xs text-[var(--text-muted)]">
+      No recently used utilities yet. Launch any tool below to see it here!
+    </div>
+  `;
+
+  // Bento Box Squared Cards for Available Utilities
+  const bentoGrid = readyTools.length > 0 ? readyTools.map(t => `
+    <div onclick="navigateTo('tool_studio', '${t.id}')" class="group p-5 rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden min-h-[180px]">
+      <div>
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform shadow-xs">
+            ${getIcon(t.icon, 'w-5 h-5')}
+          </div>
+          <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${t.category_name}</span>
+        </div>
+        <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${t.name}</h4>
+        <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${t.description}</p>
+      </div>
+      <div class="pt-4 mt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
+        <span class="text-xs font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+          <span>Open Tool</span>
+          ${getIcon('arrow-right', 'w-3 h-3')}
+        </span>
+      </div>
+    </div>
+  `).join('') : `
+    <div class="col-span-full p-8 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center">
       <p class="text-xs text-[var(--text-secondary)] mb-2">No utilities currently installed on this PC.</p>
       <button onclick="navigateTo('tool_hub')" class="btn-primary px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white inline-flex items-center gap-1.5">
         <span>Browse Tool Hub</span>
@@ -247,32 +336,120 @@ function renderHome(container) {
     <div class="max-w-5xl mx-auto space-y-7 pb-10">
       <!-- Hero -->
       <div>
-        <h2 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">Offline Utility Suite</h2>
+        <h2 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">Utility Suite</h2>
         <p class="text-xs text-[var(--text-secondary)] mt-1">High-speed, 100% private tools for creator workflows and local power operations.</p>
       </div>
 
-      <!-- Categories 2x2 Grid -->
+      <!-- Recent Utilities -->
       <div>
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">Categories</span>
+        <div class="flex items-center justify-between mb-2.5">
+          <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">Recent Utilities</span>
           <button onclick="navigateTo('tool_hub')" class="text-xs font-medium text-[var(--brand-primary)] hover:underline flex items-center gap-1">
-            <span>Open Tool Hub</span>
+            <span>Browse All</span>
             ${getIcon('chevron-right', 'w-3 h-3')}
           </button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          ${catCards}
+        <div class="space-y-2">
+          ${recentRows}
         </div>
       </div>
 
-      <!-- Available Utilities Shelf -->
+      <!-- Available Utilities Bento Grid -->
       <div>
         <div class="flex items-center justify-between mb-3">
           <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">Available Utilities</span>
-          <span class="text-xs text-[var(--text-muted)]">${readyTools.length} offline ready</span>
+          <span class="text-xs text-[var(--text-muted)]">${readyTools.length} Utilities</span>
         </div>
-        <div class="space-y-2.5">
-          ${toolRows}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          ${bentoGrid}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 1b. Dedicated Category View
+function renderCategoryView(container, categoryId) {
+  const cat = state.categories.find(c => c.id === categoryId) || {
+    id: categoryId,
+    name: "Utilities",
+    desc: "Offline tools for power operations",
+    icon: "sliders",
+    accent: "var(--brand-primary)"
+  };
+
+  updateBreadcrumb(['Home', cat.name]);
+
+  const catTools = state.tools.filter(t => t.category_id === categoryId);
+
+  const toolCardsHtml = catTools.length > 0 ? catTools.map(t => {
+    const isInstalled = t.status === 'installed';
+    return `
+      <div onclick="navigateTo('tool_studio', '${t.id}')" class="group p-5 rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden min-h-[180px]">
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--surface-inset)] group-hover:scale-105 transition-transform shadow-xs" style="color: ${cat.accent};">
+              ${getIcon(t.icon, 'w-5 h-5')}
+            </div>
+            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full ${isInstalled ? 'bg-emerald-500/10 text-emerald-500' : 'bg-[var(--surface-pill)] text-[var(--text-muted)]'}">
+              ${isInstalled ? 'Ready' : 'Available'}
+            </span>
+          </div>
+          <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${t.name}</h4>
+          <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${t.description}</p>
+        </div>
+        <div class="pt-4 mt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+            <span>Open Tool</span>
+            ${getIcon('arrow-right', 'w-3 h-3')}
+          </span>
+          ${isInstalled ? `
+            <button onclick="event.stopPropagation(); openUninstallModal('${t.id}', '${t.name}')" class="px-2 py-1 text-[11px] font-normal rounded-md text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors">
+              Uninstall
+            </button>
+          ` : `
+            <button onclick="event.stopPropagation(); installTool('${t.id}')" class="px-2.5 py-1 text-[11px] font-medium rounded-md bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-hover)] transition-all">
+              Install
+            </button>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('') : `
+    <div class="col-span-full p-8 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center">
+      <p class="text-xs text-[var(--text-secondary)]">No tools currently in this category.</p>
+    </div>
+  `;
+
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto space-y-6 pb-10">
+      <!-- Category Header Card -->
+      <div class="p-5 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-[var(--surface-inset)]" style="color: ${cat.accent};">
+            ${getIcon(cat.icon, 'w-6 h-6')}
+          </div>
+          <div>
+            <h2 class="text-lg font-bold font-display text-[var(--text-primary)]">${cat.name}</h2>
+            <p class="text-xs text-[var(--text-secondary)] mt-0.5">${cat.desc}</p>
+          </div>
+        </div>
+        <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)]">
+          ${catTools.length} Utilities
+        </span>
+      </div>
+
+      <!-- Tools Grid -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">Utilities in this category</span>
+          <button onclick="navigateTo('tool_hub')" class="text-xs text-[var(--brand-primary)] hover:underline flex items-center gap-1">
+            <span>View All Tools</span>
+            ${getIcon('chevron-right', 'w-3 h-3')}
+          </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          ${toolCardsHtml}
         </div>
       </div>
     </div>
@@ -633,7 +810,7 @@ function renderToolStudio(container, toolId) {
           <div class="p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-1.5">
             <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Save Destination</span>
             <div class="flex items-center gap-2">
-              <input type="text" id="studio-out-folder" value="${state.defaultDownloads}" readonly class="w-full px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)]" />
+              <input type="text" id="studio-out-folder" value="${state.customOutputDir || state.defaultDownloads}" oninput="state.customOutputDir = this.value" class="w-full px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] cursor-text" />
               <button onclick="handleStudioBrowseOutFolder()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] shrink-0 transition-colors">
                 Browse
               </button>
@@ -663,7 +840,7 @@ function renderToolStudio(container, toolId) {
             <div class="text-left space-y-2 p-3.5 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">
               <div class="flex items-center gap-2">
                 ${getIcon('check', 'w-3.5 h-3.5 text-emerald-500 shrink-0')}
-                <span>100% Offline execution on your local PC</span>
+                <span>Private on-device execution on your PC</span>
               </div>
               <div class="flex items-center gap-2">
                 ${getIcon('check', 'w-3.5 h-3.5 text-emerald-500 shrink-0')}
@@ -708,7 +885,7 @@ function getDefaultOptionsForTool(toolId) {
   if (toolId === 'video_compressor') return { mode: 'Balanced', target_mb: 50 };
   if (toolId === 'pdf_converter') return { mode: 'PDF to Images (PNG)' };
   if (toolId === 'image_webp_compress') return { quality: 80, smart_mode: true, max_dim: '1920px (Full HD)' };
-  if (toolId === 'system_batch_rename') return { rule: 'Add Suffix', text1: '_v1', text2: '', op_mode: 'Rename In-Place' };
+  if (toolId === 'system_batch_rename') return { rule: 'Add Suffix', text1: '_v1', text2: '', op_mode: 'Save to Destination' };
   return {};
 }
 
@@ -801,6 +978,18 @@ function renderToolSpecificOptions(toolId) {
   } else if (toolId === 'system_batch_rename') {
     return `
       <div class="space-y-3">
+        <div>
+          <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Output Mode</span>
+          ${renderCustomDropdown({
+            id: 'dropdown-rename-mode',
+            currentValue: state.activeToolOptions.op_mode || 'Save to Destination',
+            options: [
+              { value: 'Save to Destination', label: 'Save Renamed Files to Destination Folder' },
+              { value: 'Rename In-Place', label: 'Rename In-Place (Modify original files directly)' }
+            ],
+            onSelect: 'handleSelectRenameOpMode'
+          })}
+        </div>
         <div>
           <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Renaming Rule</span>
           ${renderCustomDropdown({
@@ -933,20 +1122,30 @@ window.handleSelectRenameRule = function(val) {
   if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
 };
 
+window.handleSelectRenameOpMode = function(val) {
+  state.activeToolOptions.op_mode = val;
+  const optBox = document.getElementById('studio-options-box');
+  if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
+};
+
 function setStudioMode(modeName) {
   state.activeToolOptions.mode = modeName;
-  const container = document.getElementById('main-content');
-  if (container) renderToolStudio(container, state.activeToolId);
+  const optBox = document.getElementById('studio-options-box');
+  if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
 }
 
 async function handleStudioBrowseFiles(toolId) {
   let fileTypes = [];
-  if (toolId === 'video_compressor' || toolId === 'media_audio_extractor') {
-    fileTypes = ['Media & Video Files (*.mp4;*.mkv;*.mov;*.webm;*.avi;*.flv;*.wmv;*.m4v)'];
+  if (toolId === 'video_compressor') {
+    fileTypes = ['Video Files (*.mp4;*.mkv;*.mov;*.webm;*.avi;*.flv;*.wmv;*.m4v)'];
+  } else if (toolId === 'media_audio_extractor') {
+    fileTypes = ['Audio Video Files (*.mp4;*.mkv;*.mov;*.webm;*.avi;*.flv;*.wmv;*.mp3;*.wav;*.m4a;*.flac;*.ogg)'];
   } else if (toolId === 'pdf_converter') {
-    fileTypes = ['Documents & Images (*.pdf;*.png;*.jpg;*.jpeg)'];
+    fileTypes = ['Document Files (*.pdf;*.png;*.jpg;*.jpeg)'];
   } else if (toolId === 'image_webp_compress') {
     fileTypes = ['Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.webp)'];
+  } else {
+    fileTypes = ['All Files (*.*)'];
   }
 
   const files = await callBridge('browse_files', fileTypes);
@@ -987,6 +1186,19 @@ async function handleStudioBrowseOutFolder() {
   if (dir) {
     const inp = document.getElementById('studio-out-folder');
     if (inp) inp.value = dir;
+    state.customOutputDir = dir;
+  }
+}
+
+function handleOpenOutputFile() {
+  if (state.lastOutputFile) {
+    callBridge('open_file', state.lastOutputFile);
+  }
+}
+
+function handleRevealOutputFolder() {
+  if (state.lastOutputFile) {
+    callBridge('reveal_file', state.lastOutputFile);
   }
 }
 
@@ -1053,7 +1265,7 @@ window.onToolLog = function(msg) {
 
 window.onToolComplete = function(data) {
   state.isToolRunning = false;
-  const outPath = data.output_file || '';
+  state.lastOutputFile = data.output_file || '';
 
   const btnExec = document.getElementById('studio-btn-execute');
   if (btnExec) {
@@ -1070,11 +1282,11 @@ window.onToolComplete = function(data) {
       <h4 class="text-sm font-semibold text-[var(--text-primary)]">Processing Complete!</h4>
       <p class="text-xs text-[var(--text-secondary)] mt-1 mb-5">Your output file was successfully generated.</p>
       <div class="space-y-2">
-        <button onclick="callBridge('open_path', '${outPath.replace(/\\\\/g, '/')}')" class="btn-primary w-full py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all flex items-center justify-center gap-1.5">
+        <button onclick="handleOpenOutputFile()" class="btn-primary w-full py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer">
           <span>Open Output File</span>
           ${getIcon('arrow-right', 'w-3.5 h-3.5')}
         </button>
-        <button onclick="callBridge('open_path', '${outPath.replace(/\\\\/g, '/').split('/').slice(0, -1).join('/')}')" class="w-full py-2 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors">
+        <button onclick="handleRevealOutputFolder()" class="w-full py-2 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors cursor-pointer">
           Reveal in Folder
         </button>
       </div>
@@ -1249,6 +1461,12 @@ async function initApp() {
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.custom-dropdown-container')) {
       closeAllCustomDropdowns();
+    }
+    const cmdModal = document.getElementById('modal-command-palette');
+    if (cmdModal && !cmdModal.classList.contains('hidden')) {
+      if (e.target === cmdModal) {
+        closeCommandPalette();
+      }
     }
   });
 

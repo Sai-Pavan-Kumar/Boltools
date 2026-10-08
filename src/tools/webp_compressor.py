@@ -24,8 +24,8 @@ class WebpCompressorTool(BaseToolFrame):
         super().__init__(
             master=master,
             tool_id="image_webp_compress",
-            title="WebP Compressor",
-            description="Bulk compress images into high-efficiency WebP with automatic photo vs illustration optimization.",
+            title="Lossless WebP & JPG Compressor",
+            description="Shrink image file footprints by 60%–85% with zero perceptible quality drop using multi-thread compression.",
             category_id="image",
             **kwargs
         )

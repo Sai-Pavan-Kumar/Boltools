@@ -24,8 +24,8 @@ class BatchRenamerTool(BaseToolFrame):
         super().__init__(
             master=master,
             tool_id="system_batch_rename",
-            title="Batch File Renamer",
-            description="Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace.",
+            title="Bulk File & Folder Renamer",
+            description="Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace locally.",
             category_id="system",
             **kwargs
         )

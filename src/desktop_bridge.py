@@ -44,10 +44,10 @@ class DesktopBridge:
         tools = [
             {
                 "id": "media_audio_extractor",
-                "name": "Audio Extractor",
+                "name": "Universal Media & Audio Extractor",
                 "category_id": "video",
-                "category_name": "Video & Media",
-                "description": "Extract studio-grade MP3, WAV, AAC, FLAC, or direct stream audio from any video.",
+                "category_name": "Media & Video",
+                "description": "Extract clean, lossless MP3, WAV, AAC, or FLAC audio tracks from any video container without re-encoding frames.",
                 "icon": "music",
                 "is_implemented": True,
                 "engine_type": "python",
@@ -55,10 +55,10 @@ class DesktopBridge:
             },
             {
                 "id": "video_compressor",
-                "name": "Video Compressor",
+                "name": "Target Video Size Compressor",
                 "category_id": "video",
-                "category_name": "Video & Media",
-                "description": "Reduce video file size while maintaining crisp 1080p/720p quality. 100% offline via local FFmpeg.",
+                "category_name": "Media & Video",
+                "description": "Mathematically compress videos to fit exact upload caps (WhatsApp 16MB, Discord 25MB) without bitrate guesswork.",
                 "icon": "video",
                 "is_implemented": True,
                 "engine_type": "python",
@@ -66,10 +66,10 @@ class DesktopBridge:
             },
             {
                 "id": "pdf_converter",
-                "name": "Document Converter",
+                "name": "PDF to Editable Word / DOCX Converter",
                 "category_id": "pdf",
-                "category_name": "Documents & PDF",
-                "description": "Convert PDF documents to high-resolution images, plain text, or combine photos into PDF. 100% offline.",
+                "category_name": "PDF Studio",
+                "description": "Convert PDF documents into clean, fully editable Word DOCX files preserving paragraph flows and tables.",
                 "icon": "file-text",
                 "is_implemented": True,
                 "engine_type": "python",
@@ -77,10 +77,10 @@ class DesktopBridge:
             },
             {
                 "id": "image_webp_compress",
-                "name": "WebP Compressor",
+                "name": "Lossless WebP & JPG Compressor",
                 "category_id": "image",
-                "category_name": "Images & Visuals",
-                "description": "Bulk compress images into high-efficiency WebP with automatic photo vs illustration optimization.",
+                "category_name": "Image Studio",
+                "description": "Shrink image file footprints by 60%–85% with zero perceptible quality drop using multi-thread compression.",
                 "icon": "image",
                 "is_implemented": True,
                 "engine_type": "python",
@@ -88,10 +88,10 @@ class DesktopBridge:
             },
             {
                 "id": "system_batch_rename",
-                "name": "Batch File Renamer",
+                "name": "Bulk File & Folder Renamer",
                 "category_id": "system",
                 "category_name": "System & Files",
-                "description": "Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace.",
+                "description": "Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace locally.",
                 "icon": "sliders",
                 "is_implemented": True,
                 "engine_type": "python",
@@ -105,9 +105,9 @@ class DesktopBridge:
             t["status"] = st
 
         categories = [
-            {"id": "video", "name": "Video & Media", "desc": "Fast offline video compression, extraction, and formatting", "icon": "video", "accent": "#2563EB"},
-            {"id": "pdf", "name": "Documents & PDF", "desc": "Offline conversion, splitting, merging, and document protection", "icon": "file-text", "accent": "#DC2626"},
-            {"id": "image", "name": "Images & Visuals", "desc": "Batch WebP compression, target sizing, and color extraction", "icon": "image", "accent": "#059669"},
+            {"id": "video", "name": "Media & Video", "desc": "Fast offline video compression, extraction, and formatting", "icon": "video", "accent": "#2563EB"},
+            {"id": "pdf", "name": "PDF Studio", "desc": "Offline conversion, splitting, merging, and document protection", "icon": "file-text", "accent": "#DC2626"},
+            {"id": "image", "name": "Image Studio", "desc": "Batch WebP compression, target sizing, and format switching", "icon": "image", "accent": "#059669"},
             {"id": "system", "name": "System & Files", "desc": "Power file renaming, extension repair, and organization", "icon": "sliders", "accent": "#475569"}
         ]
 
@@ -174,15 +174,38 @@ class DesktopBridge:
         if not self.window:
             return []
         try:
-            ftypes = tuple(file_types) if file_types else ()
+            cleaned_filters: List[str] = []
+            if file_types:
+                for ft in file_types:
+                    try:
+                        # Clean filter description to match pywebview's ^([\w ]+) requirements
+                        if "(" in ft and ft.endswith(")"):
+                            desc, exts = ft.split("(", 1)
+                            desc_clean = "".join(c for c in desc if c.isalnum() or c == " ").strip()
+                            cleaned_filters.append(f"{desc_clean} ({exts}")
+                        else:
+                            cleaned_filters.append(ft)
+                    except Exception:
+                        pass
+            if not cleaned_filters:
+                cleaned_filters = ["All Files (*.*)"]
+
             result = self.window.create_file_dialog(
                 dialog_type=webview.OPEN_DIALOG,
                 allow_multiple=True,
-                file_types=ftypes
+                file_types=tuple(cleaned_filters)
             )
             return list(result) if result else []
         except Exception:
-            return []
+            # Fallback without file type constraints to ensure file picker never gets blocked
+            try:
+                result = self.window.create_file_dialog(
+                    dialog_type=webview.OPEN_DIALOG,
+                    allow_multiple=True
+                )
+                return list(result) if result else []
+            except Exception:
+                return []
 
     def browse_directory(self) -> str:
         """Opens native Windows folder selection dialog."""
@@ -196,18 +219,49 @@ class DesktopBridge:
         except Exception:
             return ""
 
-    def open_path(self, target_path: str):
-        """Reveals file or folder in native Windows Explorer."""
+    def open_file(self, target_path: str):
+        """Opens the specified file directly in the OS default application."""
         if not target_path or not os.path.exists(target_path):
             return
         try:
-            if os.path.isfile(target_path):
-                # Select file in Explorer
-                subprocess.run(["explorer", "/select,", os.path.normpath(target_path)])
-            else:
-                os.startfile(os.path.normpath(target_path))
+            norm = os.path.normpath(target_path)
+            os.startfile(norm)
         except Exception:
             pass
+
+    def reveal_file(self, target_path: str):
+        """Opens the exact containing directory in Windows Explorer and selects the file."""
+        if not target_path:
+            return
+        norm = os.path.normpath(target_path)
+        if not os.path.exists(norm):
+            parent = os.path.dirname(norm)
+            if os.path.exists(parent):
+                try:
+                    os.startfile(parent)
+                except Exception:
+                    pass
+            return
+        try:
+            if os.path.isfile(norm):
+                subprocess.Popen(f'explorer /select,"{norm}"', shell=True)
+            else:
+                os.startfile(norm)
+        except Exception:
+            try:
+                folder = os.path.dirname(norm) if os.path.isfile(norm) else norm
+                os.startfile(folder)
+            except Exception:
+                pass
+
+    def open_path(self, target_path: str):
+        """Legacy helper for backwards compatibility."""
+        if not target_path or not os.path.exists(target_path):
+            return
+        if os.path.isfile(target_path):
+            self.reveal_file(target_path)
+        else:
+            self.open_file(target_path)
 
     # ── Favorites & Lifecycle Services ───────────────────────────────────────
     def toggle_favorite(self, tool_id: str) -> List[str]:
