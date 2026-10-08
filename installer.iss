@@ -27,6 +27,9 @@ SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
+CloseApplications=yes
+RestartApplications=no
+CloseApplicationsFilter=*.exe
 UninstallDisplayIcon={app}\boltools.ico
 UninstallDisplayName={#MyAppName} (Built by The SurfBoard)
 
