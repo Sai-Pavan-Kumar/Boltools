@@ -27,8 +27,8 @@ class PdfConverterTool(BaseToolFrame):
         super().__init__(
             master=master,
             tool_id="pdf_converter",
-            title="PDF to Editable Word / DOCX Converter",
-            description="Convert PDF documents into clean, fully editable Word DOCX files preserving paragraph flows and tables.",
+            title="PDF & Image Converter",
+            description="Convert PDF pages to high-resolution PNG/JPG images or compile multiple images into a PDF.",
             category_id="pdf",
             **kwargs
         )

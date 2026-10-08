@@ -30,8 +30,8 @@ class VideoCompressorTool(BaseToolFrame):
         super().__init__(
             master=master,
             tool_id="video_compressor",
-            title="Target Video Size Compressor",
-            description="Mathematically compress videos to fit exact upload caps (WhatsApp 16MB, Discord 25MB) without bitrate guesswork.",
+            title="Video Compressor",
+            description="Compress video files with Low, Balanced, and Maximum compression presets.",
             category_id="video",
             **kwargs
         )

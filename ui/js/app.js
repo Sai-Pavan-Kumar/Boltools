@@ -14,50 +14,50 @@ const DEFAULT_CATEGORIES = [
 const DEFAULT_TOOLS = [
   {
     id: "media_audio_extractor",
-    name: "Universal Media & Audio Extractor",
+    name: "Audio Extractor",
     category_id: "video",
     category_name: "Media & Video",
-    description: "Extract clean, lossless MP3, WAV, AAC, or FLAC audio tracks from any video container without re-encoding frames.",
+    description: "Extract clean MP3, WAV, AAC, or FLAC audio tracks from video and audio files locally.",
     icon: "music",
     is_implemented: true,
     status: "installed"
   },
   {
     id: "video_compressor",
-    name: "Target Video Size Compressor",
+    name: "Video Compressor",
     category_id: "video",
     category_name: "Media & Video",
-    description: "Mathematically compress videos to fit exact upload caps (WhatsApp 16MB, Discord 25MB) without bitrate guesswork.",
+    description: "Compress video files with Low, Balanced, and Maximum compression presets.",
     icon: "video",
     is_implemented: true,
     status: "installed"
   },
   {
     id: "pdf_converter",
-    name: "PDF to Editable Word / DOCX Converter",
+    name: "PDF & Image Converter",
     category_id: "pdf",
     category_name: "PDF Studio",
-    description: "Convert PDF documents into clean, fully editable Word DOCX files preserving paragraph flows and tables.",
+    description: "Convert PDF pages to high-resolution PNG/JPG images or compile multiple images into a PDF.",
     icon: "file-text",
     is_implemented: true,
     status: "installed"
   },
   {
     id: "image_webp_compress",
-    name: "Lossless WebP & JPG Compressor",
+    name: "WebP Image Compressor",
     category_id: "image",
     category_name: "Image Studio",
-    description: "Shrink image file footprints by 60%–85% with zero perceptible quality drop using multi-thread compression.",
+    description: "Bulk compress photos into web-optimized WebP images with custom quality controls.",
     icon: "image",
     is_implemented: true,
     status: "installed"
   },
   {
     id: "system_batch_rename",
-    name: "Bulk File & Folder Renamer",
+    name: "Bulk File Renamer",
     category_id: "system",
     category_name: "System & Files",
-    description: "Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace locally.",
+    description: "Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace.",
     icon: "sliders",
     is_implemented: true,
     status: "installed"
@@ -66,7 +66,7 @@ const DEFAULT_TOOLS = [
 
 // ── Application State ────────────────────────────────────────────────────────
 const state = {
-  theme: localStorage.getItem('boltools-theme') || 'dark',
+  theme: localStorage.getItem('boltools-theme') || 'light',
   currentView: 'home',
   activeToolId: null,
   navHistory: ['home'],
