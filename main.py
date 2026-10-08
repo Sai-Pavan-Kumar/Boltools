@@ -10,6 +10,14 @@ Features:
 import os
 import sys
 
+# Set explicit Windows AppUserModelID so taskbar binds window to Boltools app icon
+if sys.platform == 'win32':
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("TheSurfBoard.Boltools.App.1.0")
+    except Exception:
+        pass
+
 # Subprocess worker hook for decoupled tool engines in frozen mode
 if "--engine-worker" in sys.argv:
     idx = sys.argv.index("--engine-worker")
@@ -37,27 +45,45 @@ import webview
 from src.desktop_bridge import desktop_bridge
 
 
+def _get_icon_path():
+    """Finds the absolute path to boltools.ico across frozen or source environments."""
+    exe_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else root_dir
+    possible = [
+        os.path.join(exe_dir, "boltools.ico"),
+        os.path.join(root_dir, "assets", "boltools.ico"),
+        os.path.join(exe_dir, "assets", "boltools.ico"),
+        os.path.join(exe_dir, "_internal", "assets", "boltools.ico"),
+        os.path.join(root_dir, "ui", "assets", "boltools.ico"),
+    ]
+    for p in possible:
+        if os.path.isfile(p):
+            return p
+    return None
+
+
 def _apply_win_icon(window):
     """Sets custom taskbar and titlebar icon via Win32 API to override Python runtime icon."""
     try:
         import time
         import ctypes
         time.sleep(0.3)
-        icon_path = os.path.join(root_dir, "assets", "boltools.ico")
-        if os.path.exists(icon_path):
+        icon_path = _get_icon_path()
+        if icon_path:
             hwnd = ctypes.windll.user32.FindWindowW(None, "Boltools")
             if hwnd:
-                h_icon = ctypes.windll.user32.LoadImageW(None, icon_path, 1, 0, 0, 0x00000010 | 0x00000040)
-                if h_icon:
-                    ctypes.windll.user32.SendMessageW(hwnd, 0x0080, 0, h_icon) # ICON_SMALL
-                    ctypes.windll.user32.SendMessageW(hwnd, 0x0080, 1, h_icon) # ICON_BIG
+                h_icon_big = ctypes.windll.user32.LoadImageW(None, icon_path, 1, 32, 32, 0x00000010)
+                h_icon_small = ctypes.windll.user32.LoadImageW(None, icon_path, 1, 16, 16, 0x00000010)
+                if h_icon_big:
+                    ctypes.windll.user32.SendMessageW(hwnd, 0x0080, 1, h_icon_big) # ICON_BIG
+                if h_icon_small:
+                    ctypes.windll.user32.SendMessageW(hwnd, 0x0080, 0, h_icon_small) # ICON_SMALL
     except Exception:
         pass
 
 
 def main():
     ui_html_path = os.path.join(root_dir, "ui", "index.html")
-    icon_path = os.path.join(root_dir, "assets", "boltools.ico")
+    icon_path = _get_icon_path()
 
     # Create native Windows WebView2 window
     window = webview.create_window(
