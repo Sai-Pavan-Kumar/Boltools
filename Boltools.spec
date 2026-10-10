@@ -3,7 +3,6 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [
     ('ui', 'ui'),
-    ('engines', 'engines'),
     ('assets', 'assets'),
     ('catalog.json', '.'),
     ('poll.json', '.'),
@@ -20,15 +19,6 @@ hiddenimports = [
 tmp_ret = collect_all('webview')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
-tmp_ret = collect_all('PIL')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('pymupdf')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-
-tmp_ret = collect_all('fitz')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
-
 a = Analysis(
     ['main.py'],
     pathex=[],
@@ -38,7 +28,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['tkinter', 'customtkinter', 'turtle'],
+    excludes=['tkinter', 'customtkinter', 'turtle', 'PIL', 'Pillow', 'fitz', 'pymupdf', 'pypdf'],
     noarchive=False,
     optimize=0,
 )
@@ -53,21 +43,21 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
+    upx=False,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['C:/Projects/boltools/software/assets/boltools.ico'],
+    icon=['assets/boltools.ico'],
 )
 coll = COLLECT(
     exe,
     a.binaries,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name='Boltools',
 )
