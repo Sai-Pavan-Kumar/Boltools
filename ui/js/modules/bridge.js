@@ -60,17 +60,45 @@ class Bridge {
     };
     window.addEventListener('pywebviewready', onReady);
 
-    // Fallback ONLY in browser after 3 seconds if pywebview never shows up
+    const isShellNative = urlParams.get('shell') === 'native';
+
+    // Fallback handling
     setTimeout(() => {
       if (!this._isReady) {
-        if (!window.pywebview) {
-          console.warn('[Bridge] pywebview not detected after 3s. Entering browser mock mode.');
+        if (window.pywebview && window.pywebview.api) {
+          this._isReady = true;
+          this._resolveReady({ mode: 'real' });
+          return;
+        }
+
+        if (isShellNative) {
+          // In real shell: NEVER fall back to mock data!
+          console.error('[Bridge] Critical: Native desktop shell detected but pywebview API failed to bind within 10s.');
+          const errBanner = document.createElement('div');
+          errBanner.id = 'bridge-error-banner';
+          errBanner.className = 'fixed inset-0 z-50 flex flex-col items-center justify-center bg-[var(--surface-base)] text-[var(--text-primary)] p-6 text-center';
+          errBanner.innerHTML = `
+            <div class="max-w-md p-6 rounded-2xl bg-[var(--surface-card)] border border-red-500/30 shadow-xl">
+              <div class="w-12 h-12 mx-auto rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center mb-3">⚠️</div>
+              <h3 class="text-base font-bold text-[var(--text-primary)]">Desktop Connection Timeout</h3>
+              <p class="text-xs text-[var(--text-secondary)] mt-2 leading-relaxed">
+                The native Python engine did not respond in time (antivirus scan or process delay). Mock data has been blocked to prevent state corruption.
+              </p>
+              <button onclick="window.location.reload()" class="mt-4 px-4 py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all cursor-pointer">
+                Retry Connection
+              </button>
+            </div>
+          `;
+          document.body.appendChild(errBanner);
+        } else {
+          // Pure external browser dev without ?shell=native
+          console.warn('[Bridge] pywebview not detected in standalone browser. Entering mock mode.');
           this._isMock = true;
           this._isReady = true;
           this._resolveReady({ mode: 'mock' });
         }
       }
-    }, 3000);
+    }, isShellNative ? 10000 : 3000);
   }
 
   async call(fnName, ...args) {

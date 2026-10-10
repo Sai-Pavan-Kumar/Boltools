@@ -1,13 +1,13 @@
 {
   "startup": {
-    "time_to_usable_ms": 145.81710000129533,
-    "first_paint_ms": 136,
-    "first_contentful_paint_ms": 136,
-    "initial_dom_nodes": 171,
+    "time_to_usable_ms": 158.79360000326415,
+    "first_paint_ms": null,
+    "first_contentful_paint_ms": null,
+    "initial_dom_nodes": 188,
     "initial_heap_mb": 9.5367431640625,
     "network_requests": [
       {
-        "url": "file:///C:/Projects/boltools/software/ui/index.html",
+        "url": "file:///C:/Projects/boltools/software/ui/index.html?mock=1",
         "resource_type": "document",
         "method": "GET"
       },
@@ -91,36 +91,39 @@
   "scale": [
     {
       "count": 100,
-      "render_hub_ms": 31.28429999924265,
-      "dom_nodes": 191,
+      "render_hub_ms": 200.56389999808744,
+      "dom_nodes": 564,
+      "rendered_cards": 18,
       "heap_mb": 9.5367431640625,
-      "max_frame_ms": 18,
+      "max_frame_ms": 17.699999999254942,
       "approx_fps": 60,
       "frames_over_50ms": 0,
-      "avg_search_ms": 0.03333333351959785,
-      "max_search_ms": 0.10000000149011612
+      "avg_search_ms": 0.18333333327124515,
+      "max_search_ms": 0.40000000037252903
     },
     {
       "count": 1000,
-      "render_hub_ms": 31.998599999496946,
-      "dom_nodes": 191,
+      "render_hub_ms": 173.17459999685525,
+      "dom_nodes": 564,
+      "rendered_cards": 18,
       "heap_mb": 9.5367431640625,
-      "max_frame_ms": 18.799999998882413,
-      "approx_fps": 60,
+      "max_frame_ms": 34.19999999925494,
+      "approx_fps": 56.25879043600563,
       "frames_over_50ms": 0,
-      "avg_search_ms": 0,
-      "max_search_ms": 0
+      "avg_search_ms": 1.5166666666045785,
+      "max_search_ms": 6
     },
     {
       "count": 10000,
-      "render_hub_ms": 30.887999999322346,
-      "dom_nodes": 191,
-      "heap_mb": 12.111663818359375,
-      "max_frame_ms": 17.90000000037253,
-      "approx_fps": 60,
+      "render_hub_ms": 204.24439999987953,
+      "dom_nodes": 564,
+      "rendered_cards": 18,
+      "heap_mb": 16.307830810546875,
+      "max_frame_ms": 32.80000000074506,
+      "approx_fps": 58.07200929145868,
       "frames_over_50ms": 0,
-      "avg_search_ms": 0.016666666604578495,
-      "max_search_ms": 0.09999999962747097
+      "avg_search_ms": 6.1500000000620885,
+      "max_search_ms": 8.299999998882413
     }
   ]
 }

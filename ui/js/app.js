@@ -329,11 +329,11 @@ function renderHome(container) {
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate">${t.name}</span>
-              <span class="px-2 py-0.5 text-[9px] font-medium rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${t.category_name}</span>
+              <span class="text-xs font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate">${escapeHtml(t.name)}</span>
+              <span class="px-2 py-0.5 text-[9px] font-medium rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${escapeHtml(t.category_name)}</span>
               ${isUpdate ? `<span class="px-1.5 py-0.2 text-[8px] font-bold rounded bg-amber-500/10 text-amber-500">UPDATE</span>` : ''}
             </div>
-            <p class="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">${t.description}</p>
+            <p class="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">${escapeHtml(t.description)}</p>
           </div>
         </div>
         <button class="shrink-0 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--brand-primary)] hover:text-white border border-[var(--border-subtle)] text-[var(--text-primary)] transition-all flex items-center gap-1.5 shadow-xs">
@@ -363,10 +363,10 @@ function renderHome(container) {
             <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform shadow-xs">
               ${getIcon(t.icon, 'w-5 h-5')}
             </div>
-            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${t.category_name}</span>
+            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${escapeHtml(t.category_name)}</span>
           </div>
-          <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${t.name}</h4>
-          <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${t.description}</p>
+          <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(t.name)}</h4>
+          <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${escapeHtml(t.description)}</p>
         </div>
         <div class="pt-4 mt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
           <span class="text-xs font-semibold ${isUpdate ? 'text-amber-500' : 'text-[var(--brand-primary)]'} group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
@@ -468,8 +468,8 @@ function renderCategoryView(container, categoryId) {
               ${isInstalled ? 'Ready' : 'Available'}
             </span>
           </div>
-          <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${t.name}</h4>
-          <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${t.description}</p>
+          <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(t.name)}</h4>
+          <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${escapeHtml(t.description)}</p>
         </div>
         <div class="pt-4 mt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
           <span class="text-xs font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
@@ -552,7 +552,7 @@ function renderToolHubCard(t, index) {
           <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)]">
             ${getIcon(t.icon, 'w-4 h-4')}
           </div>
-          <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${t.category_name}</span>
+          <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${escapeHtml(t.category_name)}</span>
           <span class="text-[10px] font-mono text-[var(--text-muted)]">v${installedVer || remoteVer}</span>
         </div>
         <h4 class="text-sm font-semibold text-[var(--text-primary)] truncate">${window.ToolSearchIndex ? window.ToolSearchIndex.highlight(t.name, state.searchQuery) : escapeHtml(t.name)}</h4>
@@ -754,14 +754,14 @@ function renderFavorites(container) {
             <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)]">
               ${getIcon(t.icon, 'w-4 h-4')}
             </div>
-            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${t.category_name}</span>
+            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${escapeHtml(t.category_name)}</span>
           </div>
           <button data-action="toggle-fav" data-tool-id="${escapeAttr(t.id)}" class="text-red-500 hover:scale-110 transition-transform">
             ${getIcon('heartFilled', 'w-4 h-4')}
           </button>
         </div>
-        <h4 class="text-sm font-semibold text-[var(--text-primary)]">${t.name}</h4>
-        <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">${t.description}</p>
+        <h4 class="text-sm font-semibold text-[var(--text-primary)]">${escapeHtml(t.name)}</h4>
+        <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">${escapeHtml(t.description)}</p>
       </div>
       <div class="mt-4 pt-3 border-t border-[var(--border-subtle)]">
         <button data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
@@ -2386,8 +2386,8 @@ function renderPaletteResults(query) {
           ${getIcon(t.icon, 'w-3.5 h-3.5')}
         </div>
         <div>
-          <span class="text-xs font-semibold text-[var(--text-primary)]">${t.name}</span>
-          <span class="ml-2 text-[10px] text-[var(--text-muted)]">${t.category_name}</span>
+          <span class="text-xs font-semibold text-[var(--text-primary)]">${escapeHtml(t.name)}</span>
+          <span class="ml-2 text-[10px] text-[var(--text-muted)]">${escapeHtml(t.category_name)}</span>
         </div>
       </div>
       ${getIcon('chevron-right', 'w-3.5 h-3.5 text-[var(--text-muted)]')}
@@ -3009,3 +3009,4 @@ if (window.boltoolsBridge) {
 // Export for tests, modules, and debugging
 window.state = state;
 window.navigateTo = navigateTo;
+window.getActiveSearchIndex = () => activeSearchIndex;

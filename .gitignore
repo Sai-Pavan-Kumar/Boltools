@@ -56,3 +56,4 @@ package-lock.json
 repomix-output.xml
 nul
 *.pdb
+tools_dev/catalog_*.json

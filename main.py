@@ -82,7 +82,7 @@ def _apply_win_icon(window):
 
 
 def main():
-    ui_html_path = os.path.join(root_dir, "ui", "index.html")
+    ui_html_path = f"{os.path.join(root_dir, 'ui', 'index.html')}?shell=native"
     icon_path = _get_icon_path()
 
     # Create native Windows WebView2 window

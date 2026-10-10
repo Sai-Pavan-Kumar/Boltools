@@ -342,6 +342,14 @@ class ToolStoreService:
                     if resp.status == 200:
                         content = resp.read()
                         if len(content) > 100:  # Valid non-empty file check
+                            expected_sha256 = meta.get("sha256")
+                            if expected_sha256:
+                                import hashlib
+                                actual_sha256 = hashlib.sha256(content).hexdigest().lower()
+                                if actual_sha256 != expected_sha256.lower().strip():
+                                    last_error = f"SHA256 mismatch for {tool_id}: expected {expected_sha256}, got {actual_sha256}"
+                                    continue
+
                             temp_path = target_engine_file + ".tmp"
                             with open(temp_path, "wb") as f:
                                 f.write(content)
