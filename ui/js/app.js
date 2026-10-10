@@ -279,11 +279,12 @@ function updateBreadcrumb(crumbs) {
 
 // 1. Home Dashboard View
 function renderHome(container) {
-  const readyTools = state.tools.filter(t => t.status === 'installed');
+  const readyTools = state.tools.filter(t => t.status === 'installed' || t.status === 'update_available' || t.update_available);
+  const updatesCount = state.updatesCount || state.tools.filter(t => t.update_available || t.status === 'update_available').length;
 
   // Compute Last Used 3 Utilities
   let recentList = (state.recentTools || [])
-    .map(id => state.tools.find(t => t.id === id && t.status === 'installed'))
+    .map(id => state.tools.find(t => t.id === id && (t.status === 'installed' || t.status === 'update_available')))
     .filter(Boolean);
 
   if (recentList.length === 0) {
@@ -293,52 +294,64 @@ function renderHome(container) {
     recentList = recentList.slice(0, 3);
   }
 
-  const recentRows = recentList.length > 0 ? recentList.map(t => `
-    <div onclick="navigateTo('tool_studio', '${t.id}')" class="group p-3 px-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all flex items-center justify-between gap-3">
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] shrink-0 group-hover:scale-105 transition-transform">
-          ${getIcon(t.icon, 'w-4 h-4')}
-        </div>
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate">${t.name}</span>
-            <span class="px-2 py-0.5 text-[9px] font-medium rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${t.category_name}</span>
+  const recentRows = recentList.length > 0 ? recentList.map(t => {
+    const isUpdate = t.update_available || t.status === 'update_available';
+    return `
+      <div onclick="navigateTo('tool_studio', '${t.id}')" class="group p-3 px-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border ${isUpdate ? 'border-amber-500/30' : 'border-[var(--border-subtle)]'} hover:border-[var(--brand-primary)] cursor-pointer transition-all flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] shrink-0 group-hover:scale-105 transition-transform">
+            ${getIcon(t.icon, 'w-4 h-4')}
           </div>
-          <p class="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">${t.description}</p>
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate">${t.name}</span>
+              <span class="px-2 py-0.5 text-[9px] font-medium rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${t.category_name}</span>
+              ${isUpdate ? `<span class="px-1.5 py-0.2 text-[8px] font-bold rounded bg-amber-500/10 text-amber-500">UPDATE</span>` : ''}
+            </div>
+            <p class="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">${t.description}</p>
+          </div>
         </div>
+        <button class="shrink-0 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--brand-primary)] hover:text-white border border-[var(--border-subtle)] text-[var(--text-primary)] transition-all flex items-center gap-1.5 shadow-xs">
+          <span>Launch</span>
+          ${getIcon('arrow-right', 'w-3 h-3')}
+        </button>
       </div>
-      <button class="shrink-0 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--brand-primary)] hover:text-white border border-[var(--border-subtle)] text-[var(--text-primary)] transition-all flex items-center gap-1.5 shadow-xs">
-        <span>Launch</span>
-        ${getIcon('arrow-right', 'w-3 h-3')}
-      </button>
-    </div>
-  `).join('') : `
+    `;
+  }).join('') : `
     <div class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center text-xs text-[var(--text-muted)]">
       No recently used utilities yet. Launch any tool below to see it here!
     </div>
   `;
 
   // Bento Box Squared Cards for Available Utilities
-  const bentoGrid = readyTools.length > 0 ? readyTools.map(t => `
-    <div onclick="navigateTo('tool_studio', '${t.id}')" class="group p-5 rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden min-h-[180px]">
-      <div>
-        <div class="flex items-center justify-between gap-2 mb-3">
-          <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform shadow-xs">
-            ${getIcon(t.icon, 'w-5 h-5')}
+  const bentoGrid = readyTools.length > 0 ? readyTools.map(t => {
+    const isUpdate = t.update_available || t.status === 'update_available';
+    return `
+      <div onclick="navigateTo('tool_studio', '${t.id}')" class="group p-5 rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border ${isUpdate ? 'border-amber-500/40' : 'border-[var(--border-subtle)]'} hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden min-h-[180px]">
+        ${isUpdate ? `
+          <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg tracking-wider uppercase flex items-center gap-1">
+            ${getIcon('refresh-cw', 'w-2.5 h-2.5')} Update v${t.remote_version || t.version}
           </div>
-          <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${t.category_name}</span>
+        ` : ''}
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform shadow-xs">
+              ${getIcon(t.icon, 'w-5 h-5')}
+            </div>
+            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${t.category_name}</span>
+          </div>
+          <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${t.name}</h4>
+          <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${t.description}</p>
         </div>
-        <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${t.name}</h4>
-        <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${t.description}</p>
+        <div class="pt-4 mt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
+          <span class="text-xs font-semibold ${isUpdate ? 'text-amber-500' : 'text-[var(--brand-primary)]'} group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+            <span>${isUpdate ? 'Update or Open' : 'Open Tool'}</span>
+            ${getIcon('arrow-right', 'w-3 h-3')}
+          </span>
+        </div>
       </div>
-      <div class="pt-4 mt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
-        <span class="text-xs font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
-          <span>Open Tool</span>
-          ${getIcon('arrow-right', 'w-3 h-3')}
-        </span>
-      </div>
-    </div>
-  `).join('') : `
+    `;
+  }).join('') : `
     <div class="col-span-full p-8 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center">
       <p class="text-xs text-[var(--text-secondary)] mb-2">No utilities currently installed on this PC.</p>
       <button onclick="navigateTo('tool_hub')" class="btn-primary px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white inline-flex items-center gap-1.5">
@@ -348,6 +361,23 @@ function renderHome(container) {
     </div>
   `;
 
+  const updateBanner = (updatesCount > 0) ? `
+    <div class="p-3.5 px-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 shadow-xs">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
+          ${getIcon('refresh-cw', 'w-4 h-4')}
+        </div>
+        <div>
+          <span class="text-xs font-bold text-amber-700 dark:text-amber-400">Updates Available for ${updatesCount} Tool${updatesCount > 1 ? 's' : ''}</span>
+          <p class="text-[11px] text-[var(--text-secondary)] mt-0.5">Engine enhancements and bug fixes are ready. Update in 1 click without re-downloading software.</p>
+        </div>
+      </div>
+      <button onclick="setHubTab('Updates'); navigateTo('tool_hub');" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shrink-0 cursor-pointer shadow-sm">
+        Review & Update
+      </button>
+    </div>
+  ` : '';
+
   container.innerHTML = `
     <div class="max-w-5xl mx-auto space-y-7 pb-10">
       <!-- Hero -->
@@ -355,6 +385,8 @@ function renderHome(container) {
         <h2 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">Utility Suite</h2>
         <p class="text-xs text-[var(--text-secondary)] mt-1">High-speed, 100% private tools for creator workflows and local power operations.</p>
       </div>
+
+      ${updateBanner}
 
       <!-- Recent Utilities -->
       <div>
@@ -474,13 +506,18 @@ function renderCategoryView(container, categoryId) {
 
 // 2. Tool Hub & Catalog View
 function renderToolHub(container) {
-  const filterTab = state.hubFilterTab;
+  const filterTab = state.hubFilterTab || 'All';
   const query = state.searchQuery.toLowerCase().trim();
+  const updatesCount = state.updatesCount || state.tools.filter(t => t.update_available || t.status === 'update_available').length;
 
   let filtered = state.tools.filter(t => {
-    const isInstalled = t.status === 'installed';
+    const isUpdate = t.update_available || t.status === 'update_available';
+    const isInstalled = t.status === 'installed' || isUpdate;
+
     if (filterTab === 'Installed' && !isInstalled) return false;
-    if (filterTab === 'Hub Catalog' && isInstalled) return false;
+    if (filterTab === 'Updates' && !isUpdate) return false;
+    if ((filterTab === 'Hub Catalog' || filterTab === 'Catalog') && isInstalled) return false;
+
     if (query) {
       const match = t.name.toLowerCase().includes(query) ||
                     t.description.toLowerCase().includes(query) ||
@@ -491,53 +528,86 @@ function renderToolHub(container) {
   });
 
   const cardsHtml = filtered.map(t => {
-    const isInstalled = t.status === 'installed';
+    const isUpdate = t.update_available || t.status === 'update_available';
+    const isInstalled = t.status === 'installed' || isUpdate;
+    const installedVer = t.installed_version || (t.status === 'installed' ? (t.version || '1.0.0') : null);
+    const remoteVer = t.remote_version || t.version || '1.0.0';
+
     return `
-      <div class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] hover:border-[var(--border-hover)] transition-all flex flex-col justify-between">
+      <div class="p-4 rounded-xl bg-[var(--surface-card)] border ${isUpdate ? 'border-amber-500/40 shadow-sm' : 'border-[var(--border-subtle)]'} hover:border-[var(--border-hover)] transition-all flex flex-col justify-between relative overflow-hidden">
+        ${isUpdate ? `
+          <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-bl-lg tracking-wider uppercase flex items-center gap-1 shadow-xs">
+            ${getIcon('refresh-cw', 'w-2.5 h-2.5')} Update Available
+          </div>
+        ` : ''}
         <div>
           <div class="flex items-center gap-2.5 mb-3">
             <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)]">
               ${getIcon(t.icon, 'w-4 h-4')}
             </div>
             <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${t.category_name}</span>
+            <span class="text-[10px] font-mono text-[var(--text-muted)]">v${installedVer || remoteVer}</span>
           </div>
           <h4 class="text-sm font-semibold text-[var(--text-primary)]">${t.name}</h4>
           <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${t.description}</p>
+          ${isUpdate && t.release_notes ? `
+            <div class="mt-2.5 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 dark:text-amber-400">
+              <span class="font-semibold">What's New in v${remoteVer}:</span> ${t.release_notes}
+            </div>
+          ` : ''}
         </div>
         <div class="mt-4 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
-          ${isInstalled ? `
-            <button onclick="navigateTo('tool_studio', '${t.id}')" class="btn-primary px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-sm">
+          ${isUpdate ? `
+            <div class="flex items-center gap-2 w-full justify-between">
+              <button id="btn-action-${t.id}" onclick="handleInstallOrUpdateTool('${t.id}', true)" class="btn-primary px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
+                ${getIcon('download', 'w-3.5 h-3.5')}
+                <span>Update Tool (v${remoteVer})</span>
+              </button>
+              <button onclick="navigateTo('tool_studio', '${t.id}')" class="px-2.5 py-1.5 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-colors cursor-pointer">
+                <span>Launch (v${installedVer || '1.0.0'})</span>
+              </button>
+            </div>
+          ` : (isInstalled ? `
+            <button onclick="navigateTo('tool_studio', '${t.id}')" class="btn-primary px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
               <span>Open Tool</span>
               ${getIcon('arrow-right', 'w-3 h-3')}
             </button>
-            <button onclick="openUninstallModal('${t.id}', '${t.name}')" class="px-2.5 py-1.5 text-xs font-normal rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors">
+            <button onclick="openUninstallModal('${t.id}', '${t.name}')" class="px-2.5 py-1.5 text-xs font-normal rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer">
               Uninstall
             </button>
           ` : `
-            <button onclick="handleInstallTool('${t.id}')" class="btn-primary px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-sm">
+            <button id="btn-action-${t.id}" onclick="handleInstallOrUpdateTool('${t.id}', false)" class="btn-primary px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
               ${getIcon('download', 'w-3.5 h-3.5')}
               <span>+ Install (Free)</span>
             </button>
-          `}
+          `)}
         </div>
       </div>
     `;
   }).join('');
 
+  const hubTabs = [
+    { id: 'All', label: 'All' },
+    { id: 'Installed', label: 'Installed' },
+    { id: 'Updates', label: updatesCount > 0 ? `Updates (${updatesCount})` : 'Updates', badge: updatesCount > 0 },
+    { id: 'Hub Catalog', label: 'Hub Catalog' }
+  ];
+
   container.innerHTML = `
     <div class="max-w-5xl mx-auto space-y-6 pb-10">
       <div>
         <h2 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">Tool Hub</h2>
-        <p class="text-xs text-[var(--text-secondary)] mt-1">Browse, install, and manage modular offline tools on this PC.</p>
+        <p class="text-xs text-[var(--text-secondary)] mt-1">Browse, install, and update modular offline tools directly on this PC.</p>
       </div>
 
       <!-- Filter Tabs & Search Bar -->
       <div class="p-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] flex flex-col sm:flex-row items-center gap-3">
         <!-- Segmented Tabs -->
-        <div class="flex items-center gap-1 p-1 bg-[var(--surface-inset)] rounded-lg shrink-0">
-          ${['All', 'Installed', 'Hub Catalog'].map(tab => `
-            <button onclick="setHubTab('${tab}')" class="px-3 py-1 text-xs font-medium rounded-md transition-all ${filterTab === tab ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}">
-              ${tab}
+        <div class="flex items-center gap-1 p-1 bg-[var(--surface-inset)] rounded-lg shrink-0 overflow-x-auto max-w-full">
+          ${hubTabs.map(tab => `
+            <button onclick="setHubTab('${tab.id}')" class="px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${filterTab === tab.id ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}">
+              <span>${tab.label}</span>
+              ${tab.badge && filterTab !== tab.id ? `<span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>` : ''}
             </button>
           `).join('')}
         </div>
@@ -582,16 +652,50 @@ function handleHubSearch(val) {
   if (container) renderToolHub(container);
 }
 
-async function handleInstallTool(toolId) {
-  await callBridge('install_tool', toolId);
-  const data = await callBridge('get_initial_data');
-  if (data) state.tools = data.tools;
-  const container = document.getElementById('main-content');
-  if (state.currentView === 'tool_hub' && container) {
-    renderToolHub(container);
-  } else if (state.currentView === 'home' && container) {
-    renderHome(container);
+async function handleInstallOrUpdateTool(toolId, isUpdate = false) {
+  const btn = document.getElementById(`btn-action-${toolId}`);
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
+    btn.innerHTML = `<span class="inline-block animate-spin mr-1.5">⏳</span><span>${isUpdate ? 'Updating Engine...' : 'Installing Engine...'}</span>`;
   }
+
+  try {
+    const res = await callBridge('install_or_update_tool', toolId);
+    if (res && res.success) {
+      const data = await callBridge('get_initial_data');
+      if (data) {
+        state.tools = data.tools;
+        state.updatesCount = data.updates_count || 0;
+        updateBellBadge();
+      }
+      showToast(res.message || `${toolId} updated successfully!`, 'success');
+      const container = document.getElementById('main-content');
+      if (container) {
+        if (state.currentView === 'tool_hub') renderToolHub(container);
+        else if (state.currentView === 'home') renderHome(container);
+        else if (state.currentView === 'category_view') renderCategoryView(container, state.activeCategoryId);
+      }
+    } else {
+      alert((res && res.error) || 'Failed to download tool engine.');
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.innerHTML = `<span>Retry</span>`;
+      }
+    }
+  } catch (err) {
+    console.error('Error in handleInstallOrUpdateTool:', err);
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.innerHTML = `<span>Retry</span>`;
+    }
+  }
+}
+
+async function handleInstallTool(toolId) {
+  return handleInstallOrUpdateTool(toolId, false);
 }
 
 // 3. Favorites View
@@ -2299,11 +2403,15 @@ async function confirmUninstall(purgeData) {
 }
 
 // ── Announcements Modal & Notification System ──────────────────────────────
-function updateBellBadge(count) {
-  state.unreadAnnouncementsCount = Math.max(0, count);
+function updateBellBadge(count = null) {
+  if (count !== null && count !== undefined) {
+    state.unreadAnnouncementsCount = Math.max(0, count);
+  }
+  const pendingUpdates = state.updatesCount || (state.tools ? state.tools.filter(t => t.update_available || t.status === 'update_available').length : 0);
+  const totalAlerts = (state.unreadAnnouncementsCount || 0) + pendingUpdates;
   const dot = document.getElementById('bell-dot');
   if (dot) {
-    dot.style.display = state.unreadAnnouncementsCount > 0 ? 'block' : 'none';
+    dot.style.display = totalAlerts > 0 ? 'block' : 'none';
   }
 }
 
@@ -2351,14 +2459,21 @@ function openAnnouncementsModal() {
       </div>
       <h4 class="text-xs font-semibold text-[var(--text-primary)]">${a.title}</h4>
       <p class="text-[11px] text-[var(--text-secondary)] leading-relaxed">${a.description}</p>
-      ${a.cta_url ? `
+      ${a.cta_action ? `
+        <div class="pt-1">
+          <button onclick="handleAnnouncementAction('${a.cta_action}', '${a.cta_target || ''}')" class="text-[11px] font-medium text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1 cursor-pointer">
+            <span>${a.cta_text || 'Open in App'}</span>
+            ${getIcon('chevron-right', 'w-3 h-3')}
+          </button>
+        </div>
+      ` : (a.cta_url ? `
         <div class="pt-1">
           <a href="${a.cta_url}" target="_blank" class="text-[11px] font-medium text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1">
             <span>${a.cta_text || 'Learn more'}</span>
             ${getIcon('chevron-right', 'w-3 h-3')}
           </a>
         </div>
-      ` : ''}
+      ` : '')}
     </div>
   `).join('');
 
@@ -2373,6 +2488,52 @@ function openAnnouncementsModal() {
 function closeAnnouncementsModal() {
   const modal = document.getElementById('modal-announcements');
   if (modal) modal.classList.add('hidden');
+}
+
+function showToast(message, type = 'info') {
+  let toastContainer = document.getElementById('toast-container');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'toast-container';
+    toastContainer.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none';
+    document.body.appendChild(toastContainer);
+  }
+  const toast = document.createElement('div');
+  const bg = type === 'success' ? 'bg-emerald-600 text-white' : (type === 'error' ? 'bg-red-600 text-white' : 'bg-neutral-800 text-white');
+  toast.className = `${bg} px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium flex items-center gap-2 pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
+  toast.innerHTML = `
+    <span>${getIcon(type === 'success' ? 'check' : 'info', 'w-4 h-4')}</span>
+    <span>${message}</span>
+  `;
+  toastContainer.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.classList.remove('translate-y-2', 'opacity-0');
+  });
+  setTimeout(() => {
+    toast.classList.add('opacity-0', 'translate-y-2');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function handleAnnouncementAction(action, target) {
+  closeAnnouncementsModal();
+  if (action === 'update_tool' && target) {
+    navigateTo('tool_hub');
+    handleInstallOrUpdateTool(target, true);
+  } else if (action === 'navigate_hub') {
+    navigateTo('tool_hub');
+  } else if (action === 'open_tool' && target) {
+    const tool = state.tools.find(t => t.id === target);
+    if (tool && (tool.status === 'update_available' || tool.update_available)) {
+      navigateTo('tool_hub');
+    } else {
+      navigateTo('tool_studio', target);
+    }
+  } else if (action === 'navigate_category' && target) {
+    navigateToCategory(target);
+  } else {
+    navigateTo('tool_hub');
+  }
 }
 
 // ── Application Bootstrapper ─────────────────────────────────────────────────
@@ -2418,10 +2579,11 @@ async function initApp() {
         if (data.tools && data.tools.length) state.tools = data.tools;
         if (data.favorites) state.favorites = data.favorites;
         if (data.announcements && data.announcements.length) state.announcements = data.announcements;
+        if (data.updates_count !== undefined) state.updatesCount = data.updates_count;
         if (data.system_stats) state.systemStats = data.system_stats;
         if (data.default_downloads) state.defaultDownloads = data.default_downloads;
 
-        // Check unread announcements
+        // Check unread announcements and pending updates
         const seenIds = JSON.parse(localStorage.getItem('boltools-seen-announcements') || '[]');
         const unread = (state.announcements || []).filter(a => !seenIds.includes(a.id)).length;
         updateBellBadge(unread > 0 ? unread : 0);

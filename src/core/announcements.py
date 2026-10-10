@@ -15,8 +15,11 @@ from typing import List, Dict, Optional, Callable
 
 DEFAULT_ANNOUNCEMENTS = []
 
-# Remote endpoint pointing to repository / marketing announcements file
-ANNOUNCEMENTS_ENDPOINT = "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/announcements.json"
+# Remote endpoints pointing to announcements file (Cloudflare CDN primary, GitHub fallback)
+ANNOUNCEMENT_ENDPOINTS = [
+    "https://boltools.thesurfboard.in/announcements.json",
+    "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/announcements.json"
+]
 
 
 class AnnouncementService:
@@ -84,24 +87,25 @@ class AnnouncementService:
         """Fetches remote announcements on a background worker thread."""
         def _fetch():
             unread_count = 0
-            try:
-                req = urllib.request.Request(
-                    ANNOUNCEMENTS_ENDPOINT,
-                    headers={"User-Agent": "Boltools-Desktop/1.0"}
-                )
-                with urllib.request.urlopen(req, timeout=3.5) as response:
-                    if response.status == 200:
-                        raw = response.read().decode("utf-8")
-                        items = json.loads(raw)
-                        if isinstance(items, list) and len(items) > 0:
-                            self.cached_announcements = items
-            except Exception:
-                # Silently fail when offline or unreachable; fall back to defaults
-                pass
-            finally:
-                unread_count = self.get_unread_count()
-                if on_complete:
-                    on_complete(unread_count)
+            for endpoint in ANNOUNCEMENT_ENDPOINTS:
+                try:
+                    req = urllib.request.Request(
+                        endpoint,
+                        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+                    )
+                    with urllib.request.urlopen(req, timeout=4.0) as response:
+                        if response.status == 200:
+                            raw = response.read().decode("utf-8")
+                            items = json.loads(raw)
+                            if isinstance(items, list) and len(items) > 0:
+                                self.cached_announcements = items
+                                break
+                except Exception:
+                    continue
+
+            unread_count = self.get_unread_count()
+            if on_complete:
+                on_complete(unread_count)
 
         thread = threading.Thread(target=_fetch, daemon=True)
         thread.start()

@@ -21,6 +21,7 @@ from src.core.system_monitor import system_monitor
 from src.core.favorites import favorites_service
 from src.core.community import community_service
 from src.core.announcements import announcement_service
+from src.core.tool_store import tool_store_service
 from src.engine_runner import engine_runner
 
 
@@ -40,81 +41,9 @@ class DesktopBridge:
 
     # ── Initial State Dispatcher ─────────────────────────────────────────────
     def get_initial_data(self) -> Dict[str, Any]:
-        """Provides full catalog, installed status, favorites, and system metrics to frontend."""
-        # 5 Implemented Engines + Catalog Metadata
-        tools = [
-            {
-                "id": "media_audio_extractor",
-                "name": "Audio Extractor",
-                "category_id": "video",
-                "category_name": "Media & Video",
-                "description": "Extract clean MP3, WAV, AAC, or FLAC audio tracks from video and audio files locally.",
-                "icon": "music",
-                "is_implemented": True,
-                "engine_type": "python",
-                "target": os.path.join(self.engines_dir, "audio_extractor", "engine.py")
-            },
-            {
-                "id": "video_compressor",
-                "name": "Video Compressor",
-                "category_id": "video",
-                "category_name": "Media & Video",
-                "description": "Compress video files with Low, Balanced, and Maximum compression presets.",
-                "icon": "video",
-                "is_implemented": True,
-                "engine_type": "python",
-                "target": os.path.join(self.engines_dir, "video_compressor", "engine.py")
-            },
-            {
-                "id": "pdf_converter",
-                "name": "PDF & Image Converter",
-                "category_id": "pdf",
-                "category_name": "PDF Studio",
-                "description": "Convert PDF pages to high-resolution PNG/JPG images or compile multiple images into a PDF.",
-                "icon": "file-text",
-                "is_implemented": True,
-                "engine_type": "python",
-                "target": os.path.join(self.engines_dir, "pdf_converter", "engine.py")
-            },
-            {
-                "id": "image_webp_compress",
-                "name": "WebP Image Compressor",
-                "category_id": "image",
-                "category_name": "Image Studio",
-                "description": "Bulk compress photos into web-optimized WebP images with custom quality controls.",
-                "icon": "image",
-                "is_implemented": True,
-                "engine_type": "python",
-                "target": os.path.join(self.engines_dir, "webp_compressor", "engine.py")
-            },
-            {
-                "id": "system_batch_rename",
-                "name": "Bulk File Renamer",
-                "category_id": "system",
-                "category_name": "System & Files",
-                "description": "Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace.",
-                "icon": "sliders",
-                "is_implemented": True,
-                "engine_type": "python",
-                "target": os.path.join(self.engines_dir, "batch_renamer", "engine.py")
-            },
-            {
-                "id": "subtitle_animator",
-                "name": "Subtitle Animation Maker",
-                "category_id": "video",
-                "category_name": "Media & Video",
-                "description": "Create viral animated subtitles with word-by-word karaoke highlight, custom fonts, colors, and live timing editor.",
-                "icon": "type",
-                "is_implemented": True,
-                "engine_type": "python",
-                "target": os.path.join(self.engines_dir, "subtitle_animator", "engine.py")
-            }
-        ]
-
-        # Sync tool installation state with user overrides
-        for t in tools:
-            st = community_service.get_tool_status(t["id"], "installed" if t["is_implemented"] else "available")
-            t["status"] = st
+        """Provides dynamic catalog, installed/update status, favorites, and system metrics to frontend."""
+        tools = tool_store_service.get_tools_catalog()
+        updates_count = tool_store_service.get_updates_count()
 
         categories = [
             {"id": "video", "name": "Media & Video", "desc": "Fast offline video compression, extraction, and formatting", "icon": "video", "accent": "#2563EB"},
@@ -128,6 +57,7 @@ class DesktopBridge:
         return {
             "categories": categories,
             "tools": tools,
+            "updates_count": updates_count,
             "favorites": favorites_service.get_all(),
             "announcements": announcement_service.cached_announcements,
             "system_stats": {"cpu": cpu, "ram": ram, "disk": disk},
@@ -145,7 +75,11 @@ class DesktopBridge:
             return
 
         engine_type = tool_meta.get("engine_type", "python")
-        target = tool_meta.get("target", "")
+        target = tool_store_service.get_engine_target(tool_id) or tool_meta.get("target", "")
+
+        if not target or not os.path.exists(target):
+            self._notify_frontend("onToolError", f"Engine file for '{tool_id}' not found. Please click Install/Update in Tool Hub to download.")
+            return
 
         def _on_progress(pct: float, status: str):
             self._notify_frontend("onToolProgress", {"percent": pct, "status": status})
@@ -307,9 +241,19 @@ class DesktopBridge:
         return favorites_service.get_all()
 
     def install_tool(self, tool_id: str) -> bool:
-        return community_service.install_tool(tool_id)
+        res = tool_store_service.install_or_update_tool(tool_id)
+        community_service.install_tool(tool_id)
+        return bool(res.get("success", False))
+
+    def install_or_update_tool(self, tool_id: str) -> Dict[str, Any]:
+        """Installs or updates tool engine file over-the-air from CDN/repository."""
+        res = tool_store_service.install_or_update_tool(tool_id)
+        if res.get("success"):
+            community_service.install_tool(tool_id)
+        return res
 
     def uninstall_tool(self, tool_id: str, purge_data: bool = False) -> bool:
+        tool_store_service.uninstall_tool(tool_id, purge_data=purge_data)
         return community_service.uninstall_tool(tool_id, purge_data=purge_data)
 
     def clean_cache(self) -> Dict[str, Any]:
