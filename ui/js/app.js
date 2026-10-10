@@ -552,8 +552,8 @@ function renderToolHubCard(t, index) {
           <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${t.category_name}</span>
           <span class="text-[10px] font-mono text-[var(--text-muted)]">v${installedVer || remoteVer}</span>
         </div>
-        <h4 class="text-sm font-semibold text-[var(--text-primary)] truncate">${escapeHtml(t.name)}</h4>
-        <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${escapeHtml(t.description)}</p>
+        <h4 class="text-sm font-semibold text-[var(--text-primary)] truncate">${window.ToolSearchIndex ? window.ToolSearchIndex.highlight(t.name, state.searchQuery) : escapeHtml(t.name)}</h4>
+        <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${window.ToolSearchIndex ? window.ToolSearchIndex.highlight(t.description, state.searchQuery) : escapeHtml(t.description)}</p>
       </div>
       <div class="mt-3 pt-2.5 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
         ${isUpdate ? `
