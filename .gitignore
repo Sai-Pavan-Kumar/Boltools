@@ -47,3 +47,12 @@ desktop.ini
 *.log
 *.sqlite3
 .wrangler/
+
+# Node & Package Managers
+node_modules/
+package-lock.json
+
+# Tool outputs & Scratch dumps
+repomix-output.xml
+nul
+*.pdb
