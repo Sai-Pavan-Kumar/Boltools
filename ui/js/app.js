@@ -193,6 +193,11 @@ function navigateTo(viewName, toolId = null, pushHistory = true) {
   const container = document.getElementById('main-content');
   if (!container) return;
 
+  if (viewName !== 'tool_hub' && activeHubVirtualGrid) {
+    activeHubVirtualGrid.destroy();
+    activeHubVirtualGrid = null;
+  }
+
   if (viewName === 'home') {
     renderHome(container);
     updateBreadcrumb(['Home']);
@@ -2997,3 +3002,7 @@ if (window.boltoolsBridge) {
 } else {
   window.addEventListener('pywebviewready', bootstrapApp);
 }
+
+// Export for tests, modules, and debugging
+window.state = state;
+window.navigateTo = navigateTo;

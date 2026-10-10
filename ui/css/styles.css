@@ -1,12 +1,33 @@
 /* ==========================================================================
    BOLTOOLS DESIGN SYSTEM STYLESHEET
    100% Visually Synchronized with software/src/core/theme.py
-   Option 3 Typography Standard: Instrument Sans + Satoshi + DM Mono
-   Quiet, Minimal, Refined Raycast / Apple Aesthetic
+   Option 3 Typography Standard: Instrument Sans + DM Mono (Local WOFF2)
+   Zero Remote Requests • 100% Offline Resilience
    ========================================================================== */
 
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap');
+@font-face {
+  font-family: 'Instrument Sans';
+  src: url('../assets/fonts/InstrumentSans-Variable.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Mono';
+  src: url('../assets/fonts/DMMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Mono';
+  src: url('../assets/fonts/DMMono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
 
 /* ==========================================================================
    BOLTOOLS DUAL-THEME SYSTEM (MATHEMATICAL DUAL TOKENS)
@@ -147,7 +168,7 @@ html {
 body {
   background-color: var(--surface-base);
   color: var(--text-primary);
-  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -195,16 +216,15 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--radial-glow);
 }
 
-/* Hairline Cards (1px precision border) */
+/* Hairline Cards (1px precision border with CSS containment & 150ms budget) */
 .hairline-card {
   background-color: var(--surface-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
-  box-shadow: var(--card-shadow);
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.22s ease,
-              box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  contain: layout paint style;
+  transition: transform 140ms ease-out,
+              opacity 140ms ease-out,
+              border-color 140ms ease-out;
   position: relative;
   overflow: hidden;
   will-change: transform, opacity;
@@ -213,49 +233,22 @@ h1, h2, h3, h4, h5, h6 {
 .hairline-card:hover {
   transform: translateY(-2px);
   border-color: var(--border-hover);
-  box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.18), 0 4px 8px -4px rgba(0, 0, 0, 0.1);
 }
 
-.hairline-card::before {
-  content: '';
-  position: absolute;
-  top: -40px;
-  right: -40px;
-  width: 140px;
-  height: 140px;
-  border-radius: 50%;
-  filter: blur(40px);
-  pointer-events-none;
-  opacity: 0.45;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.hairline-card:hover::before {
-  opacity: 0.85;
-  transform: scale(1.15);
-}
-
-.hairline-card[data-category="video"]::before {
-  background: radial-gradient(circle, rgba(0, 90, 224, 0.25), transparent 70%);
-}
-
-.hairline-card[data-category="pdf"]::before {
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.25), transparent 70%);
-}
-
-.hairline-card[data-category="image"]::before {
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.25), transparent 70%);
-}
-
-.hairline-card[data-category="system"]::before {
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.25), transparent 70%);
+@media (prefers-reduced-motion: reduce) {
+  .hairline-card,
+  .hairline-card:hover,
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .hairline-card:hover {
   border-color: var(--border-hover);
   background-color: var(--surface-card-hover);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.12), 0 0 0 1px var(--border-hover);
+  transform: translateY(-2px);
 }
 
 .hairline-card.active-card {
@@ -447,11 +440,11 @@ html.theme-transitioning *::after {
 }
 
 .font-body {
-  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .font-mono {
-  font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   letter-spacing: -0.01em;
 }
 
@@ -463,7 +456,7 @@ html.theme-transitioning *::after {
   gap: 0.5rem;
   background-color: var(--brand-primary);
   color: var(--text-on-brand);
-  font-family: 'Satoshi', sans-serif;
+  font-family: 'Instrument Sans', sans-serif;
   font-weight: 500;
   border-radius: var(--radius-button);
   padding: 0.55rem 1.15rem;
@@ -491,7 +484,7 @@ html.theme-transitioning *::after {
   gap: 0.5rem;
   background-color: var(--surface-card);
   color: var(--text-primary);
-  font-family: 'Satoshi', sans-serif;
+  font-family: 'Instrument Sans', sans-serif;
   font-weight: 500;
   border-radius: var(--radius-button);
   padding: 0.55rem 1.15rem;
@@ -512,7 +505,7 @@ html.theme-transitioning *::after {
   background-color: var(--surface-pill);
   color: var(--brand-accent);
   border: 1px solid var(--border-subtle);
-  font-family: 'Satoshi', sans-serif;
+  font-family: 'Instrument Sans', sans-serif;
   font-size: 0.6875rem;
   font-weight: 500;
   padding: 0.2rem 0.65rem;
@@ -527,7 +520,7 @@ html.theme-transitioning *::after {
   background-color: rgba(16, 185, 129, 0.1);
   color: #34D399;
   border: 1px solid rgba(16, 185, 129, 0.2);
-  font-family: 'Satoshi', sans-serif;
+  font-family: 'Instrument Sans', sans-serif;
   font-size: 0.6875rem;
   font-weight: 500;
   padding: 0.15rem 0.5rem;
@@ -541,7 +534,7 @@ html.theme-transitioning *::after {
   background-color: rgba(56, 189, 248, 0.08);
   color: #38BDF8;
   border: 1px solid rgba(56, 189, 248, 0.2);
-  font-family: 'Satoshi', sans-serif;
+  font-family: 'Instrument Sans', sans-serif;
   font-size: 0.6875rem;
   font-weight: 500;
   padding: 0.15rem 0.5rem;
@@ -597,7 +590,7 @@ html.theme-transitioning *::after {
 
 .sidebar-section-header {
   font-size: 0.625rem;
-  font-family: 'Satoshi', sans-serif;
+  font-family: 'Instrument Sans', sans-serif;
   font-weight: 600;
   color: var(--text-muted);
   letter-spacing: 0.08em;
@@ -612,7 +605,7 @@ html.theme-transitioning *::after {
   padding: 0.45rem 0.65rem;
   border-radius: var(--radius-button);
   font-size: 0.75rem;
-  font-family: 'Satoshi', sans-serif;
+  font-family: 'Instrument Sans', sans-serif;
   font-weight: 500;
   color: var(--text-secondary);
   background: transparent;
@@ -637,7 +630,7 @@ html.theme-transitioning *::after {
   background-color: var(--surface-inset);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-input);
-  font-family: 'Satoshi', sans-serif;
+  font-family: 'Instrument Sans', sans-serif;
   font-size: 0.75rem;
   color: #94A3B8;
   line-height: 1.5;
@@ -788,7 +781,7 @@ html.theme-transitioning *::after {
   gap: 0.5rem;
   padding: 0.55rem 0.85rem;
   font-size: 0.75rem;
-  font-family: 'Satoshi', sans-serif;
+  font-family: 'Instrument Sans', sans-serif;
   font-weight: 500;
   border-radius: var(--radius-input);
   background-color: var(--surface-inset);
@@ -858,7 +851,7 @@ html.theme-transitioning *::after {
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   font-size: 0.75rem;
-  font-family: 'Satoshi', sans-serif;
+  font-family: 'Instrument Sans', sans-serif;
   color: var(--text-primary);
   cursor: pointer;
   transition: background-color 0.12s ease, color 0.12s ease;
