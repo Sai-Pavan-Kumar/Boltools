@@ -275,7 +275,16 @@ function updateBreadcrumb(crumbs) {
           onclickStr = `navigateToCategory('${cat.id}')`;
         }
       }
-      html += `<button onclick="${onclickStr}" class="text-xs font-medium text-[var(--brand-primary)] hover:underline cursor-pointer">${crumb}</button>`;
+      let actionAttr = '';
+      if (crumb === 'Home') actionAttr = 'data-action="nav" data-view="home"';
+      else if (crumb === 'Tool Hub') actionAttr = 'data-action="nav" data-view="tool_hub"';
+      else if (crumb === 'Favorites') actionAttr = 'data-action="nav" data-view="favorites"';
+      else if (crumb === 'Settings') actionAttr = 'data-action="nav" data-view="settings"';
+      else {
+        const cat = state.categories.find(c => c.name.toLowerCase() === crumb.toLowerCase());
+        if (cat) actionAttr = `data-action="nav-category" data-cat="${escapeAttr(cat.id)}"`;
+      }
+      html += `<button ${actionAttr} class="text-xs font-medium text-[var(--brand-primary)] hover:underline cursor-pointer">${escapeHtml(crumb)}</button>`;
     }
   });
 
@@ -305,7 +314,7 @@ function renderHome(container) {
   const recentRows = recentList.length > 0 ? recentList.map(t => {
     const isUpdate = t.update_available || t.status === 'update_available';
     return `
-      <div onclick="navigateTo('tool_studio', '${t.id}')" class="group p-3 px-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border ${isUpdate ? 'border-amber-500/30' : 'border-[var(--border-subtle)]'} hover:border-[var(--brand-primary)] cursor-pointer transition-all flex items-center justify-between gap-3">
+      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-3 px-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border ${isUpdate ? 'border-amber-500/30' : 'border-[var(--border-subtle)]'} hover:border-[var(--brand-primary)] cursor-pointer transition-all flex items-center justify-between gap-3">
         <div class="flex items-center gap-3 min-w-0">
           <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] shrink-0 group-hover:scale-105 transition-transform">
             ${getIcon(t.icon, 'w-4 h-4')}
@@ -335,7 +344,7 @@ function renderHome(container) {
   const bentoGrid = readyTools.length > 0 ? readyTools.map(t => {
     const isUpdate = t.update_available || t.status === 'update_available';
     return `
-      <div onclick="navigateTo('tool_studio', '${t.id}')" class="group p-5 rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border ${isUpdate ? 'border-amber-500/40' : 'border-[var(--border-subtle)]'} hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden min-h-[180px]">
+      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-5 rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border ${isUpdate ? 'border-amber-500/40' : 'border-[var(--border-subtle)]'} hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden min-h-[180px]">
         ${isUpdate ? `
           <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg tracking-wider uppercase flex items-center gap-1">
             ${getIcon('refresh-cw', 'w-2.5 h-2.5')} Update v${t.remote_version || t.version}
@@ -362,7 +371,7 @@ function renderHome(container) {
   }).join('') : `
     <div class="col-span-full p-8 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center">
       <p class="text-xs text-[var(--text-secondary)] mb-2">No utilities currently installed on this PC.</p>
-      <button onclick="navigateTo('tool_hub')" class="btn-primary px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white inline-flex items-center gap-1.5">
+      <button data-action="nav" data-view="tool_hub" class="btn-primary px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white inline-flex items-center gap-1.5 cursor-pointer">
         <span>Browse Tool Hub</span>
         ${getIcon('arrow-right', 'w-3 h-3')}
       </button>
@@ -380,7 +389,7 @@ function renderHome(container) {
           <p class="text-[11px] text-[var(--text-secondary)] mt-0.5">Engine enhancements and bug fixes are ready. Update in 1 click without re-downloading software.</p>
         </div>
       </div>
-      <button onclick="setHubTab('Updates'); navigateTo('tool_hub');" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shrink-0 cursor-pointer shadow-sm">
+      <button data-action="open-updates-hub" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shrink-0 cursor-pointer shadow-sm">
         Review & Update
       </button>
     </div>
@@ -400,7 +409,7 @@ function renderHome(container) {
       <div>
         <div class="flex items-center justify-between mb-2.5">
           <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">Recent Utilities</span>
-          <button onclick="navigateTo('tool_hub')" class="text-xs font-medium text-[var(--brand-primary)] hover:underline flex items-center gap-1">
+          <button data-action="nav" data-view="tool_hub" class="text-xs font-medium text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
             <span>Browse All</span>
             ${getIcon('chevron-right', 'w-3 h-3')}
           </button>
@@ -441,7 +450,7 @@ function renderCategoryView(container, categoryId) {
   const toolCardsHtml = catTools.length > 0 ? catTools.map(t => {
     const isInstalled = t.status === 'installed';
     return `
-      <div onclick="navigateTo('tool_studio', '${t.id}')" class="group p-5 rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden min-h-[180px]">
+      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-5 rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden min-h-[180px]">
         <div>
           <div class="flex items-center justify-between gap-2 mb-3">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--surface-inset)] group-hover:scale-105 transition-transform shadow-xs" style="color: ${cat.accent};">
@@ -460,11 +469,11 @@ function renderCategoryView(container, categoryId) {
             ${getIcon('arrow-right', 'w-3 h-3')}
           </span>
           ${isInstalled ? `
-            <button onclick="event.stopPropagation(); openUninstallModal('${t.id}', '${t.name}')" class="px-2 py-1 text-[11px] font-normal rounded-md text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors">
+            <button data-action="uninstall-tool" data-tool-id="${escapeAttr(t.id)}" data-tool-name="${escapeAttr(t.name)}" class="px-2 py-1 text-[11px] font-normal rounded-md text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors">
               Uninstall
             </button>
           ` : `
-            <button onclick="event.stopPropagation(); installTool('${t.id}')" class="px-2.5 py-1 text-[11px] font-medium rounded-md bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-hover)] transition-all">
+            <button data-action="install-tool" data-tool-id="${escapeAttr(t.id)}" class="px-2.5 py-1 text-[11px] font-medium rounded-md bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-hover)] transition-all">
               Install
             </button>
           `}
@@ -499,7 +508,7 @@ function renderCategoryView(container, categoryId) {
       <div>
         <div class="flex items-center justify-between mb-3">
           <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">Utilities in this category</span>
-          <button onclick="navigateTo('tool_hub')" class="text-xs text-[var(--brand-primary)] hover:underline flex items-center gap-1">
+          <button data-action="nav" data-view="tool_hub" class="text-xs text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
             <span>View All Tools</span>
             ${getIcon('chevron-right', 'w-3 h-3')}
           </button>
@@ -538,30 +547,30 @@ function renderToolHubCard(t, index) {
           <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${t.category_name}</span>
           <span class="text-[10px] font-mono text-[var(--text-muted)]">v${installedVer || remoteVer}</span>
         </div>
-        <h4 class="text-sm font-semibold text-[var(--text-primary)] truncate">${t.name}</h4>
-        <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${t.description}</p>
+        <h4 class="text-sm font-semibold text-[var(--text-primary)] truncate">${escapeHtml(t.name)}</h4>
+        <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${escapeHtml(t.description)}</p>
       </div>
       <div class="mt-3 pt-2.5 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
         ${isUpdate ? `
           <div class="flex items-center gap-2 w-full justify-between">
-            <button id="btn-action-${t.id}" onclick="handleInstallOrUpdateTool('${t.id}', true)" class="btn-primary px-3 py-1 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all flex items-center gap-1.5 cursor-pointer">
+            <button id="btn-action-${escapeAttr(t.id)}" data-action="update-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3 py-1 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all flex items-center gap-1.5 cursor-pointer">
               ${getIcon('download', 'w-3 h-3')}
               <span>Update v${remoteVer}</span>
             </button>
-            <button onclick="navigateTo('tool_studio', '${t.id}')" class="px-2 py-1 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-colors cursor-pointer">
+            <button data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="px-2 py-1 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-colors cursor-pointer">
               <span>Launch</span>
             </button>
           </div>
         ` : (isInstalled ? `
-          <button onclick="navigateTo('tool_studio', '${t.id}')" class="btn-primary px-3 py-1 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 cursor-pointer">
+          <button data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3 py-1 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 cursor-pointer">
             <span>Open Tool</span>
             ${getIcon('arrow-right', 'w-3 h-3')}
           </button>
-          <button onclick="openUninstallModal('${t.id}', '${t.name}')" class="px-2 py-1 text-xs font-normal rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer">
+          <button data-action="uninstall-tool" data-tool-id="${escapeAttr(t.id)}" data-tool-name="${escapeAttr(t.name)}" class="px-2 py-1 text-xs font-normal rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer">
             Uninstall
           </button>
         ` : `
-          <button id="btn-action-${t.id}" onclick="handleInstallOrUpdateTool('${t.id}', false)" class="btn-primary px-3 py-1 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 cursor-pointer">
+          <button id="btn-action-${escapeAttr(t.id)}" data-action="install-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3 py-1 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 cursor-pointer">
             ${getIcon('download', 'w-3 h-3')}
             <span>+ Install</span>
           </button>
@@ -601,7 +610,7 @@ function renderToolHub(container) {
         <!-- Segmented Tabs -->
         <div class="flex items-center gap-1 p-1 bg-[var(--surface-inset)] rounded-lg shrink-0 overflow-x-auto max-w-full">
           ${hubTabs.map(tab => `
-            <button onclick="setHubTab('${tab.id}')" class="px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${filterTab === tab.id ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}">
+            <button data-action="set-hub-tab" data-tab="${escapeAttr(tab.id)}" class="px-3 py-1 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 cursor-pointer ${filterTab === tab.id ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}">
               <span>${tab.label}</span>
               ${tab.badge && filterTab !== tab.id ? `<span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>` : ''}
             </button>
@@ -618,7 +627,7 @@ function renderToolHub(container) {
             id="hub-search-input"
             value="${state.searchQuery}"
             placeholder="Filter utilities by name or keyword..."
-            oninput="handleHubSearch(this.value)"
+            data-action="hub-search-input"
             class="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--brand-primary)]"
           />
         </div>
@@ -720,7 +729,7 @@ function renderFavorites(container) {
         </div>
         <h3 class="text-base font-semibold text-[var(--text-primary)]">No Pinned Favorites Yet</h3>
         <p class="text-xs text-[var(--text-secondary)] max-w-sm mx-auto mt-1 mb-5">Pin frequently used utilities using the heart icon inside any tool studio for instant access.</p>
-        <button onclick="navigateTo('tool_hub')" class="btn-primary px-4 py-2 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all inline-flex items-center gap-1.5">
+        <button data-action="nav" data-view="tool_hub" class="btn-primary px-4 py-2 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer">
           <span>Browse Tool Hub</span>
           ${getIcon('arrow-right', 'w-3.5 h-3.5')}
         </button>
@@ -739,7 +748,7 @@ function renderFavorites(container) {
             </div>
             <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${t.category_name}</span>
           </div>
-          <button onclick="handleToggleFavorite('${t.id}')" class="text-red-500 hover:scale-110 transition-transform">
+          <button data-action="toggle-fav" data-tool-id="${escapeAttr(t.id)}" class="text-red-500 hover:scale-110 transition-transform">
             ${getIcon('heartFilled', 'w-4 h-4')}
           </button>
         </div>
@@ -747,7 +756,7 @@ function renderFavorites(container) {
         <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">${t.description}</p>
       </div>
       <div class="mt-4 pt-3 border-t border-[var(--border-subtle)]">
-        <button onclick="navigateTo('tool_studio', '${t.id}')" class="btn-primary px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-sm">
+        <button data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
           <span>Launch Utility</span>
           ${getIcon('arrow-right', 'w-3 h-3')}
         </button>
@@ -796,7 +805,7 @@ function renderSettings(container) {
           </div>
           <div class="flex items-center gap-1 p-1 bg-[var(--surface-inset)] rounded-lg">
             ${['dark', 'light'].map(m => `
-              <button onclick="applyTheme('${m}')" class="px-3 py-1 text-xs font-medium rounded-md capitalize transition-all ${state.theme === m ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}">
+              <button data-action="set-theme" data-theme="${escapeAttr(m)}" class="px-3 py-1 text-xs font-medium rounded-md capitalize transition-all ${state.theme === m ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}">
                 ${m}
               </button>
             `).join('')}
@@ -812,7 +821,7 @@ function renderSettings(container) {
           <p class="text-xs text-[var(--text-secondary)] mt-0.5">Where converted and compressed files will be saved by default.</p>
           <div class="flex items-center gap-2 mt-3">
             <input type="text" id="settings-out-dir" value="${state.defaultDownloads}" readonly class="w-full px-3 py-2 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)]" />
-            <button onclick="handleBrowseDefaultFolder()" class="px-3.5 py-2 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] shrink-0 transition-colors">
+            <button data-action="browse-default-folder" class="px-3.5 py-2 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] shrink-0 transition-colors cursor-pointer">
               Browse...
             </button>
           </div>
@@ -827,7 +836,7 @@ function renderSettings(container) {
             <h4 class="text-sm font-semibold text-[var(--text-primary)]">Clean Local Cache</h4>
             <p class="text-xs text-[var(--text-secondary)] mt-0.5">Wipes temporary processing files without touching your presets.</p>
           </div>
-          <button onclick="handleCleanCache(this)" class="px-3.5 py-2 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors">
+          <button data-action="clean-cache" class="px-3.5 py-2 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors cursor-pointer">
             Clean Cache
           </button>
         </div>
@@ -887,19 +896,19 @@ function renderToolStudio(container, toolId) {
       <!-- Studio Header Bar -->
       <div class="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)] shrink-0">
         <div class="flex items-center gap-3">
-          <button onclick="navigateBack()" class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors">
+          <button data-action="navigate-back" class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors cursor-pointer">
             ${getIcon('arrow-left', 'w-4 h-4')}
           </button>
           <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)]">
             ${getIcon(tool.icon, 'w-5 h-5')}
           </div>
           <div>
-            <h3 class="text-base font-bold font-display text-[var(--text-primary)]">${tool.name}</h3>
-            <p class="text-xs text-[var(--text-secondary)] line-clamp-1">${tool.description}</p>
+            <h3 class="text-base font-bold font-display text-[var(--text-primary)]">${escapeHtml(tool.name)}</h3>
+            <p class="text-xs text-[var(--text-secondary)] line-clamp-1">${escapeHtml(tool.description)}</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button onclick="handleStudioToggleFavorite('${tool.id}', this)" class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] transition-colors">
+          <button data-action="studio-toggle-fav" data-tool-id="${escapeAttr(tool.id)}" class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] transition-colors">
             ${isFav ? getIcon('heartFilled', 'w-4 h-4') : getIcon('heart', 'w-4 h-4')}
           </button>
         </div>
@@ -912,7 +921,7 @@ function renderToolStudio(container, toolId) {
           <!-- Dropzone -->
           <div 
             id="studio-dropzone" 
-            onclick="handleStudioBrowseFiles('${tool.id}')"
+            data-action="studio-browse-files" data-tool-id="${escapeAttr(tool.id)}"
             class="p-7 rounded-xl bg-[var(--surface-card)] border-2 border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer text-center transition-all group"
           >
             <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform mb-3">
@@ -926,7 +935,7 @@ function renderToolStudio(container, toolId) {
           <div id="studio-files-wrap" class="hidden space-y-2 p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)]">
             <div class="flex items-center justify-between text-xs">
               <span id="studio-files-count" class="font-semibold text-[var(--text-primary)]">0 files selected</span>
-              <button onclick="clearStudioFiles()" class="text-red-500 hover:underline">Clear all</button>
+              <button data-action="clear-studio-files" class="text-red-500 hover:underline cursor-pointer">Clear all</button>
             </div>
             <div id="studio-files-list" class="space-y-1.5 max-h-36 overflow-y-auto"></div>
           </div>
@@ -940,8 +949,8 @@ function renderToolStudio(container, toolId) {
           <div class="p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-1.5">
             <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Save Destination</span>
             <div class="flex items-center gap-2">
-              <input type="text" id="studio-out-folder" value="${state.customOutputDir || state.defaultDownloads}" oninput="state.customOutputDir = this.value" class="w-full px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] cursor-text" />
-              <button onclick="handleStudioBrowseOutFolder()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] shrink-0 transition-colors">
+              <input type="text" id="studio-out-folder" value="${state.customOutputDir || state.defaultDownloads}" data-action="studio-out-folder-input" class="w-full px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] cursor-text" />
+              <button data-action="studio-browse-out-folder" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] shrink-0 transition-colors cursor-pointer">
                 Browse
               </button>
             </div>
@@ -950,7 +959,7 @@ function renderToolStudio(container, toolId) {
           <!-- Primary Execute Action CTA -->
           <button 
             id="studio-btn-execute"
-            onclick="handleExecuteTool('${tool.id}')"
+            data-action="studio-execute" data-tool-id="${escapeAttr(tool.id)}"
             class="btn-primary w-full py-3 text-xs font-semibold rounded-xl bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>${tool.id === 'subtitle_animator' ? 'Export Video with Subtitles' : 'Start Processing'}</span>
@@ -987,10 +996,10 @@ function renderToolStudio(container, toolId) {
 
               <!-- Playback & Scrubbing Controls -->
               <div class="flex items-center gap-2 pt-1">
-                <button id="sub-btn-playpause" onclick="toggleSubtitleVideoPlay()" class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-hover)] shrink-0 transition-colors cursor-pointer">
+                <button id="sub-btn-playpause" data-action="sub-toggle-play" class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-hover)] shrink-0 transition-colors cursor-pointer">
                   ${getIcon('play', 'w-3.5 h-3.5')}
                 </button>
-                <input type="range" id="sub-video-scrubber" min="0" max="8" step="0.05" value="0.8" oninput="handleSubtitleScrub(this.value)" class="w-full accent-[var(--brand-primary)] cursor-pointer" />
+                <input type="range" id="sub-video-scrubber" min="0" max="8" step="0.05" value="0.8" data-action="sub-scrubber-input" class="w-full accent-[var(--brand-primary)] cursor-pointer" />
                 <span id="sub-dur-label" class="text-[11px] font-medium tabular-nums text-[var(--text-secondary)] shrink-0">00:08</span>
               </div>
             </div>
@@ -1004,7 +1013,7 @@ function renderToolStudio(container, toolId) {
                   <span id="sub-cues-badge" class="px-1.5 py-0.5 rounded-full text-[10px] bg-[var(--surface-inset)] text-[var(--text-muted)] font-medium tabular-nums">0 cues</span>
                 </div>
                 <div class="flex items-center gap-1.5">
-                  <button onclick="addSubtitleCue()" class="px-2 py-1 rounded bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[11px] font-medium text-[var(--text-primary)] flex items-center gap-1 cursor-pointer transition-colors">
+                  <button data-action="sub-add-cue" class="px-2 py-1 rounded bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[11px] font-medium text-[var(--text-primary)] flex items-center gap-1 cursor-pointer transition-colors">
                     ${getIcon('plus', 'w-3 h-3')}
                     <span>Add Cue</span>
                   </button>
@@ -1048,7 +1057,7 @@ function renderToolStudio(container, toolId) {
             <div class="w-full bg-[var(--surface-inset)] h-2 rounded-full overflow-hidden">
               <div id="studio-progress-fill" class="bg-[var(--brand-primary)] h-full w-0 transition-all duration-200"></div>
             </div>
-            <button onclick="handleCancelTool()" class="w-full py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer">
+            <button data-action="cancel-tool" class="w-full py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer">
               Cancel Operation
             </button>
           </div>
@@ -1132,7 +1141,7 @@ function renderToolSpecificOptions(toolId) {
         ${['Balanced', 'High Quality', 'Small Size', 'Custom'].map(m => `
           <button 
             type="button"
-            onclick="setStudioMode('${m}')"
+            data-action="set-studio-mode" data-mode="${escapeAttr(m)}"
             class="p-2.5 rounded-lg border text-left text-xs transition-all ${state.activeToolOptions.mode === m ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
           >
             ${m}
@@ -1164,7 +1173,7 @@ function renderToolSpecificOptions(toolId) {
             <span class="font-semibold text-[var(--text-muted)] uppercase tracking-wider">Quality</span>
             <span id="qual-val-lbl" class="font-bold text-[var(--brand-primary)]">${qual}%</span>
           </div>
-          <input type="range" min="40" max="100" value="${qual}" oninput="document.getElementById('qual-val-lbl').innerText = this.value + '%'; state.activeToolOptions.quality = this.value;" class="w-full accent-[var(--brand-primary)]" />
+          <input type="range" min="40" max="100" value="${qual}" data-action="webp-qual-input" class="w-full accent-[var(--brand-primary)]" />
         </div>
         <div>
           <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Max Dimension Limit</span>
@@ -1215,7 +1224,7 @@ function renderToolSpecificOptions(toolId) {
         </div>
         <div>
           <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Text / Tag</span>
-          <input type="text" value="${state.activeToolOptions.text1 || '_v1'}" oninput="state.activeToolOptions.text1 = this.value" class="w-full mt-1.5 px-3 py-2 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)]" />
+          <input type="text" value="${state.activeToolOptions.text1 || '_v1'}" data-action="renamer-text-input" class="w-full mt-1.5 px-3 py-2 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)]" />
         </div>
       </div>
     `;
@@ -1238,7 +1247,7 @@ function renderToolSpecificOptions(toolId) {
             ${presets.map(p => `
               <button
                 type="button"
-                onclick="handleSelectSubtitleStyle('${p.id}')"
+                data-action="sub-select-style" data-style="${escapeAttr(p.id)}"
                 class="p-2.5 rounded-lg border text-left transition-all cursor-pointer ${opts.style === p.id ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)] ring-1 ring-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
               >
                 <div class="text-xs font-bold">${p.name}</div>
@@ -1254,7 +1263,7 @@ function renderToolSpecificOptions(toolId) {
             <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Font Family</span>
             <button 
               type="button" 
-              onclick="handleBrowseCustomFont()" 
+              data-action="sub-browse-font" 
               class="text-[11px] text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer font-medium"
             >
               ${getIcon('plus', 'w-3 h-3')}
@@ -1283,14 +1292,14 @@ function renderToolSpecificOptions(toolId) {
             <div class="p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
               <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase block mb-1">Text Color</span>
               <div class="flex items-center gap-1.5">
-                <input type="color" value="${opts.primary_color || (opts.style === 'white_box' ? '#000000' : '#FFFFFF')}" onchange="setSubtitleColor('primary_color', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                <input type="color" value="${opts.primary_color || (opts.style === 'white_box' ? '#000000' : '#FFFFFF')}" data-action="sub-color-change" data-color-prop="primary_color" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
                 <span class="text-xs font-semibold tabular-nums text-[var(--text-primary)]">${opts.primary_color || (opts.style === 'white_box' ? '#000' : '#FFF')}</span>
               </div>
             </div>
             <div class="p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
               <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase block mb-1">${opts.style === 'white_box' ? 'Tag Background' : 'Box Background'}</span>
               <div class="flex items-center gap-1.5">
-                <input type="color" value="${opts.outline_color || (opts.style === 'white_box' ? '#FFFFFF' : '#0F172A')}" onchange="setSubtitleColor('outline_color', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                <input type="color" value="${opts.outline_color || (opts.style === 'white_box' ? '#FFFFFF' : '#0F172A')}" data-action="sub-color-change" data-color-prop="outline_color" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
                 <span class="text-xs font-semibold tabular-nums text-[var(--text-primary)]">${opts.outline_color || (opts.style === 'white_box' ? '#FFF' : '#0F172A')}</span>
               </div>
             </div>
@@ -1300,21 +1309,21 @@ function renderToolSpecificOptions(toolId) {
             <div class="p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
               <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase block mb-1">Base Text</span>
               <div class="flex items-center gap-1.5">
-                <input type="color" value="${opts.primary_color || '#FFFFFF'}" onchange="setSubtitleColor('primary_color', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                <input type="color" value="${opts.primary_color || '#FFFFFF'}" data-action="sub-color-change" data-color-prop="primary_color" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
                 <span class="text-xs font-semibold tabular-nums text-[var(--text-primary)]">${opts.primary_color || '#FFF'}</span>
               </div>
             </div>
             <div class="p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
               <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase block mb-1">Active Highlight</span>
               <div class="flex items-center gap-1.5">
-                <input type="color" value="${opts.highlight_color || '#FFE600'}" onchange="setSubtitleColor('highlight_color', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                <input type="color" value="${opts.highlight_color || '#FFE600'}" data-action="sub-color-change" data-color-prop="highlight_color" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
                 <span class="text-xs font-semibold tabular-nums text-[var(--text-primary)]">${opts.highlight_color || '#FFE600'}</span>
               </div>
             </div>
             <div class="p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
               <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase block mb-1">Outline Stroke</span>
               <div class="flex items-center gap-1.5">
-                <input type="color" value="${opts.outline_color || '#000000'}" onchange="setSubtitleColor('outline_color', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                <input type="color" value="${opts.outline_color || '#000000'}" data-action="sub-color-change" data-color-prop="outline_color" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
                 <span class="text-xs font-semibold tabular-nums text-[var(--text-primary)]">${opts.outline_color || '#000'}</span>
               </div>
             </div>
@@ -1333,7 +1342,7 @@ function renderToolSpecificOptions(toolId) {
               min="28" 
               max="72" 
               value="${opts.font_size || 48}" 
-              oninput="document.getElementById('sub-fontsize-val').innerText = this.value + 'px'; setSubtitleFontSize(this.value);" 
+              data-action="sub-fontsize-input" 
               class="w-full accent-[var(--brand-primary)] cursor-pointer" 
             />
           </div>
@@ -1346,7 +1355,7 @@ function renderToolSpecificOptions(toolId) {
                 return `
                   <button 
                     type="button" 
-                    onclick="setSubtitlePosition('${pKey}')" 
+                    data-action="sub-set-position" data-pos="${escapeAttr(pKey)}" 
                     class="py-1 px-1.5 rounded text-[11px] font-medium border text-center transition-all cursor-pointer ${isSel ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] text-[var(--brand-primary)] font-bold' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}"
                   >
                     ${p}
@@ -1363,7 +1372,7 @@ function renderToolSpecificOptions(toolId) {
             <input 
               type="checkbox" 
               ${opts.all_caps ? 'checked' : ''} 
-              onchange="setSubtitleAllCaps(this.checked)" 
+              data-action="sub-all-caps-change" 
               class="rounded text-[var(--brand-primary)] accent-[var(--brand-primary)] cursor-pointer" 
             />
             <span class="font-medium text-[var(--text-primary)]">Force UPPERCASE</span>
@@ -1371,7 +1380,7 @@ function renderToolSpecificOptions(toolId) {
           <div class="flex items-center gap-1.5">
             <button 
               type="button" 
-              onclick="loadDemoSubtitleSample()" 
+              data-action="sub-load-demo" 
               class="px-2.5 py-1 rounded-md text-[11px] font-medium bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
             >
               Reset to Demo Cues
@@ -1401,7 +1410,7 @@ function renderCustomDropdown({ id, currentValue, options, onSelect }) {
       <div 
         role="option"
         aria-selected="${isSelected}"
-        onclick="selectCustomDropdownOption('${id}', '${safeVal}', '${safeLbl}', '${onSelect}')"
+        data-action="select-dropdown-option" data-dd-id="${escapeAttr(id)}" data-dd-val="${escapeAttr(val)}" data-dd-lbl="${escapeAttr(lbl)}" data-dd-callback="${escapeAttr(onSelect)}"
         class="custom-dropdown-item ${isSelected ? 'active' : ''}"
       >
         <span class="truncate">${lbl}</span>
@@ -1414,7 +1423,7 @@ function renderCustomDropdown({ id, currentValue, options, onSelect }) {
     <div class="custom-dropdown-container mt-1.5" id="${id}">
       <button 
         type="button"
-        onclick="toggleCustomDropdown('${id}', event)"
+        data-action="toggle-dropdown" data-dd-id="${escapeAttr(id)}"
         class="custom-dropdown-trigger"
       >
         <span class="custom-dropdown-current-label truncate">${currentLabel}</span>
@@ -1655,11 +1664,11 @@ window.onToolComplete = function(data) {
       <h4 class="text-sm font-semibold text-[var(--text-primary)]">Processing Complete!</h4>
       <p class="text-xs text-[var(--text-secondary)] mt-1 mb-5">Your output file was successfully generated.</p>
       <div class="space-y-2">
-        <button onclick="handleOpenOutputFile()" class="btn-primary w-full py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+        <button data-action="open-output-file" class="btn-primary w-full py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer">
           <span>Open Output File</span>
           ${getIcon('arrow-right', 'w-3.5 h-3.5')}
         </button>
-        <button onclick="handleRevealOutputFolder()" class="w-full py-2 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors cursor-pointer">
+        <button data-action="reveal-output-folder" class="w-full py-2 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors cursor-pointer">
           Reveal in Folder
         </button>
       </div>
@@ -2164,20 +2173,20 @@ function renderSubtitleCuesList() {
     <div class="sub-cue-row p-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-inset)] transition-all space-y-1.5" data-cue-id="${cue.id}">
       <div class="flex items-center justify-between text-[11px]">
         <div class="flex items-center gap-1.5">
-          <button onclick="seekSubtitlePreview(${cue.start})" class="px-1.5 py-0.5 rounded bg-[var(--surface-card)] hover:bg-[var(--brand-light)] hover:text-[var(--brand-primary)] text-[var(--text-secondary)] font-semibold tabular-nums transition-colors cursor-pointer border border-[var(--border-subtle)]" title="Click to seek preview">
+          <button data-action="sub-seek-cue" data-cue-start="${cue.start}" class="px-1.5 py-0.5 rounded bg-[var(--surface-card)] hover:bg-[var(--brand-light)] hover:text-[var(--brand-primary)] text-[var(--text-secondary)] font-semibold tabular-nums transition-colors cursor-pointer border border-[var(--border-subtle)]" title="Click to seek preview">
             ${formatDisplayTime(cue.start)} → ${formatDisplayTime(cue.end)}
           </button>
-          <button onclick="nudgeCueTime(${cue.id}, -0.1)" class="px-1.5 py-0.5 rounded bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] text-[10px] text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-pointer" title="Nudge back 0.1s">-0.1s</button>
-          <button onclick="nudgeCueTime(${cue.id}, 0.1)" class="px-1.5 py-0.5 rounded bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] text-[10px] text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-pointer" title="Nudge forward 0.1s">+0.1s</button>
+          <button data-action="sub-nudge-cue" data-cue-id="${cue.id}" data-nudge="-0.1" class="px-1.5 py-0.5 rounded bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] text-[10px] text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-pointer" title="Nudge back 0.1s">-0.1s</button>
+          <button data-action="sub-nudge-cue" data-cue-id="${cue.id}" data-nudge="0.1" class="px-1.5 py-0.5 rounded bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] text-[10px] text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-pointer" title="Nudge forward 0.1s">+0.1s</button>
         </div>
-        <button onclick="deleteSubtitleCue(${cue.id})" class="text-red-400 hover:text-red-500 text-[11px] p-1 cursor-pointer transition-colors" title="Delete Cue">
+        <button data-action="sub-delete-cue" data-cue-id="${cue.id}" class="text-red-400 hover:text-red-500 text-[11px] p-1 cursor-pointer transition-colors" title="Delete Cue">
           ${getIcon('trash', 'w-3 h-3')}
         </button>
       </div>
       <input 
         type="text" 
         value="${cue.text.replace(/"/g, '&quot;')}" 
-        oninput="updateSubtitleCueText(${cue.id}, this.value)" 
+        data-action="sub-cue-text-input" data-cue-id="${cue.id}" 
         class="w-full px-2 py-1 text-xs rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)]"
         placeholder="Edit subtitle text..."
       />
@@ -2363,7 +2372,7 @@ function renderPaletteResults(query) {
   }
 
   list.innerHTML = matched.map((t, idx) => `
-    <div onclick="closeCommandPalette(); navigateTo('tool_studio', '${t.id}')" class="p-2.5 rounded-lg hover:bg-[var(--surface-inset)] cursor-pointer flex items-center justify-between transition-colors">
+    <div data-action="cmd-select-tool" data-tool-id="${escapeAttr(t.id)}" class="p-2.5 rounded-lg hover:bg-[var(--surface-inset)] cursor-pointer flex items-center justify-between transition-colors">
       <div class="flex items-center gap-2.5">
         <div class="w-7 h-7 rounded-md flex items-center justify-center bg-[var(--surface-card)] text-[var(--brand-primary)]">
           ${getIcon(t.icon, 'w-3.5 h-3.5')}
@@ -2467,11 +2476,11 @@ function openAnnouncementsModal() {
         <span class="px-2 py-0.5 text-[9px] font-bold rounded bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${a.tag || 'UPDATE'}</span>
         <span class="text-[10px] text-[var(--text-muted)]">${a.date || ''}</span>
       </div>
-      <h4 class="text-xs font-semibold text-[var(--text-primary)]">${a.title}</h4>
-      <p class="text-[11px] text-[var(--text-secondary)] leading-relaxed">${a.description}</p>
+      <h4 class="text-xs font-semibold text-[var(--text-primary)]">${escapeHtml(a.title)}</h4>
+      <p class="text-[11px] text-[var(--text-secondary)] leading-relaxed">${escapeHtml(a.description)}</p>
       ${a.cta_action ? `
         <div class="pt-1">
-          <button onclick="handleAnnouncementAction('${a.cta_action}', '${a.cta_target || ''}')" class="text-[11px] font-medium text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1 cursor-pointer">
+          <button data-action="announcement-cta" data-cta-action="${escapeAttr(a.cta_action)}" data-cta-target="${escapeAttr(a.cta_target || '')}" class="text-[11px] font-medium text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1 cursor-pointer">
             <span>${a.cta_text || 'Open in App'}</span>
             ${getIcon('chevron-right', 'w-3 h-3')}
           </button>
@@ -2550,16 +2559,330 @@ function handleAnnouncementAction(action, target) {
 async function initApp() {
   applyTheme(state.theme);
 
-  // Bind shortcuts & global click dismissals
+  // Central Delegated Event Dispatcher (Zero inline handlers, Strict CSP compliance)
   document.addEventListener('click', (e) => {
+    // 1. Dismiss dropdowns if click is outside
     if (!e.target.closest('.custom-dropdown-container')) {
       closeAllCustomDropdowns();
     }
-    const cmdModal = document.getElementById('modal-command-palette');
-    if (cmdModal && !cmdModal.classList.contains('hidden')) {
-      if (e.target === cmdModal) {
-        closeCommandPalette();
+
+    // 2. Handle data-action click delegation
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+
+    const action = el.dataset.action;
+
+    switch (action) {
+      case 'stop-prop':
+        e.stopPropagation();
+        break;
+
+      case 'nav': {
+        const view = el.dataset.view;
+        const arg = el.dataset.arg || null;
+        if (view) navigateTo(view, arg);
+        break;
       }
+
+      case 'nav-category': {
+        const cat = el.dataset.cat;
+        if (cat) navigateToCategory(cat);
+        break;
+      }
+
+      case 'open-tool': {
+        const tid = el.dataset.toolId;
+        if (tid) navigateTo('tool_studio', tid);
+        break;
+      }
+
+      case 'open-updates-hub':
+        setHubTab('Updates');
+        navigateTo('tool_hub');
+        break;
+
+      case 'install-tool': {
+        e.stopPropagation();
+        const tid = el.dataset.toolId;
+        if (tid) installTool(tid);
+        break;
+      }
+
+      case 'update-tool': {
+        e.stopPropagation();
+        const tid = el.dataset.toolId;
+        if (tid) handleInstallOrUpdateTool(tid, true);
+        break;
+      }
+
+      case 'uninstall-tool': {
+        e.stopPropagation();
+        const tid = el.dataset.toolId;
+        const tname = el.dataset.toolName || '';
+        if (tid) openUninstallModal(tid, tname);
+        break;
+      }
+
+      case 'set-hub-tab': {
+        const tab = el.dataset.tab;
+        if (tab) setHubTab(tab);
+        break;
+      }
+
+      case 'toggle-fav': {
+        e.stopPropagation();
+        const tid = el.dataset.toolId;
+        if (tid) handleToggleFavorite(tid);
+        break;
+      }
+
+      case 'set-theme': {
+        const theme = el.dataset.theme;
+        if (theme) applyTheme(theme);
+        break;
+      }
+
+      case 'toggle-theme':
+        applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+        break;
+
+      case 'browse-default-folder':
+        handleBrowseDefaultFolder();
+        break;
+
+      case 'clean-cache':
+        handleCleanCache(el);
+        break;
+
+      case 'navigate-back':
+        navigateBack();
+        break;
+
+      case 'studio-toggle-fav': {
+        const tid = el.dataset.toolId;
+        if (tid) handleStudioToggleFavorite(tid, el);
+        break;
+      }
+
+      case 'studio-browse-files': {
+        const tid = el.dataset.toolId;
+        if (tid) handleStudioBrowseFiles(tid);
+        break;
+      }
+
+      case 'clear-studio-files':
+        clearStudioFiles();
+        break;
+
+      case 'studio-browse-out-folder':
+        handleStudioBrowseOutFolder();
+        break;
+
+      case 'studio-execute': {
+        const tid = el.dataset.toolId;
+        if (tid) handleExecuteTool(tid);
+        break;
+      }
+
+      case 'cancel-tool':
+        handleCancelTool();
+        break;
+
+      case 'open-output-file':
+        handleOpenOutputFile();
+        break;
+
+      case 'reveal-output-folder':
+        handleRevealOutputFolder();
+        break;
+
+      case 'set-studio-mode': {
+        const mode = el.dataset.mode;
+        if (mode) setStudioMode(mode);
+        break;
+      }
+
+      case 'sub-select-style': {
+        const style = el.dataset.style;
+        if (style) handleSelectSubtitleStyle(style);
+        break;
+      }
+
+      case 'sub-browse-font':
+        handleBrowseCustomFont();
+        break;
+
+      case 'sub-set-position': {
+        const pos = el.dataset.pos;
+        if (pos) setSubtitlePosition(pos);
+        break;
+      }
+
+      case 'sub-load-demo':
+        loadDemoSubtitleSample();
+        break;
+
+      case 'sub-toggle-play':
+        toggleSubtitleVideoPlay();
+        break;
+
+      case 'sub-add-cue':
+        addSubtitleCue();
+        break;
+
+      case 'sub-seek-cue': {
+        const start = parseFloat(el.dataset.cueStart);
+        if (!isNaN(start)) seekSubtitlePreview(start);
+        break;
+      }
+
+      case 'sub-nudge-cue': {
+        const cueId = parseInt(el.dataset.cueId, 10);
+        const delta = parseFloat(el.dataset.nudge);
+        if (!isNaN(cueId) && !isNaN(delta)) nudgeCueTime(cueId, delta);
+        break;
+      }
+
+      case 'sub-delete-cue': {
+        const cueId = parseInt(el.dataset.cueId, 10);
+        if (!isNaN(cueId)) deleteSubtitleCue(cueId);
+        break;
+      }
+
+      case 'toggle-dropdown': {
+        const id = el.dataset.ddId;
+        if (id) toggleCustomDropdown(id, e);
+        break;
+      }
+
+      case 'select-dropdown-option': {
+        const id = el.dataset.ddId;
+        const val = el.dataset.ddVal;
+        const lbl = el.dataset.ddLbl;
+        const cb = el.dataset.ddCallback;
+        if (id) selectCustomDropdownOption(id, val, lbl, cb);
+        break;
+      }
+
+      case 'open-cmd-palette':
+        openCommandPalette();
+        break;
+
+      case 'close-cmd':
+      case 'close-cmd-backdrop':
+        closeCommandPalette();
+        break;
+
+      case 'cmd-select-tool': {
+        const tid = el.dataset.toolId;
+        closeCommandPalette();
+        if (tid) navigateTo('tool_studio', tid);
+        break;
+      }
+
+      case 'toggle-announcements':
+        openAnnouncementsModal();
+        break;
+
+      case 'close-announcements':
+      case 'close-announcements-backdrop':
+        closeAnnouncementsModal();
+        break;
+
+      case 'announcement-cta': {
+        const ctaAction = el.dataset.ctaAction;
+        const ctaTarget = el.dataset.ctaTarget;
+        handleAnnouncementAction(ctaAction, ctaTarget);
+        break;
+      }
+
+      case 'close-uninstall':
+      case 'close-uninstall-backdrop':
+        closeUninstallModal();
+        break;
+
+      case 'confirm-uninstall': {
+        const purge = el.dataset.purge === 'true';
+        confirmUninstall(purge);
+        break;
+      }
+
+      default:
+        break;
+    }
+  });
+
+  // Delegated Input Dispatcher
+  document.addEventListener('input', (e) => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+
+    const action = el.dataset.action;
+    switch (action) {
+      case 'cmd-palette-input':
+        renderPaletteResults(el.value);
+        break;
+
+      case 'hub-search-input':
+        handleHubSearch(el.value);
+        break;
+
+      case 'studio-out-folder-input':
+        state.customOutputDir = el.value;
+        break;
+
+      case 'webp-qual-input': {
+        const lbl = document.getElementById('qual-val-lbl');
+        if (lbl) lbl.innerText = el.value + '%';
+        state.activeToolOptions.quality = el.value;
+        break;
+      }
+
+      case 'renamer-text-input':
+        state.activeToolOptions.text1 = el.value;
+        break;
+
+      case 'sub-scrubber-input':
+        handleSubtitleScrub(el.value);
+        break;
+
+      case 'sub-fontsize-input': {
+        const lbl = document.getElementById('sub-fontsize-val');
+        if (lbl) lbl.innerText = el.value + 'px';
+        setSubtitleFontSize(el.value);
+        break;
+      }
+
+      case 'sub-cue-text-input': {
+        const cueId = parseInt(el.dataset.cueId, 10);
+        if (!isNaN(cueId)) updateSubtitleCueText(cueId, el.value);
+        break;
+      }
+
+      default:
+        break;
+    }
+  });
+
+  // Delegated Change Dispatcher
+  document.addEventListener('change', (e) => {
+    const el = e.target.closest('[data-action]');
+    if (!el) return;
+
+    const action = el.dataset.action;
+    switch (action) {
+      case 'sub-color-change': {
+        const prop = el.dataset.colorProp;
+        if (prop) setSubtitleColor(prop, el.value);
+        break;
+      }
+
+      case 'sub-all-caps-change':
+        setSubtitleAllCaps(el.checked);
+        break;
+
+      default:
+        break;
     }
   });
 

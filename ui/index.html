@@ -6,24 +6,17 @@
   <title>Boltools — Built by The SurfBoard</title>
   <link rel="icon" type="image/x-icon" href="assets/boltools.ico">
   
-  <!-- Tailwind CSS CDN (cached locally via WebView2) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Satoshi', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-            display: ['Satoshi', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-            mono: ['Satoshi', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
-          }
-        }
-      }
-    }
-  </script>
+  <!-- Content Security Policy: Strict 100% Offline Resilience (Zero Remote Network Requests, Strict Self Scripts) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; img-src 'self' data:;">
 
-  <!-- Synchronized SurfBoard Design System Tokens -->
+  <!-- Preload Critical Offline Fonts -->
+  <link rel="preload" href="assets/fonts/InstrumentSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/DMMono-Regular.woff2" as="font" type="font/woff2" crossorigin>
+
+  <!-- Precompiled Local Tailwind CSS (Offline, 23.8 KB Minified) -->
+  <link rel="stylesheet" href="css/tailwind.min.css">
+
+  <!-- Synchronized SurfBoard Design System Tokens & Local @font-face -->
   <link rel="stylesheet" href="css/styles.css">
 
   <style>
@@ -71,7 +64,7 @@
     <div class="flex items-center gap-2">
       <!-- Search Trigger Pill -->
       <button 
-        onclick="openCommandPalette()"
+        data-action="open-cmd-palette"
         class="flex items-center gap-3 px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-muted)] transition-all cursor-pointer"
       >
         <span>Search utilities...</span>
@@ -81,7 +74,7 @@
       <!-- Notification Bell -->
       <button 
         id="btn-bell"
-        onclick="toggleAnnouncementsModal()" 
+        data-action="toggle-announcements" 
         title="Updates & Announcements"
         class="relative w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
       >
@@ -92,9 +85,9 @@
       <!-- Theme Switcher -->
       <button 
         id="btn-theme-toggle"
-        onclick="toggleTheme()" 
+        data-action="toggle-theme" 
         title="Toggle Dark / Light Theme"
-        class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+        class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
       </button>
@@ -109,7 +102,7 @@
     <aside class="w-56 bg-[var(--surface-sidebar)] border-r border-[var(--border-subtle)] flex flex-col justify-between shrink-0 p-3">
       <div class="space-y-4">
         <!-- Monogram Brand Row -->
-        <div onclick="navigateTo('home')" class="flex items-center justify-between px-2 py-1 cursor-pointer">
+        <div data-action="nav" data-view="home" class="flex items-center justify-between px-2 py-1 cursor-pointer">
           <div class="flex items-center gap-2.5">
             <img src="assets/Boltools_logo.webp" alt="Boltools" class="w-6 h-6 object-contain" />
             <div>
@@ -126,22 +119,22 @@
         <nav class="space-y-1">
           <span class="px-2 text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">Navigation</span>
           
-          <button onclick="navigateTo('home')" data-key="home" class="sidebar-nav-btn active w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+          <button data-action="nav" data-view="home" data-key="home" class="sidebar-nav-btn active w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             <span>Home</span>
           </button>
 
-          <button onclick="navigateTo('tool_hub')" data-key="tools" class="sidebar-nav-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+          <button data-action="nav" data-view="tool_hub" data-key="tools" class="sidebar-nav-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
             <span>Tool Hub</span>
           </button>
 
-          <button onclick="navigateTo('favorites')" data-key="favorites" class="sidebar-nav-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+          <button data-action="nav" data-view="favorites" data-key="favorites" class="sidebar-nav-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
             <span>Favorites</span>
           </button>
 
-          <button onclick="navigateTo('settings')" data-key="settings" class="sidebar-nav-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+          <button data-action="nav" data-view="settings" data-key="settings" class="sidebar-nav-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
             <span>Settings</span>
           </button>
@@ -150,19 +143,19 @@
           <div class="pt-3">
             <span class="px-2 text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">Categories</span>
             <div class="mt-1 space-y-1">
-              <button onclick="navigateToCategory('video')" data-cat="video" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+              <button data-action="nav-category" data-cat="video" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><polygon points="23 7 16 12 23 17 23 7"/><rect width="14" height="14" x="1" y="5" rx="2" ry="2"/></svg>
                 <span class="truncate">Video & Media</span>
               </button>
-              <button onclick="navigateToCategory('pdf')" data-cat="pdf" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+              <button data-action="nav-category" data-cat="pdf" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                 <span class="truncate">Documents & PDF</span>
               </button>
-              <button onclick="navigateToCategory('image')" data-cat="image" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+              <button data-action="nav-category" data-cat="image" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                 <span class="truncate">Images & Visuals</span>
               </button>
-              <button onclick="navigateToCategory('system')" data-cat="system" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all">
+              <button data-action="nav-category" data-cat="system" class="sidebar-cat-btn w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-400"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/></svg>
                 <span class="truncate">System & Files</span>
               </button>
@@ -217,26 +210,26 @@
        3. MODALS: RAYCAST COMMAND PALETTE & 2-TIER UNINSTALL
        ========================================================================= -->
   <!-- Command Palette Modal -->
-  <div id="modal-command-palette" onclick="if (event.target === this) closeCommandPalette()" class="hidden fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60 backdrop-blur-sm">
-    <div onclick="event.stopPropagation()" class="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+  <div id="modal-command-palette" data-action="close-cmd-backdrop" class="hidden fixed inset-0 z-50 flex items-start justify-center pt-24 bg-black/60 backdrop-blur-sm">
+    <div data-action="stop-prop" class="w-full max-w-lg rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       <div class="p-3 border-b border-[var(--border-subtle)] flex items-center gap-2.5">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--text-muted)]"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input 
           type="text" 
           id="cmd-palette-input" 
           placeholder="Search all tools and utilities..." 
-          oninput="renderPaletteResults(this.value)" 
+          data-action="cmd-palette-input"
           class="w-full text-xs bg-transparent border-none outline-none text-[var(--text-primary)] placeholder-[var(--text-muted)]" 
         />
-        <button onclick="closeCommandPalette()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs">Esc</button>
+        <button data-action="close-cmd" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs cursor-pointer">Esc</button>
       </div>
       <div id="cmd-palette-list" class="max-h-72 overflow-y-auto p-2 space-y-1"></div>
     </div>
   </div>
 
   <!-- 2-Tier Uninstall Modal -->
-  <div id="modal-uninstall" onclick="if (event.target === this) closeUninstallModal()" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-    <div onclick="event.stopPropagation()" class="w-full max-w-md p-6 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+  <div id="modal-uninstall" data-action="close-uninstall-backdrop" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div data-action="stop-prop" class="w-full max-w-md p-6 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
       <div>
         <h3 class="text-base font-bold font-display text-[var(--text-primary)]">Remove Utility?</h3>
         <p class="text-xs text-[var(--text-secondary)] mt-1">Choose how you'd like to uninstall <span id="uninstall-tool-name" class="font-semibold text-[var(--text-primary)]">this tool</span>.</p>
@@ -244,7 +237,7 @@
 
       <div class="space-y-2.5">
         <!-- Tier 1: Keep Settings & Work -->
-        <div onclick="confirmUninstall(false)" class="p-3 rounded-xl border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] bg-[var(--surface-inset)] cursor-pointer transition-all">
+        <div data-action="confirm-uninstall" data-purge="false" class="p-3 rounded-xl border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] bg-[var(--surface-inset)] cursor-pointer transition-all">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold text-[var(--text-primary)]">Keep Work & Settings</span>
             <span class="text-[10px] text-emerald-500 font-medium">Recommended</span>
@@ -253,7 +246,7 @@
         </div>
 
         <!-- Tier 2: Complete Purge -->
-        <div onclick="confirmUninstall(true)" class="p-3 rounded-xl border border-[var(--border-subtle)] hover:border-red-500 bg-[var(--surface-inset)] cursor-pointer transition-all">
+        <div data-action="confirm-uninstall" data-purge="true" class="p-3 rounded-xl border border-[var(--border-subtle)] hover:border-red-500 bg-[var(--surface-inset)] cursor-pointer transition-all">
           <div class="flex items-center justify-between">
             <span class="text-xs font-semibold text-red-500">Delete Tool & Completely Purge</span>
             <span class="text-[10px] text-red-500 font-medium">Full Wipe</span>
@@ -263,7 +256,7 @@
       </div>
 
       <div class="flex justify-end pt-2">
-        <button onclick="closeUninstallModal()" class="px-4 py-2 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-colors">
+        <button data-action="close-uninstall" class="px-4 py-2 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-colors cursor-pointer">
           Cancel
         </button>
       </div>
@@ -271,14 +264,14 @@
   </div>
 
   <!-- Announcements Modal -->
-  <div id="modal-announcements" onclick="if (event.target === this) closeAnnouncementsModal()" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-    <div onclick="event.stopPropagation()" class="w-full max-w-lg p-6 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
+  <div id="modal-announcements" data-action="close-announcements-backdrop" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div data-action="stop-prop" class="w-full max-w-lg p-6 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
       <div class="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
         <div class="flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--brand-primary)]"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
           <h3 class="text-sm font-bold font-display text-[var(--text-primary)]">Updates & Announcements</h3>
         </div>
-        <button onclick="closeAnnouncementsModal()" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs p-1">✕</button>
+        <button data-action="close-announcements" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-xs p-1 cursor-pointer">✕</button>
       </div>
 
       <div id="announcements-list" class="max-h-80 overflow-y-auto space-y-3 pr-1">
@@ -287,14 +280,20 @@
 
       <div class="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)] text-[11px] text-[var(--text-muted)]">
         <span>The SurfBoard Studio</span>
-        <button onclick="closeAnnouncementsModal()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] text-[var(--text-primary)]">
+        <button data-action="close-announcements" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] text-[var(--text-primary)] cursor-pointer">
           Close
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- Modular Core Scripts -->
+  <script src="js/modules/utils.js"></script>
+  <script src="js/modules/bridge.js"></script>
+  <script src="js/modules/store.js"></script>
+  <script src="js/modules/virtual_grid.js"></script>
+  <script src="js/modules/search_index.js"></script>
+  <script src="js/modules/perf.js"></script>
   <script src="js/icons.js"></script>
   <script src="js/app.js"></script>
 </body>
