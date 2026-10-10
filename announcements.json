@@ -1,8 +1,17 @@
 [
   {
+    "id": "sb_boltools_tool_06_subtitle_animator",
+    "date": "2026-10-10",
+    "tag": "NEW TOOL",
+    "title": "Subtitle Animation Maker (Now Live)",
+    "description": "Create viral animated subtitles with word-by-word karaoke highlights, custom fonts, colors, and live 60fps timing preview 100% offline.",
+    "cta_text": "Open Tool Hub",
+    "cta_url": "https://thesurfboard.in"
+  },
+  {
     "id": "sb_boltools_launch_01",
     "date": "2026-10-05",
-    "tag": "NEW LAUNCH",
+    "tag": "READY",
     "title": "Welcome to Boltools Desktop Suite",
     "description": "The 100% offline Swiss Army knife for creators, editors, and power users. Zero subscriptions. Zero data leaks.",
     "cta_text": "Join SurfBoard Community",

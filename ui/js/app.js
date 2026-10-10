@@ -61,6 +61,16 @@ const DEFAULT_TOOLS = [
     icon: "sliders",
     is_implemented: true,
     status: "installed"
+  },
+  {
+    id: "subtitle_animator",
+    name: "Subtitle Animation Maker",
+    category_id: "video",
+    category_name: "Media & Video",
+    description: "Create viral animated subtitles with word-by-word karaoke highlight, custom fonts, colors, and live timing editor.",
+    icon: "type",
+    is_implemented: true,
+    status: "installed"
   }
 ];
 
@@ -69,7 +79,7 @@ const state = {
   theme: localStorage.getItem('boltools-theme') || 'light',
   currentView: 'home',
   activeToolId: null,
-  navHistory: ['home'],
+  navHistory: [{ view: 'home', toolId: null }],
   categories: DEFAULT_CATEGORIES,
   tools: DEFAULT_TOOLS,
   favorites: [],
@@ -136,7 +146,9 @@ function navigateTo(viewName, toolId = null, pushHistory = true) {
   state.activeToolId = toolId;
   if (pushHistory) {
     const last = state.navHistory[state.navHistory.length - 1];
-    if (!last || last.view !== viewName || last.toolId !== toolId) {
+    const lastView = typeof last === 'string' ? last : (last ? last.view : null);
+    const lastTool = typeof last === 'object' && last ? last.toolId : null;
+    if (lastView !== viewName || lastTool !== toolId) {
       state.navHistory.push({ view: viewName, toolId });
     }
   }
@@ -199,10 +211,12 @@ function navigateToCategory(categoryId, pushHistory = true) {
 }
 
 function navigateBack() {
-  // Pop until we find a history entry that is different from current view and tool
-  while (state.navHistory.length > 0) {
+  // Pop the active view from the history stack if it's currently on top
+  while (state.navHistory.length > 1) {
     const top = state.navHistory[state.navHistory.length - 1];
-    if (top && top.view === state.currentView && top.toolId === state.activeToolId) {
+    const topView = typeof top === 'string' ? top : (top ? top.view : null);
+    const topTool = typeof top === 'object' && top ? top.toolId : null;
+    if (topView === state.currentView && topTool === state.activeToolId) {
       state.navHistory.pop();
     } else {
       break;
@@ -211,10 +225,12 @@ function navigateBack() {
 
   if (state.navHistory.length > 0) {
     const prev = state.navHistory[state.navHistory.length - 1];
-    if (prev.view === 'category_view') {
-      navigateToCategory(prev.toolId, false);
+    const prevView = typeof prev === 'string' ? prev : (prev ? prev.view : 'home');
+    const prevToolId = typeof prev === 'object' && prev ? prev.toolId : null;
+    if (prevView === 'category_view') {
+      navigateToCategory(prevToolId, false);
     } else {
-      navigateTo(prev.view, prev.toolId, false);
+      navigateTo(prevView || 'home', prevToolId, false);
     }
   } else {
     state.navHistory = [{ view: 'home', toolId: null }];
@@ -777,8 +793,8 @@ function renderToolStudio(container, toolId) {
 
       <!-- Studio 2-Pane Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 items-start min-h-0">
-        <!-- Left Pane: Controls & Inputs (7 Cols) -->
-        <div class="lg:col-span-7 space-y-4 overflow-y-auto max-h-[calc(100vh-160px)] pr-1">
+        <!-- Left Pane: Controls & Inputs (${tool.id === 'subtitle_animator' ? '6 Cols' : '7 Cols'}) -->
+        <div class="${tool.id === 'subtitle_animator' ? 'lg:col-span-6' : 'lg:col-span-7'} space-y-4 overflow-y-auto max-h-[calc(100vh-160px)] pr-1">
           <!-- Dropzone -->
           <div 
             id="studio-dropzone" 
@@ -821,56 +837,112 @@ function renderToolStudio(container, toolId) {
           <button 
             id="studio-btn-execute"
             onclick="handleExecuteTool('${tool.id}')"
-            class="btn-primary w-full py-3 text-xs font-semibold rounded-xl bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2"
+            class="btn-primary w-full py-3 text-xs font-semibold rounded-xl bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Start Processing</span>
+            <span>${tool.id === 'subtitle_animator' ? 'Export Video with Subtitles' : 'Start Processing'}</span>
             ${getIcon('arrow-right', 'w-3.5 h-3.5')}
           </button>
         </div>
 
-        <!-- Right Pane: Live Inspector & Output Hub (5 Cols) -->
-        <div class="lg:col-span-5 space-y-4 flex flex-col max-h-[calc(100vh-160px)]">
-          <!-- Stage Card -->
-          <div id="studio-stage-card" class="p-6 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] flex-1 flex flex-col justify-center text-center">
-            <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-500 mb-3">
-              ${getIcon('shield', 'w-6 h-6')}
+        <!-- Right Pane: (${tool.id === 'subtitle_animator' ? 'Subtitle Studio 6 Cols' : 'Standard Stage Hub 5 Cols'}) -->
+        <div class="${tool.id === 'subtitle_animator' ? 'lg:col-span-6' : 'lg:col-span-5'} space-y-4 flex flex-col max-h-[calc(100vh-160px)] overflow-y-auto pr-1">
+          ${tool.id === 'subtitle_animator' ? `
+            <!-- Live Preview Screen Card -->
+            <div class="p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-3">
+              <div class="flex items-center justify-between text-xs">
+                <div class="flex items-center gap-1.5 font-bold text-[var(--text-primary)]">
+                  ${getIcon('play', 'w-3.5 h-3.5 text-[var(--brand-primary)]')}
+                  <span>Live 60fps Subtitle Preview</span>
+                </div>
+                <span id="sub-time-indicator" class="text-[11px] text-[var(--text-muted)] font-medium tabular-nums">00:00.80</span>
+              </div>
+
+              <div class="sub-preview-screen" id="sub-preview-screen-box">
+                <video id="sub-video-element" class="sub-preview-video hidden" playsinline></video>
+                <div id="sub-empty-bg" class="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950">
+                  <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 mb-2">
+                    ${getIcon('video', 'w-5 h-5')}
+                  </div>
+                  <span class="text-xs font-semibold text-slate-300">Live Visual Stage</span>
+                  <span class="text-[10px] text-slate-500 mt-0.5">Drop a video on the left to preview with real footage</span>
+                </div>
+                <div id="sub-preview-overlay-wrap" class="sub-preview-overlay-wrap" style="bottom: 12%;">
+                  <div id="sub-preview-text-box" class="sub-preview-text-box font-bold"></div>
+                </div>
+              </div>
+
+              <!-- Playback & Scrubbing Controls -->
+              <div class="flex items-center gap-2 pt-1">
+                <button id="sub-btn-playpause" onclick="toggleSubtitleVideoPlay()" class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-hover)] shrink-0 transition-colors cursor-pointer">
+                  ${getIcon('play', 'w-3.5 h-3.5')}
+                </button>
+                <input type="range" id="sub-video-scrubber" min="0" max="8" step="0.05" value="0.8" oninput="handleSubtitleScrub(this.value)" class="w-full accent-[var(--brand-primary)] cursor-pointer" />
+                <span id="sub-dur-label" class="text-[11px] font-medium tabular-nums text-[var(--text-secondary)] shrink-0">00:08</span>
+              </div>
             </div>
-            <h4 class="text-sm font-semibold text-[var(--text-primary)]">Ready for Processing</h4>
-            <p class="text-xs text-[var(--text-secondary)] mt-1 mb-5">Select or drop your files on the left to begin.</p>
-            <div class="text-left space-y-2 p-3.5 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">
-              <div class="flex items-center gap-2">
-                ${getIcon('check', 'w-3.5 h-3.5 text-emerald-500 shrink-0')}
-                <span>Private on-device execution on your PC</span>
+
+            <!-- Transcript & Timing Editor Card -->
+            <div class="p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2 flex flex-col min-h-[220px]">
+              <div class="flex items-center justify-between text-xs pb-1 border-b border-[var(--border-subtle)]">
+                <div class="flex items-center gap-1.5 font-bold text-[var(--text-primary)]">
+                  ${getIcon('type', 'w-3.5 h-3.5 text-[var(--brand-primary)]')}
+                  <span>Subtitle Transcript Editor</span>
+                  <span id="sub-cues-badge" class="px-1.5 py-0.5 rounded-full text-[10px] bg-[var(--surface-inset)] text-[var(--text-muted)] font-medium tabular-nums">0 cues</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="addSubtitleCue()" class="px-2 py-1 rounded bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[11px] font-medium text-[var(--text-primary)] flex items-center gap-1 cursor-pointer transition-colors">
+                    ${getIcon('plus', 'w-3 h-3')}
+                    <span>Add Cue</span>
+                  </button>
+                </div>
               </div>
-              <div class="flex items-center gap-2">
-                ${getIcon('check', 'w-3.5 h-3.5 text-emerald-500 shrink-0')}
-                <span>Zero telemetry, zero cloud data leaks</span>
+
+              <!-- Scrollable Cues List -->
+              <div id="sub-cues-list" class="space-y-2 overflow-y-auto max-h-48 pr-1"></div>
+            </div>
+          ` : `
+            <!-- Standard Stage Card for Other Tools -->
+            <div id="studio-stage-card" class="p-6 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] flex-1 flex flex-col justify-center text-center">
+              <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-500 mb-3">
+                ${getIcon('shield', 'w-6 h-6')}
               </div>
-              <div class="flex items-center gap-2">
-                ${getIcon('check', 'w-3.5 h-3.5 text-emerald-500 shrink-0')}
-                <span>High-throughput multi-core processing</span>
+              <h4 class="text-sm font-semibold text-[var(--text-primary)]">Ready for Processing</h4>
+              <p class="text-xs text-[var(--text-secondary)] mt-1 mb-5">Select or drop your files on the left to begin.</p>
+              <div class="text-left space-y-2 p-3.5 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)]">
+                <div class="flex items-center gap-2">
+                  ${getIcon('check', 'w-3.5 h-3.5 text-emerald-500 shrink-0')}
+                  <span>Private on-device execution on your PC</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  ${getIcon('check', 'w-3.5 h-3.5 text-emerald-500 shrink-0')}
+                  <span>Zero telemetry, zero cloud data leaks</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  ${getIcon('check', 'w-3.5 h-3.5 text-emerald-500 shrink-0')}
+                  <span>High-throughput multi-core processing</span>
+                </div>
               </div>
             </div>
-          </div>
+          `}
 
           <!-- Progress Bar & Cancel Row -->
           <div id="studio-progress-wrap" class="hidden p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2.5">
             <div class="flex items-center justify-between text-xs">
               <span id="studio-status-txt" class="font-semibold text-[var(--text-primary)]">Processing...</span>
-              <span id="studio-pct-txt" class="font-mono text-[var(--brand-primary)]">0%</span>
+              <span id="studio-pct-txt" class="text-xs font-bold text-[var(--brand-primary)] tabular-nums">0%</span>
             </div>
             <div class="w-full bg-[var(--surface-inset)] h-2 rounded-full overflow-hidden">
               <div id="studio-progress-fill" class="bg-[var(--brand-primary)] h-full w-0 transition-all duration-200"></div>
             </div>
-            <button onclick="handleCancelTool()" class="w-full py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+            <button onclick="handleCancelTool()" class="w-full py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer">
               Cancel Operation
             </button>
           </div>
 
           <!-- Activity Log Drawer -->
-          <div class="p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2 flex-1 flex flex-col min-h-[140px]">
+          <div class="p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2 flex-1 flex flex-col min-h-[120px]">
             <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Activity Log</span>
-            <div id="studio-log-box" class="flex-1 p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] font-mono text-[11px] text-[var(--text-secondary)] overflow-y-auto max-h-36 leading-relaxed">
+            <div id="studio-log-box" class="flex-1 p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] overflow-y-auto max-h-32 leading-relaxed">
               System ready. Waiting for input...
             </div>
           </div>
@@ -878,6 +950,12 @@ function renderToolStudio(container, toolId) {
       </div>
     </div>
   `;
+
+  if (tool.id === 'subtitle_animator') {
+    setTimeout(() => {
+      initSubtitleStudio();
+    }, 30);
+  }
 }
 
 function getDefaultOptionsForTool(toolId) {
@@ -886,6 +964,20 @@ function getDefaultOptionsForTool(toolId) {
   if (toolId === 'pdf_converter') return { mode: 'PDF to Images (PNG)' };
   if (toolId === 'image_webp_compress') return { quality: 80, smart_mode: true, max_dim: '1920px (Full HD)' };
   if (toolId === 'system_batch_rename') return { rule: 'Add Suffix', text1: '_v1', text2: '', op_mode: 'Save to Destination' };
+  if (toolId === 'subtitle_animator') return {
+    style: 'white_box',
+    font_name: 'Montserrat',
+    font_path: '',
+    font_size: 46,
+    primary_color: '#000000',
+    highlight_color: '#FFE600',
+    outline_color: '#FFFFFF',
+    outline_width: 3,
+    position: 'bottom',
+    all_caps: false,
+    chunk_size: 4,
+    subtitles: getSampleSubtitleCues()
+  };
   return {};
 }
 
@@ -895,6 +987,7 @@ function getDropzoneHint(toolId) {
   if (toolId === 'pdf_converter') return 'Supports PDF documents and JPG/PNG images';
   if (toolId === 'image_webp_compress') return 'Supports PNG, JPG, JPEG, BMP, WebP';
   if (toolId === 'system_batch_rename') return 'Select any files or folder to batch rename';
+  if (toolId === 'subtitle_animator') return 'Supports Video (MP4, MKV, MOV, WebM) + Subtitles (.srt, .vtt)';
   return 'Select or drop your files';
 }
 
@@ -1009,6 +1102,167 @@ function renderToolSpecificOptions(toolId) {
         <div>
           <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Text / Tag</span>
           <input type="text" value="${state.activeToolOptions.text1 || '_v1'}" oninput="state.activeToolOptions.text1 = this.value" class="w-full mt-1.5 px-3 py-2 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)]" />
+        </div>
+      </div>
+    `;
+  } else if (toolId === 'subtitle_animator') {
+    const opts = state.activeToolOptions || {};
+    const presets = [
+      { id: 'white_box', name: 'Clean White Tag', desc: 'Viral rounded white pill badges with bold black text' },
+      { id: 'hormozi', name: 'The Hormozi Punch', desc: 'Bold uppercase, neon yellow active pop, heavy stroke' },
+      { id: 'bounce', name: 'Pop & Bounce', desc: 'Playful spring scale bounce on each word entry' },
+      { id: 'minimal', name: 'Clean Minimal Box', desc: 'Crisp text on translucent dark backdrop' }
+    ];
+    const isBoxStyle = (opts.style === 'minimal' || opts.style === 'white_box');
+
+    return `
+      <div class="space-y-4">
+        <!-- Preset Style Cards -->
+        <div>
+          <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Viral Animation Presets</span>
+          <div class="grid grid-cols-2 gap-2 pt-1.5">
+            ${presets.map(p => `
+              <button
+                type="button"
+                onclick="handleSelectSubtitleStyle('${p.id}')"
+                class="p-2.5 rounded-lg border text-left transition-all cursor-pointer ${opts.style === p.id ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)] ring-1 ring-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
+              >
+                <div class="text-xs font-bold">${p.name}</div>
+                <div class="text-[10px] text-[var(--text-secondary)] line-clamp-1 mt-0.5">${p.desc}</div>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Typography & Custom Font -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Font Family</span>
+            <button 
+              type="button" 
+              onclick="handleBrowseCustomFont()" 
+              class="text-[11px] text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer font-medium"
+            >
+              ${getIcon('plus', 'w-3 h-3')}
+              <span>${opts.font_path ? 'Custom Font Loaded ✓' : 'Upload .TTF / .OTF'}</span>
+            </button>
+          </div>
+          ${renderCustomDropdown({
+            id: 'dropdown-sub-font',
+            currentValue: opts.font_name || 'Montserrat',
+            options: [
+              { value: 'Montserrat', label: 'Montserrat (Ultra Bold)' },
+              { value: 'Impact', label: 'Impact / Heavy' },
+              { value: 'Arial', label: 'Arial (Clean Sans)' },
+              { value: 'Trebuchet MS', label: 'Trebuchet MS' },
+              { value: 'Roboto', label: 'Roboto' },
+              { value: 'TheBoldFont', label: 'The Bold Font' },
+              ...(opts.font_path ? [{ value: opts.font_name, label: `Custom: ${opts.font_name}` }] : [])
+            ],
+            onSelect: 'handleSelectSubtitleFont'
+          })}
+        </div>
+
+        <!-- Color Controls (Conditional for Box Styles vs Word Highlight) -->
+        ${isBoxStyle ? `
+          <div class="grid grid-cols-2 gap-2">
+            <div class="p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
+              <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase block mb-1">Text Color</span>
+              <div class="flex items-center gap-1.5">
+                <input type="color" value="${opts.primary_color || (opts.style === 'white_box' ? '#000000' : '#FFFFFF')}" onchange="setSubtitleColor('primary_color', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                <span class="text-xs font-semibold tabular-nums text-[var(--text-primary)]">${opts.primary_color || (opts.style === 'white_box' ? '#000' : '#FFF')}</span>
+              </div>
+            </div>
+            <div class="p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
+              <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase block mb-1">${opts.style === 'white_box' ? 'Tag Background' : 'Box Background'}</span>
+              <div class="flex items-center gap-1.5">
+                <input type="color" value="${opts.outline_color || (opts.style === 'white_box' ? '#FFFFFF' : '#0F172A')}" onchange="setSubtitleColor('outline_color', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                <span class="text-xs font-semibold tabular-nums text-[var(--text-primary)]">${opts.outline_color || (opts.style === 'white_box' ? '#FFF' : '#0F172A')}</span>
+              </div>
+            </div>
+          </div>
+        ` : `
+          <div class="grid grid-cols-3 gap-2">
+            <div class="p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
+              <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase block mb-1">Base Text</span>
+              <div class="flex items-center gap-1.5">
+                <input type="color" value="${opts.primary_color || '#FFFFFF'}" onchange="setSubtitleColor('primary_color', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                <span class="text-xs font-semibold tabular-nums text-[var(--text-primary)]">${opts.primary_color || '#FFF'}</span>
+              </div>
+            </div>
+            <div class="p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
+              <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase block mb-1">Active Highlight</span>
+              <div class="flex items-center gap-1.5">
+                <input type="color" value="${opts.highlight_color || '#FFE600'}" onchange="setSubtitleColor('highlight_color', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                <span class="text-xs font-semibold tabular-nums text-[var(--text-primary)]">${opts.highlight_color || '#FFE600'}</span>
+              </div>
+            </div>
+            <div class="p-2 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
+              <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase block mb-1">Outline Stroke</span>
+              <div class="flex items-center gap-1.5">
+                <input type="color" value="${opts.outline_color || '#000000'}" onchange="setSubtitleColor('outline_color', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
+                <span class="text-xs font-semibold tabular-nums text-[var(--text-primary)]">${opts.outline_color || '#000'}</span>
+              </div>
+            </div>
+          </div>
+        `}
+
+        <!-- Sizing & Placement -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-semibold text-[var(--text-muted)] uppercase tracking-wider text-[10px]">Font Size</span>
+              <span id="sub-fontsize-val" class="font-bold text-[var(--brand-primary)] tabular-nums">${opts.font_size || 46}px</span>
+            </div>
+            <input 
+              type="range" 
+              min="28" 
+              max="72" 
+              value="${opts.font_size || 48}" 
+              oninput="document.getElementById('sub-fontsize-val').innerText = this.value + 'px'; setSubtitleFontSize(this.value);" 
+              class="w-full accent-[var(--brand-primary)] cursor-pointer" 
+            />
+          </div>
+          <div>
+            <span class="font-semibold text-[var(--text-muted)] uppercase tracking-wider text-[10px] block mb-1">Vertical Position</span>
+            <div class="grid grid-cols-3 gap-1">
+              ${['Bottom', 'Middle', 'Top'].map(p => {
+                const pKey = p.toLowerCase();
+                const isSel = (opts.position || 'bottom') === pKey;
+                return `
+                  <button 
+                    type="button" 
+                    onclick="setSubtitlePosition('${pKey}')" 
+                    class="py-1 px-1.5 rounded text-[11px] font-medium border text-center transition-all cursor-pointer ${isSel ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] text-[var(--brand-primary)] font-bold' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}"
+                  >
+                    ${p}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+
+        <!-- Pacing & Casing Options -->
+        <div class="flex items-center justify-between pt-1 border-t border-[var(--border-subtle)] text-xs">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input 
+              type="checkbox" 
+              ${opts.all_caps ? 'checked' : ''} 
+              onchange="setSubtitleAllCaps(this.checked)" 
+              class="rounded text-[var(--brand-primary)] accent-[var(--brand-primary)] cursor-pointer" 
+            />
+            <span class="font-medium text-[var(--text-primary)]">Force UPPERCASE</span>
+          </label>
+          <div class="flex items-center gap-1.5">
+            <button 
+              type="button" 
+              onclick="loadDemoSubtitleSample()" 
+              class="px-2.5 py-1 rounded-md text-[11px] font-medium bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+            >
+              Reset to Demo Cues
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -1144,6 +1398,8 @@ async function handleStudioBrowseFiles(toolId) {
     fileTypes = ['Document Files (*.pdf;*.png;*.jpg;*.jpeg)'];
   } else if (toolId === 'image_webp_compress') {
     fileTypes = ['Image Files (*.png;*.jpg;*.jpeg;*.bmp;*.webp)'];
+  } else if (toolId === 'subtitle_animator') {
+    fileTypes = ['Media & Subtitle Files (*.mp4;*.mkv;*.mov;*.webm;*.srt;*.vtt)', 'Video Files (*.mp4;*.mkv;*.mov;*.webm)', 'Subtitle Files (*.srt;*.vtt)', 'All Files (*.*)'];
   } else {
     fileTypes = ['All Files (*.*)'];
   }
@@ -1152,6 +1408,9 @@ async function handleStudioBrowseFiles(toolId) {
   if (files && files.length > 0) {
     state.selectedFiles = files;
     updateStudioFilesUI();
+    if (toolId === 'subtitle_animator') {
+      await handleSubtitleFilesLoaded(files);
+    }
   }
 }
 
@@ -1305,6 +1564,660 @@ window.onToolError = function(errMsg) {
   const statusTxt = document.getElementById('studio-status-txt');
   if (statusTxt) statusTxt.innerText = `Error: ${errMsg}`;
 };
+
+// ── Subtitle Animation Maker Studio Suite ─────────────────────────────────────
+let subPreviewTimer = null;
+let subPreviewIsPlaying = false;
+let subPreviewCurrentTime = 0.8;
+let subPreviewDuration = 8.0;
+
+function getSampleSubtitleCues() {
+  return [
+    {
+      id: 1,
+      start: 0.2,
+      end: 2.2,
+      text: "Instant captions\nfor your videos",
+      words: [
+        { word: "Instant", start: 0.2, end: 0.7 },
+        { word: "captions", start: 0.7, end: 1.2 },
+        { word: "for", start: 1.2, end: 1.6 },
+        { word: "your", start: 1.6, end: 1.9 },
+        { word: "videos", start: 1.9, end: 2.2 }
+      ]
+    },
+    {
+      id: 2,
+      start: 2.3,
+      end: 4.6,
+      text: "Viral subtitles\nbuilt offline",
+      words: [
+        { word: "Viral", start: 2.3, end: 2.8 },
+        { word: "subtitles", start: 2.8, end: 3.5 },
+        { word: "built", start: 3.5, end: 4.0 },
+        { word: "offline", start: 4.0, end: 4.6 }
+      ]
+    },
+    {
+      id: 3,
+      start: 4.7,
+      end: 7.2,
+      text: "Zero lag\nmaximum speed",
+      words: [
+        { word: "Zero", start: 4.7, end: 5.3 },
+        { word: "lag", start: 5.3, end: 5.9 },
+        { word: "maximum", start: 5.9, end: 6.5 },
+        { word: "speed", start: 6.5, end: 7.2 }
+      ]
+    }
+  ];
+}
+
+function parseSrtOrVttClient(content) {
+  if (!content) return [];
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+  const cues = [];
+  let cueId = 1;
+  const timeRegex = /(\d+:\d+:\d+[,\.]\d+|\d+:\d+[,\.]\d+)\s*-->\s*(\d+:\d+:\d+[,\.]\d+|\d+:\d+[,\.]\d+)/;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line || line.startsWith('WEBVTT') || line.startsWith('NOTE')) continue;
+
+    const match = line.match(timeRegex);
+    if (match) {
+      const startSec = parseTimestampClient(match[1]);
+      const endSec = parseTimestampClient(match[2]);
+      i++;
+      const textLines = [];
+      while (i < lines.length) {
+        const nextLine = lines[i].trim();
+        if (!nextLine || nextLine.match(timeRegex)) {
+          i--;
+          break;
+        }
+        textLines.push(nextLine);
+        i++;
+      }
+
+      const cleanText = textLines.join(' ').replace(/<[^>]+>/g, '').trim();
+      if (cleanText) {
+        const words = cleanText.split(/\s+/).filter(Boolean);
+        const dur = Math.max(0.2, endSec - startSec);
+        const wordTokens = words.map((w, idx) => ({
+          word: w,
+          start: Math.round((startSec + (idx / words.length) * dur) * 100) / 100,
+          end: Math.round((startSec + ((idx + 1) / words.length) * dur) * 100) / 100
+        }));
+
+        cues.push({
+          id: cueId++,
+          start: Math.round(startSec * 100) / 100,
+          end: Math.round(endSec * 100) / 100,
+          text: cleanText,
+          words: wordTokens
+        });
+      }
+    }
+  }
+  return cues;
+}
+
+function parseTimestampClient(ts) {
+  const clean = ts.trim().replace(',', '.');
+  const parts = clean.split(':');
+  if (parts.length === 3) {
+    return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+  } else if (parts.length === 2) {
+    return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+  }
+  return parseFloat(parts[0]) || 0;
+}
+
+function formatDisplayTime(sec) {
+  const s = Math.max(0, parseFloat(sec) || 0);
+  const m = Math.floor(s / 60);
+  const remSec = (s % 60).toFixed(2);
+  const padSec = remSec < 10 ? '0' + remSec : remSec;
+  return `${m < 10 ? '0' + m : m}:${padSec}`;
+}
+
+async function handleSubtitleFilesLoaded(files) {
+  if (!files || files.length === 0) return;
+  const videoExts = ['.mp4', '.mkv', '.mov', '.webm', '.avi', '.flv'];
+  const subExts = ['.srt', '.vtt', '.ass'];
+
+  let videoFile = null;
+  let subFile = null;
+
+  for (const f of files) {
+    const lower = f.toLowerCase();
+    if (videoExts.some(ext => lower.endsWith(ext)) && !videoFile) {
+      videoFile = f;
+    } else if (subExts.some(ext => lower.endsWith(ext)) && !subFile) {
+      subFile = f;
+    }
+  }
+
+  // Load Subtitle Text
+  if (subFile) {
+    const text = await callBridge('read_text_file', subFile);
+    if (text) {
+      const parsed = parseSrtOrVttClient(text);
+      if (parsed.length > 0) {
+        state.activeToolOptions.subtitles = parsed;
+        const maxEnd = Math.max(...parsed.map(c => c.end));
+        if (maxEnd > subPreviewDuration) subPreviewDuration = maxEnd + 1.0;
+        renderSubtitleCuesList();
+        updateSubtitleLiveOverlay(subPreviewCurrentTime);
+      }
+    }
+  }
+
+  // Load Video in Preview player
+  if (videoFile) {
+    loadVideoInPreviewPlayer(videoFile);
+  }
+}
+
+function loadVideoInPreviewPlayer(videoPathOrUrl) {
+  const vidEl = document.getElementById('sub-video-element');
+  const emptyBg = document.getElementById('sub-empty-bg');
+  if (!vidEl) return;
+
+  try {
+    let srcUrl = videoPathOrUrl;
+    if (!videoPathOrUrl.startsWith('blob:') && !videoPathOrUrl.startsWith('http')) {
+      srcUrl = 'file:///' + videoPathOrUrl.replace(/\\/g, '/');
+    }
+    vidEl.src = srcUrl;
+    vidEl.classList.remove('hidden');
+    if (emptyBg) emptyBg.classList.add('hidden');
+
+    vidEl.onloadedmetadata = () => {
+      if (vidEl.duration && !isNaN(vidEl.duration)) {
+        subPreviewDuration = vidEl.duration;
+        const scrubber = document.getElementById('sub-video-scrubber');
+        if (scrubber) scrubber.max = vidEl.duration;
+        const durLbl = document.getElementById('sub-dur-label');
+        if (durLbl) durLbl.innerText = formatDisplayTime(vidEl.duration);
+      }
+    };
+
+    vidEl.ontimeupdate = () => {
+      subPreviewCurrentTime = vidEl.currentTime;
+      updateSubtitleTimeDisplays(subPreviewCurrentTime);
+      updateSubtitleLiveOverlay(subPreviewCurrentTime);
+    };
+
+    vidEl.onended = () => {
+      subPreviewIsPlaying = false;
+      updatePlayPauseButtonUI();
+    };
+  } catch (e) {
+    console.error('Error loading video preview:', e);
+  }
+}
+
+function initSubtitleStudio() {
+  subPreviewIsPlaying = false;
+  subPreviewCurrentTime = 0.8;
+  const opts = state.activeToolOptions;
+  if (!opts.subtitles || opts.subtitles.length === 0) {
+    opts.subtitles = getSampleSubtitleCues();
+  }
+
+  const maxEnd = Math.max(...opts.subtitles.map(c => c.end));
+  subPreviewDuration = Math.max(8.0, maxEnd + 1.0);
+
+  const scrubber = document.getElementById('sub-video-scrubber');
+  if (scrubber) {
+    scrubber.max = subPreviewDuration;
+    scrubber.value = subPreviewCurrentTime;
+  }
+  const durLbl = document.getElementById('sub-dur-label');
+  if (durLbl) durLbl.innerText = formatDisplayTime(subPreviewDuration);
+
+  renderSubtitleCuesList();
+  updateSubtitleTimeDisplays(subPreviewCurrentTime);
+  updateSubtitleLiveOverlay(subPreviewCurrentTime);
+
+  // Hook dropzone for HTML5 Drag-and-Drop Video & SRT files
+  const dropzone = document.getElementById('studio-dropzone');
+  if (dropzone) {
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('border-[var(--brand-primary)]');
+    });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('border-[var(--brand-primary)]');
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-[var(--brand-primary)]');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleDroppedSubtitleFiles(e.dataTransfer.files);
+      }
+    });
+  }
+}
+
+function handleDroppedSubtitleFiles(fileList) {
+  for (let i = 0; i < fileList.length; i++) {
+    const file = fileList[i];
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.webm') || name.endsWith('.mkv')) {
+      const blobUrl = URL.createObjectURL(file);
+      loadVideoInPreviewPlayer(blobUrl);
+      if (file.path) {
+        state.selectedFiles.push(file.path);
+        updateStudioFilesUI();
+      }
+    } else if (name.endsWith('.srt') || name.endsWith('.vtt')) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const text = evt.target.result;
+        const cues = parseSrtOrVttClient(text);
+        if (cues.length > 0) {
+          state.activeToolOptions.subtitles = cues;
+          const maxEnd = Math.max(...cues.map(c => c.end));
+          if (maxEnd > subPreviewDuration) subPreviewDuration = maxEnd + 1.0;
+          renderSubtitleCuesList();
+          updateSubtitleLiveOverlay(subPreviewCurrentTime);
+        }
+      };
+      reader.readAsText(file);
+      if (file.path) {
+        state.selectedFiles.push(file.path);
+        updateStudioFilesUI();
+      }
+    }
+  }
+}
+
+function updateSubtitleTimeDisplays(t) {
+  const ind = document.getElementById('sub-time-indicator');
+  if (ind) ind.innerText = `${formatDisplayTime(t)} / ${formatDisplayTime(subPreviewDuration)}`;
+  const scrubber = document.getElementById('sub-video-scrubber');
+  if (scrubber && !scrubber.matches(':active')) scrubber.value = t;
+}
+
+function toggleSubtitleVideoPlay() {
+  const vidEl = document.getElementById('sub-video-element');
+  if (vidEl && !vidEl.classList.contains('hidden') && vidEl.src) {
+    if (vidEl.paused) {
+      vidEl.play();
+      subPreviewIsPlaying = true;
+    } else {
+      vidEl.pause();
+      subPreviewIsPlaying = false;
+    }
+    updatePlayPauseButtonUI();
+    return;
+  }
+
+  // Simulated Timer Mode if no video loaded
+  subPreviewIsPlaying = !subPreviewIsPlaying;
+  updatePlayPauseButtonUI();
+
+  if (subPreviewIsPlaying) {
+    if (subPreviewTimer) clearInterval(subPreviewTimer);
+    subPreviewTimer = setInterval(() => {
+      subPreviewCurrentTime += 0.05;
+      if (subPreviewCurrentTime > subPreviewDuration) {
+        subPreviewCurrentTime = 0.0;
+      }
+      updateSubtitleTimeDisplays(subPreviewCurrentTime);
+      updateSubtitleLiveOverlay(subPreviewCurrentTime);
+    }, 50);
+  } else {
+    if (subPreviewTimer) clearInterval(subPreviewTimer);
+    subPreviewTimer = null;
+  }
+}
+
+function updatePlayPauseButtonUI() {
+  const btn = document.getElementById('sub-btn-playpause');
+  if (btn) {
+    btn.innerHTML = subPreviewIsPlaying 
+      ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect width="4" height="16" x="6" y="4" rx="1"/><rect width="4" height="16" x="14" y="4" rx="1"/></svg>`
+      : getIcon('play', 'w-3.5 h-3.5');
+  }
+}
+
+function handleSubtitleScrub(val) {
+  const t = parseFloat(val) || 0;
+  subPreviewCurrentTime = t;
+  const vidEl = document.getElementById('sub-video-element');
+  if (vidEl && !vidEl.classList.contains('hidden') && vidEl.src) {
+    vidEl.currentTime = t;
+  }
+  updateSubtitleTimeDisplays(t);
+  updateSubtitleLiveOverlay(t);
+}
+
+function seekSubtitlePreview(seconds) {
+  handleSubtitleScrub(seconds);
+}
+
+function updateSubtitleLiveOverlay(currentTime) {
+  const overlayBox = document.getElementById('sub-preview-text-box');
+  const overlayWrap = document.getElementById('sub-preview-overlay-wrap');
+  if (!overlayBox || !overlayWrap) return;
+
+  const opts = state.activeToolOptions || {};
+  const cues = opts.subtitles || [];
+  const stylePreset = opts.style || 'white_box';
+  const pos = opts.position || 'bottom';
+  const allCaps = opts.all_caps === true;
+
+  // Apply vertical positioning
+  if (pos === 'top') {
+    overlayWrap.style.top = '12%';
+    overlayWrap.style.bottom = 'auto';
+  } else if (pos === 'middle') {
+    overlayWrap.style.top = '44%';
+    overlayWrap.style.bottom = 'auto';
+  } else {
+    overlayWrap.style.top = 'auto';
+    overlayWrap.style.bottom = '12%';
+  }
+
+  // Typography
+  overlayBox.style.fontFamily = `"${opts.font_name || 'Montserrat'}", sans-serif`;
+  overlayBox.style.fontSize = `${Math.max(16, (opts.font_size || 46) * 0.44)}px`;
+  overlayBox.style.color = opts.primary_color || (stylePreset === 'white_box' ? '#000000' : '#FFFFFF');
+
+  // Preset decorations
+  const strokeColor = opts.outline_color || '#000000';
+  if (stylePreset === 'white_box') {
+    overlayBox.style.backgroundColor = 'transparent';
+    overlayBox.style.borderRadius = '0px';
+    overlayBox.style.padding = '0px';
+    overlayBox.style.textShadow = 'none';
+  } else if (stylePreset === 'minimal') {
+    overlayBox.style.backgroundColor = opts.outline_color || 'rgba(15, 23, 42, 0.85)';
+    overlayBox.style.borderRadius = '8px';
+    overlayBox.style.padding = '6px 14px';
+    overlayBox.style.textShadow = 'none';
+  } else {
+    overlayBox.style.backgroundColor = 'transparent';
+    overlayBox.style.borderRadius = '0px';
+    overlayBox.style.padding = '6px 14px';
+    overlayBox.style.textShadow = `-2px -2px 0 ${strokeColor}, 2px -2px 0 ${strokeColor}, -2px 2px 0 ${strokeColor}, 2px 2px 0 ${strokeColor}, 0 4px 10px rgba(0,0,0,0.7)`;
+  }
+
+  // Find active cue
+  const activeCue = cues.find(c => c.start <= currentTime && currentTime <= c.end);
+  highlightActiveCueInEditor(activeCue ? activeCue.id : null);
+
+  if (!activeCue) {
+    overlayBox.innerHTML = '';
+    return;
+  }
+
+  // 1. Clean White Tag / Pill Box Preset (from user's image)
+  if (stylePreset === 'white_box') {
+    const rawText = activeCue.text || '';
+    const displayText = allCaps ? rawText.toUpperCase() : rawText;
+    const lines = displayText.split('\n').filter(l => l.trim().length > 0);
+    const tagBg = opts.outline_color || '#FFFFFF';
+    const tagText = opts.primary_color || '#000000';
+
+    overlayBox.innerHTML = `
+      <div class="flex flex-col items-center gap-1.5">
+        ${lines.map(line => `
+          <div class="sub-pill-tag" style="background-color: ${tagBg}; color: ${tagText};">
+            ${line}
+          </div>
+        `).join('')}
+      </div>
+    `;
+    return;
+  }
+
+  // 2. Clean Minimal Box Preset (whole phrase without active word highlight)
+  if (stylePreset === 'minimal') {
+    const rawText = activeCue.text || '';
+    const displayText = allCaps ? rawText.toUpperCase() : rawText;
+    overlayBox.innerText = displayText;
+    return;
+  }
+
+  // 3. Animated Presets (Hormozi Pop, Bounce)
+  const words = activeCue.words || [];
+  if (words.length === 0) {
+    overlayBox.innerText = allCaps ? activeCue.text.toUpperCase() : activeCue.text;
+    return;
+  }
+
+  // Chunk words for viral video rhythm
+  const chunkSize = opts.chunk_size || 4;
+  let activeChunk = words;
+  if (chunkSize > 0 && words.length > chunkSize) {
+    for (let i = 0; i < words.length; i += chunkSize) {
+      const slice = words.slice(i, i + chunkSize);
+      if (slice[0].start <= currentTime && currentTime <= slice[slice.length - 1].end) {
+        activeChunk = slice;
+        break;
+      }
+    }
+  }
+
+  const spans = activeChunk.map(w => {
+    const isActive = (w.start <= currentTime && currentTime <= w.end);
+    let wordText = w.word;
+    if (allCaps) wordText = wordText.toUpperCase();
+
+    if (isActive) {
+      let activeClass = `sub-word sub-word-active-${stylePreset}`;
+      return `<span class="${activeClass}" style="color: ${opts.highlight_color || '#FFE600'};">${wordText}</span>`;
+    } else {
+      return `<span class="sub-word" style="color: ${opts.primary_color || '#FFFFFF'};">${wordText}</span>`;
+    }
+  });
+
+  overlayBox.innerHTML = spans.join(' ');
+}
+
+function highlightActiveCueInEditor(cueId) {
+  document.querySelectorAll('.sub-cue-row').forEach(row => {
+    if (cueId && row.dataset.cueId == cueId) {
+      row.classList.add('active');
+    } else {
+      row.classList.remove('active');
+    }
+  });
+}
+
+function renderSubtitleCuesList() {
+  const container = document.getElementById('sub-cues-list');
+  const badge = document.getElementById('sub-cues-badge');
+  const cues = (state.activeToolOptions && state.activeToolOptions.subtitles) || [];
+  if (badge) badge.innerText = `${cues.length} cue${cues.length === 1 ? '' : 's'}`;
+  if (!container) return;
+
+  if (cues.length === 0) {
+    container.innerHTML = `
+      <div class="text-center p-4 text-[var(--text-muted)] text-xs">
+        No subtitle cues loaded. Click "+ Add Cue" or "Reset to Demo Cues" to start.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = cues.map(cue => `
+    <div class="sub-cue-row p-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-inset)] transition-all space-y-1.5" data-cue-id="${cue.id}">
+      <div class="flex items-center justify-between text-[11px]">
+        <div class="flex items-center gap-1.5">
+          <button onclick="seekSubtitlePreview(${cue.start})" class="px-1.5 py-0.5 rounded bg-[var(--surface-card)] hover:bg-[var(--brand-light)] hover:text-[var(--brand-primary)] text-[var(--text-secondary)] font-semibold tabular-nums transition-colors cursor-pointer border border-[var(--border-subtle)]" title="Click to seek preview">
+            ${formatDisplayTime(cue.start)} → ${formatDisplayTime(cue.end)}
+          </button>
+          <button onclick="nudgeCueTime(${cue.id}, -0.1)" class="px-1.5 py-0.5 rounded bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] text-[10px] text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-pointer" title="Nudge back 0.1s">-0.1s</button>
+          <button onclick="nudgeCueTime(${cue.id}, 0.1)" class="px-1.5 py-0.5 rounded bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] text-[10px] text-[var(--text-muted)] border border-[var(--border-subtle)] cursor-pointer" title="Nudge forward 0.1s">+0.1s</button>
+        </div>
+        <button onclick="deleteSubtitleCue(${cue.id})" class="text-red-400 hover:text-red-500 text-[11px] p-1 cursor-pointer transition-colors" title="Delete Cue">
+          ${getIcon('trash', 'w-3 h-3')}
+        </button>
+      </div>
+      <input 
+        type="text" 
+        value="${cue.text.replace(/"/g, '&quot;')}" 
+        oninput="updateSubtitleCueText(${cue.id}, this.value)" 
+        class="w-full px-2 py-1 text-xs rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)]"
+        placeholder="Edit subtitle text..."
+      />
+    </div>
+  `).join('');
+}
+
+function updateSubtitleCueText(cueId, newText) {
+  const cue = (state.activeToolOptions.subtitles || []).find(c => c.id === cueId);
+  if (!cue) return;
+  cue.text = newText;
+  const words = newText.split(/\s+/).filter(Boolean);
+  const dur = Math.max(0.2, cue.end - cue.start);
+  cue.words = words.map((w, idx) => ({
+    word: w,
+    start: Math.round((cue.start + (idx / words.length) * dur) * 100) / 100,
+    end: Math.round((cue.start + ((idx + 1) / words.length) * dur) * 100) / 100
+  }));
+  updateSubtitleLiveOverlay(subPreviewCurrentTime);
+}
+
+function nudgeCueTime(cueId, delta) {
+  const cue = (state.activeToolOptions.subtitles || []).find(c => c.id === cueId);
+  if (!cue) return;
+  cue.start = Math.max(0, Math.round((cue.start + delta) * 100) / 100);
+  cue.end = Math.max(cue.start + 0.2, Math.round((cue.end + delta) * 100) / 100);
+  updateSubtitleCueText(cueId, cue.text);
+  renderSubtitleCuesList();
+}
+
+function deleteSubtitleCue(cueId) {
+  state.activeToolOptions.subtitles = (state.activeToolOptions.subtitles || []).filter(c => c.id !== cueId);
+  renderSubtitleCuesList();
+  updateSubtitleLiveOverlay(subPreviewCurrentTime);
+}
+
+function addSubtitleCue() {
+  const cues = state.activeToolOptions.subtitles || [];
+  const lastEnd = cues.length > 0 ? cues[cues.length - 1].end : 0.0;
+  const newStart = Math.round((lastEnd + 0.2) * 100) / 100;
+  const newEnd = Math.round((newStart + 2.0) * 100) / 100;
+  const nextId = cues.length > 0 ? Math.max(...cues.map(c => c.id)) + 1 : 1;
+
+  cues.push({
+    id: nextId,
+    start: newStart,
+    end: newEnd,
+    text: "NEW SUBTITLE LINE",
+    words: [
+      { word: "NEW", start: newStart, end: newStart + 0.6 },
+      { word: "SUBTITLE", start: newStart + 0.6, end: newStart + 1.3 },
+      { word: "LINE", start: newStart + 1.3, end: newEnd }
+    ]
+  });
+
+  if (newEnd > subPreviewDuration) {
+    subPreviewDuration = newEnd + 1.0;
+    const scrubber = document.getElementById('sub-video-scrubber');
+    if (scrubber) scrubber.max = subPreviewDuration;
+  }
+
+  renderSubtitleCuesList();
+  seekSubtitlePreview(newStart);
+}
+
+function loadDemoSubtitleSample() {
+  state.activeToolOptions.subtitles = getSampleSubtitleCues();
+  renderSubtitleCuesList();
+  seekSubtitlePreview(0.8);
+}
+
+function handleSelectSubtitleStyle(presetId) {
+  state.activeToolOptions.style = presetId;
+  // Apply aesthetic presets
+  if (presetId === 'white_box') {
+    state.activeToolOptions.primary_color = '#000000';
+    state.activeToolOptions.outline_color = '#FFFFFF';
+    state.activeToolOptions.font_name = 'Montserrat';
+    state.activeToolOptions.all_caps = false;
+  } else if (presetId === 'hormozi') {
+    state.activeToolOptions.primary_color = '#FFFFFF';
+    state.activeToolOptions.highlight_color = '#FFE600';
+    state.activeToolOptions.outline_color = '#000000';
+    state.activeToolOptions.font_name = 'Montserrat';
+    state.activeToolOptions.all_caps = true;
+  } else if (presetId === 'bounce') {
+    state.activeToolOptions.primary_color = '#FFFFFF';
+    state.activeToolOptions.highlight_color = '#00FF66';
+    state.activeToolOptions.outline_color = '#000000';
+    state.activeToolOptions.font_name = 'Impact';
+    state.activeToolOptions.all_caps = true;
+  } else if (presetId === 'minimal') {
+    state.activeToolOptions.primary_color = '#F8FAFC';
+    state.activeToolOptions.outline_color = '#0F172A';
+    state.activeToolOptions.font_name = 'Arial';
+    state.activeToolOptions.all_caps = false;
+  }
+
+  const optBox = document.getElementById('studio-options-box');
+  if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
+  updateSubtitleLiveOverlay(subPreviewCurrentTime);
+}
+
+window.handleSelectSubtitleFont = function(fontName) {
+  state.activeToolOptions.font_name = fontName;
+  updateSubtitleLiveOverlay(subPreviewCurrentTime);
+};
+
+async function handleBrowseCustomFont() {
+  const files = await callBridge('browse_files', ['Font Files (*.ttf;*.otf)']);
+  if (files && files.length > 0) {
+    const fontPath = files[0];
+    const res = await callBridge('get_font_base64', fontPath);
+    if (res && res.success) {
+      const fontName = res.font_family;
+      let styleTag = document.getElementById('custom-font-style');
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'custom-font-style';
+        document.head.appendChild(styleTag);
+      }
+      styleTag.textContent = `@font-face { font-family: "${fontName}"; src: url("${res.data_url}") format("truetype"); font-weight: normal; font-style: normal; }`;
+
+      state.activeToolOptions.font_name = fontName;
+      state.activeToolOptions.font_path = fontPath;
+
+      const optBox = document.getElementById('studio-options-box');
+      if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
+      updateSubtitleLiveOverlay(subPreviewCurrentTime);
+    }
+  }
+}
+
+function setSubtitleColor(key, hexVal) {
+  state.activeToolOptions[key] = hexVal;
+  updateSubtitleLiveOverlay(subPreviewCurrentTime);
+}
+
+function setSubtitleFontSize(size) {
+  state.activeToolOptions.font_size = parseInt(size) || 48;
+  updateSubtitleLiveOverlay(subPreviewCurrentTime);
+}
+
+function setSubtitlePosition(pos) {
+  state.activeToolOptions.position = pos;
+  const optBox = document.getElementById('studio-options-box');
+  if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
+  updateSubtitleLiveOverlay(subPreviewCurrentTime);
+}
+
+function setSubtitleAllCaps(checked) {
+  state.activeToolOptions.all_caps = checked;
+  updateSubtitleLiveOverlay(subPreviewCurrentTime);
+}
 
 // ── Modals: Command Palette & 2-Tier Uninstall ───────────────────────────────
 function openCommandPalette() {

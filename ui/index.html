@@ -15,8 +15,8 @@
         extend: {
           fontFamily: {
             sans: ['Satoshi', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-            display: ['Instrument Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-            mono: ['DM Mono', 'Consolas', 'monospace']
+            display: ['Satoshi', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['Satoshi', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
           }
         }
       }
@@ -75,7 +75,7 @@
         class="flex items-center gap-3 px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-muted)] transition-all cursor-pointer"
       >
         <span>Search utilities...</span>
-        <kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">Ctrl K</kbd>
+        <kbd class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">Ctrl K</kbd>
       </button>
 
       <!-- Notification Bell -->
@@ -184,21 +184,21 @@
         <div class="space-y-1.5 text-[11px]">
           <!-- CPU -->
           <div class="flex items-center justify-between gap-2">
-            <span class="text-[var(--text-secondary)] font-mono text-[10px] w-7">CPU</span>
+            <span class="text-[var(--text-secondary)] font-medium text-[10px] w-7">CPU</span>
             <div class="flex-1 bg-[var(--surface-inset)] h-1.5 rounded-full overflow-hidden">
               <div id="mon-cpu-fill" class="bg-emerald-500 h-full w-[12%] transition-all duration-500"></div>
             </div>
           </div>
           <!-- RAM -->
           <div class="flex items-center justify-between gap-2">
-            <span class="text-[var(--text-secondary)] font-mono text-[10px] w-7">RAM</span>
+            <span class="text-[var(--text-secondary)] font-medium text-[10px] w-7">RAM</span>
             <div class="flex-1 bg-[var(--surface-inset)] h-1.5 rounded-full overflow-hidden">
               <div id="mon-ram-fill" class="bg-emerald-500 h-full w-[45%] transition-all duration-500"></div>
             </div>
           </div>
           <!-- DISK -->
           <div class="flex items-center justify-between gap-2">
-            <span class="text-[var(--text-secondary)] font-mono text-[10px] w-7">DISK</span>
+            <span class="text-[var(--text-secondary)] font-medium text-[10px] w-7">DISK</span>
             <div class="flex-1 bg-[var(--surface-inset)] h-1.5 rounded-full overflow-hidden">
               <div id="mon-disk-fill" class="bg-emerald-500 h-full w-[38%] transition-all duration-500"></div>
             </div>

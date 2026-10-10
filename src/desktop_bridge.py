@@ -13,6 +13,7 @@ import sys
 import json
 import shutil
 import subprocess
+import base64
 from typing import Dict, Any, List, Optional
 import webview
 
@@ -96,6 +97,17 @@ class DesktopBridge:
                 "is_implemented": True,
                 "engine_type": "python",
                 "target": os.path.join(self.engines_dir, "batch_renamer", "engine.py")
+            },
+            {
+                "id": "subtitle_animator",
+                "name": "Subtitle Animation Maker",
+                "category_id": "video",
+                "category_name": "Media & Video",
+                "description": "Create viral animated subtitles with word-by-word karaoke highlight, custom fonts, colors, and live timing editor.",
+                "icon": "type",
+                "is_implemented": True,
+                "engine_type": "python",
+                "target": os.path.join(self.engines_dir, "subtitle_animator", "engine.py")
             }
         ]
 
@@ -262,6 +274,32 @@ class DesktopBridge:
             self.reveal_file(target_path)
         else:
             self.open_file(target_path)
+
+    def read_text_file(self, target_path: str) -> str:
+        """Reads text content of a local file (e.g. .srt, .vtt, .txt)."""
+        if not target_path or not os.path.exists(target_path):
+            return ""
+        try:
+            with open(target_path, "r", encoding="utf-8", errors="ignore") as f:
+                return f.read()
+        except Exception:
+            return ""
+
+    def get_font_base64(self, target_path: str) -> Dict[str, str]:
+        """Encodes local .ttf/.otf font file into base64 for instant CSS font-face injection."""
+        if not target_path or not os.path.exists(target_path):
+            return {"success": False, "error": "File not found"}
+        try:
+            font_name = os.path.splitext(os.path.basename(target_path))[0]
+            with open(target_path, "rb") as f:
+                b64_data = base64.b64encode(f.read()).decode("utf-8")
+            return {
+                "success": True,
+                "font_family": font_name,
+                "data_url": f"data:font/truetype;charset=utf-8;base64,{b64_data}"
+            }
+        except Exception as ex:
+            return {"success": False, "error": str(ex)}
 
     # ── Favorites & Lifecycle Services ───────────────────────────────────────
     def toggle_favorite(self, tool_id: str) -> List[str]:
