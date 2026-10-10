@@ -1,0 +1,20 @@
+{
+  "name": "boltools-ui",
+  "version": "1.0.0",
+  "description": "Ultra-fast, zero-freeze offline desktop UI shell for Boltools",
+  "main": "ui/js/app.js",
+  "scripts": {
+    "build:css": "npx tailwindcss -i ./ui/css/input.css -o ./ui/css/tailwind.min.css --minify",
+    "test": "python -m unittest discover -s tests",
+    "benchmark": "python tools_dev/run_baseline_benchmark.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sai-Pavan-Kumar/Boltools.git"
+  },
+  "author": "The SurfBoard Studio",
+  "license": "ISC",
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}
