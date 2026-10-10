@@ -33,8 +33,8 @@ class AnnouncementService:
         self.read_ids = self._load_read_ids()
         self.cached_announcements: List[Dict] = self._load_initial_announcements()
 
-        # Kick off background update fetch immediately upon startup
-        self.fetch_async()
+        # Defer background remote update fetch by 10s to ensure zero contention with UI startup
+        threading.Timer(10.0, self.fetch_async).start()
 
     def _load_initial_announcements(self) -> List[Dict]:
         """Loads bundled announcements.json as guaranteed instant local fallback."""

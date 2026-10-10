@@ -100,13 +100,19 @@ def main():
 
     desktop_bridge.set_window(window)
 
-    # Launch Edge Chromium (WebView2) with custom window icon
+    # Ensure persistent storage directory for Edge WebView2 user data (theme, localStorage, recents)
+    storage_dir = os.path.join(os.path.expanduser("~"), ".boltools", "webview2_data")
+    os.makedirs(storage_dir, exist_ok=True)
+
+    # Launch Edge Chromium (WebView2) with custom window icon and persistent session
     webview.start(
         _apply_win_icon,
         (window,),
         icon=icon_path if (icon_path and os.path.exists(icon_path)) else None,
         gui="edgechromium",
-        debug=False
+        debug=False,
+        private_mode=False,
+        storage_path=storage_dir
     )
 
 

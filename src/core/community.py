@@ -37,7 +37,7 @@ class CommunityService:
 
         self.poll_state_file = os.path.join(self.state_dir, "poll_state.json")
         self.requests_state_file = os.path.join(self.state_dir, "requests_state.json")
-        self.tool_states_file = os.path.join(self.state_dir, "tool_states.json")
+        self.tool_states_file = os.path.join(self.state_dir, "community_install_counts.json")
         self.client_id_file = os.path.join(self.state_dir, "client_id.txt")
 
         self.client_id = self._get_or_create_client_id()

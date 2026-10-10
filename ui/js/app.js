@@ -75,7 +75,7 @@ const DEFAULT_TOOLS = [
 ];
 
 // ── Application State ────────────────────────────────────────────────────────
-const state = {
+const state = (window.boltoolsStore && window.boltoolsStore.state) ? window.boltoolsStore.state : {
   theme: localStorage.getItem('boltools-theme') || 'light',
   currentView: 'home',
   activeToolId: null,
@@ -96,6 +96,9 @@ const state = {
   activeToolOptions: {},
   isToolRunning: false
 };
+if (window.boltoolsStore) {
+  window.boltoolsStore.update(state);
+}
 
 function recordRecentTool(toolId) {
   if (!toolId) return;
