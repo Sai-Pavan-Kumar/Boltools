@@ -1,0 +1,126 @@
+{
+  "startup": {
+    "time_to_usable_ms": 145.81710000129533,
+    "first_paint_ms": 136,
+    "first_contentful_paint_ms": 136,
+    "initial_dom_nodes": 171,
+    "initial_heap_mb": 9.5367431640625,
+    "network_requests": [
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/index.html",
+        "resource_type": "document",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/assets/fonts/InstrumentSans-Variable.woff2",
+        "resource_type": "font",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/assets/fonts/DMMono-Regular.woff2",
+        "resource_type": "font",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/css/tailwind.min.css",
+        "resource_type": "stylesheet",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/css/styles.css",
+        "resource_type": "stylesheet",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/assets/Boltools_logo.webp",
+        "resource_type": "image",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/js/modules/utils.js",
+        "resource_type": "script",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/js/modules/bridge.js",
+        "resource_type": "script",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/js/modules/store.js",
+        "resource_type": "script",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/js/modules/virtual_grid.js",
+        "resource_type": "script",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/js/modules/search_index.js",
+        "resource_type": "script",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/js/modules/perf.js",
+        "resource_type": "script",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/js/icons.js",
+        "resource_type": "script",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/js/app.js",
+        "resource_type": "script",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/assets/fonts/InstrumentSans-Variable.woff2",
+        "resource_type": "font",
+        "method": "GET"
+      },
+      {
+        "url": "file:///C:/Projects/boltools/software/ui/assets/fonts/DMMono-Medium.woff2",
+        "resource_type": "font",
+        "method": "GET"
+      }
+    ]
+  },
+  "scale": [
+    {
+      "count": 100,
+      "render_hub_ms": 31.28429999924265,
+      "dom_nodes": 191,
+      "heap_mb": 9.5367431640625,
+      "max_frame_ms": 18,
+      "approx_fps": 60,
+      "frames_over_50ms": 0,
+      "avg_search_ms": 0.03333333351959785,
+      "max_search_ms": 0.10000000149011612
+    },
+    {
+      "count": 1000,
+      "render_hub_ms": 31.998599999496946,
+      "dom_nodes": 191,
+      "heap_mb": 9.5367431640625,
+      "max_frame_ms": 18.799999998882413,
+      "approx_fps": 60,
+      "frames_over_50ms": 0,
+      "avg_search_ms": 0,
+      "max_search_ms": 0
+    },
+    {
+      "count": 10000,
+      "render_hub_ms": 30.887999999322346,
+      "dom_nodes": 191,
+      "heap_mb": 12.111663818359375,
+      "max_frame_ms": 17.90000000037253,
+      "approx_fps": 60,
+      "frames_over_50ms": 0,
+      "avg_search_ms": 0.016666666604578495,
+      "max_search_ms": 0.09999999962747097
+    }
+  ]
+}

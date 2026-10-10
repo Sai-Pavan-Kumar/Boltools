@@ -17,7 +17,12 @@ import json
 import time
 from playwright.sync_api import sync_playwright
 
-HTML_PATH = os.path.abspath("software/ui/index.html")
+candidates = [
+    os.path.abspath("ui/index.html"),
+    os.path.abspath("software/ui/index.html"),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "../ui/index.html"))
+]
+HTML_PATH = next((p for p in candidates if os.path.exists(p)), candidates[0])
 
 
 def measure_startup_and_network():
