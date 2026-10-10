@@ -12,6 +12,7 @@ import os
 import sys
 import json
 import shutil
+import re
 import subprocess
 import base64
 from typing import Dict, Any, List, Optional
@@ -24,20 +25,29 @@ from src.core.announcements import announcement_service
 from src.core.tool_store import tool_store_service
 from src.engine_runner import engine_runner
 
+VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
+
+
+def validate_identifier(val: str, name: str = "identifier") -> str:
+    """Validates that an identifier strictly matches ^[a-z0-9_]{1,64}$."""
+    if not val or not isinstance(val, str) or not VALID_ID_PATTERN.match(val):
+        raise ValueError(f"Security: Invalid {name} '{val}'. Must match ^[a-z0-9_]{{1,64}}$.")
+    return val
+
 
 class DesktopBridge:
     """JS-accessible API exposed to the WebView2 frontend via window.pywebview.api."""
 
     def __init__(self):
-        self.window: Optional[webview.Window] = None
+        self._window: Optional[webview.Window] = None
         if getattr(sys, "frozen", False):
             self.base_dir = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
         else:
             self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.engines_dir = os.path.join(self.base_dir, "engines")
+        self.engines_dir = os.path.normpath(os.path.abspath(os.path.join(self.base_dir, "engines")))
 
     def set_window(self, window: webview.Window):
-        self.window = window
+        self._window = window
 
     # ── Initial State Dispatcher ─────────────────────────────────────────────
     def get_initial_data(self) -> Dict[str, Any]:
@@ -67,8 +77,13 @@ class DesktopBridge:
     # ── Engine Execution (Language-Agnostic) ──────────────────────────────────
     def execute_tool(self, tool_id: str, input_files: List[str], options: Dict[str, Any], output_dir: str):
         """Executes tool engine in a clean, isolated background process."""
-        initial_data = self.get_initial_data()
-        tool_meta = next((t for t in initial_data["tools"] if t["id"] == tool_id), None)
+        try:
+            validate_identifier(tool_id, "tool_id")
+        except ValueError as err:
+            self._notify_frontend("onToolError", str(err))
+            return
+
+        tool_meta = tool_store_service.get_tool_meta(tool_id)
 
         if not tool_meta:
             self._notify_frontend("onToolError", f"Unknown tool: {tool_id}")
@@ -117,7 +132,7 @@ class DesktopBridge:
     # ── Native Dialogs & System Explorer ─────────────────────────────────────
     def browse_files(self, file_types: Optional[List[str]] = None) -> List[str]:
         """Opens native Windows file dialog and returns selected file paths."""
-        if not self.window:
+        if not self._window:
             return []
         try:
             cleaned_filters: List[str] = []
@@ -136,7 +151,7 @@ class DesktopBridge:
             if not cleaned_filters:
                 cleaned_filters = ["All Files (*.*)"]
 
-            result = self.window.create_file_dialog(
+            result = self._window.create_file_dialog(
                 dialog_type=webview.OPEN_DIALOG,
                 allow_multiple=True,
                 file_types=tuple(cleaned_filters)
@@ -145,7 +160,7 @@ class DesktopBridge:
         except Exception:
             # Fallback without file type constraints to ensure file picker never gets blocked
             try:
-                result = self.window.create_file_dialog(
+                result = self._window.create_file_dialog(
                     dialog_type=webview.OPEN_DIALOG,
                     allow_multiple=True
                 )
@@ -155,10 +170,10 @@ class DesktopBridge:
 
     def browse_directory(self) -> str:
         """Opens native Windows folder selection dialog."""
-        if not self.window:
+        if not self._window:
             return ""
         try:
-            result = self.window.create_file_dialog(dialog_type=webview.FOLDER_DIALOG)
+            result = self._window.create_file_dialog(dialog_type=webview.FOLDER_DIALOG)
             if result and len(result) > 0:
                 return result[0]
             return ""
@@ -237,22 +252,26 @@ class DesktopBridge:
 
     # ── Favorites & Lifecycle Services ───────────────────────────────────────
     def toggle_favorite(self, tool_id: str) -> List[str]:
+        validate_identifier(tool_id, "tool_id")
         favorites_service.toggle_favorite(tool_id)
         return favorites_service.get_all()
 
     def install_tool(self, tool_id: str) -> bool:
+        validate_identifier(tool_id, "tool_id")
         res = tool_store_service.install_or_update_tool(tool_id)
         community_service.install_tool(tool_id)
         return bool(res.get("success", False))
 
     def install_or_update_tool(self, tool_id: str) -> Dict[str, Any]:
         """Installs or updates tool engine file over-the-air from CDN/repository."""
+        validate_identifier(tool_id, "tool_id")
         res = tool_store_service.install_or_update_tool(tool_id)
         if res.get("success"):
             community_service.install_tool(tool_id)
         return res
 
     def uninstall_tool(self, tool_id: str, purge_data: bool = False) -> bool:
+        validate_identifier(tool_id, "tool_id")
         tool_store_service.uninstall_tool(tool_id, purge_data=purge_data)
         return community_service.uninstall_tool(tool_id, purge_data=purge_data)
 
@@ -278,13 +297,63 @@ class DesktopBridge:
         """Returns the latest announcements from the service cache."""
         return announcement_service.cached_announcements
 
+    def search_tools(self, query: str = "", category: str = "", status: str = "", sort: str = "", offset: int = 0, limit: int = 200) -> Dict[str, Any]:
+        """Provides light, paginated summaries from in-memory cache."""
+        tools = tool_store_service.get_tools_catalog()
+        q = (query or "").strip().lower()
+
+        filtered = []
+        for t in tools:
+            if category and t.get("category_id") != category:
+                continue
+            if status:
+                is_up = t.get("update_available")
+                is_inst = (t.get("status") == "installed") or is_up
+                if status == "installed" and not is_inst:
+                    continue
+                if status == "update_available" and not is_up:
+                    continue
+                if status == "available" and is_inst:
+                    continue
+            if q:
+                name_match = q in t.get("name", "").lower()
+                desc_match = q in t.get("description", "").lower()
+                if not (name_match or desc_match):
+                    continue
+
+            # Return light summary (no heavy structures)
+            filtered.append({
+                "id": t.get("id"),
+                "name": t.get("name"),
+                "category_id": t.get("category_id"),
+                "category_name": t.get("category_name"),
+                "description": t.get("description"),
+                "icon": t.get("icon"),
+                "status": t.get("status"),
+                "version": t.get("version"),
+                "remote_version": t.get("remote_version"),
+                "update_available": t.get("update_available", False),
+                "size_mb": t.get("size_mb", 25)
+            })
+
+        total = len(filtered)
+        limit = min(max(1, limit), 200)
+        items = filtered[offset:offset + limit]
+
+        return {"total": total, "items": items}
+
+    def get_tool_details(self, tool_id: str) -> Optional[Dict[str, Any]]:
+        """Returns complete tool definition."""
+        validate_identifier(tool_id, "tool_id")
+        return tool_store_service.get_tool_meta(tool_id)
+
     # ── Helper for Frontend Dispatch ─────────────────────────────────────────
     def _notify_frontend(self, handler_name: str, payload: Any):
-        if not self.window:
+        if not self._window:
             return
         payload_json = json.dumps(payload)
         js_code = f"if (window.{handler_name}) {{ window.{handler_name}({payload_json}); }}"
-        self.window.evaluate_js(js_code)
+        self._window.evaluate_js(js_code)
 
 
 desktop_bridge = DesktopBridge()
