@@ -37,7 +37,7 @@ def _filetime_to_int(ft: FILETIME) -> int:
 class SystemMonitor:
     """Background monitor providing lightweight CPU, RAM, and Disk statistics."""
 
-    def __init__(self, interval_sec: float = 3.0):
+    def __init__(self, interval_sec: float = 5.0):
         self.interval = interval_sec
         self.cpu_pct: int = 12
         self.ram_pct: int = 42
