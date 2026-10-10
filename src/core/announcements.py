@@ -28,7 +28,27 @@ class AnnouncementService:
         self.state_file = os.path.join(self.state_dir, "announcements_state.json")
         
         self.read_ids = self._load_read_ids()
-        self.cached_announcements: List[Dict] = DEFAULT_ANNOUNCEMENTS.copy()
+        self.cached_announcements: List[Dict] = self._load_initial_announcements()
+
+        # Kick off background update fetch immediately upon startup
+        self.fetch_async()
+
+    def _load_initial_announcements(self) -> List[Dict]:
+        """Loads bundled announcements.json as guaranteed instant local fallback."""
+        possible_paths = [
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "announcements.json"),
+            os.path.join(os.getcwd(), "announcements.json"),
+        ]
+        for p in possible_paths:
+            if os.path.isfile(p):
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        items = json.load(f)
+                        if isinstance(items, list) and len(items) > 0:
+                            return items
+                except Exception:
+                    pass
+        return DEFAULT_ANNOUNCEMENTS.copy()
 
     def _load_read_ids(self) -> set:
         if os.path.exists(self.state_file):

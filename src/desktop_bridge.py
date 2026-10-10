@@ -330,6 +330,10 @@ class DesktopBridge:
         cpu, ram, disk = system_monitor.get_stats()
         return {"cpu": cpu, "ram": ram, "disk": disk}
 
+    def get_announcements(self) -> List[Dict[str, Any]]:
+        """Returns the latest announcements from the service cache."""
+        return announcement_service.cached_announcements
+
     # ── Helper for Frontend Dispatch ─────────────────────────────────────────
     def _notify_frontend(self, handler_name: str, payload: Any):
         if not self.window:

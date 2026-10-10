@@ -2324,13 +2324,22 @@ function openAnnouncementsModal() {
 
   const items = state.announcements && state.announcements.length > 0 ? state.announcements : [
     {
-      id: "sb_boltools_v1_live",
+      id: "sb_boltools_tool_06_subtitle_animator",
+      date: "2026-10-10",
+      tag: "NEW TOOL",
+      title: "Subtitle Animation Maker (Now Live)",
+      description: "Create viral animated subtitles with word-by-word karaoke highlights, custom fonts, colors, and live 60fps timing preview 100% offline.",
+      cta_text: "Open Tool Hub",
+      cta_url: "https://thesurfboard.in"
+    },
+    {
+      id: "sb_boltools_launch_01",
+      date: "2026-10-05",
       tag: "READY",
-      date: "2026-10-07",
-      title: "5 Offline Creator Tools Ready",
-      description: "Audio Extractor, WebP Compressor, Video Compressor, Document Converter, and Batch Renamer are fully active.",
-      cta_text: "Browse Tool Hub",
-      cta_url: ""
+      title: "Welcome to Boltools Desktop Suite",
+      description: "The 100% offline Swiss Army knife for creators, editors, and power users. Zero subscriptions. Zero data leaks.",
+      cta_text: "Join SurfBoard Community",
+      cta_url: "https://thesurfboard.in"
     }
   ];
 
@@ -2442,6 +2451,14 @@ async function initApp() {
       if (cpu) cpu.style.width = `${stats.cpu}%`;
       if (ram) ram.style.width = `${stats.ram}%`;
       if (disk) disk.style.width = `${stats.disk}%`;
+    }
+    // Background check for newly arrived announcements
+    const latestAnnouncements = await callBridge('get_announcements');
+    if (latestAnnouncements && latestAnnouncements.length) {
+      state.announcements = latestAnnouncements;
+      const seenIds = JSON.parse(localStorage.getItem('boltools-seen-announcements') || '[]');
+      const unread = (state.announcements || []).filter(a => !seenIds.includes(a.id)).length;
+      updateBellBadge(unread > 0 ? unread : 0);
     }
   }, 3000);
 }
