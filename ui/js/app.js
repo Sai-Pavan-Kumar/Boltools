@@ -110,10 +110,17 @@ function recordRecentTool(toolId) {
 
 // ── Bridge Communication Helpers ─────────────────────────────────────────────
 async function callBridge(fnName, ...args) {
-  if (window.pywebview && window.pywebview.api && typeof window.pywebview.api[fnName] === 'function') {
-    return await window.pywebview.api[fnName](...args);
+  if (window.boltoolsBridge) {
+    const res = await window.boltoolsBridge.call(fnName, ...args);
+    if (res && res.ok) {
+      return res.data;
+    }
+    if (res && !res.ok) {
+      console.error(`[callBridge Error] ${fnName}:`, res.error);
+    }
+    return null;
   }
-  console.warn(`Bridge function ${fnName} not available in mock/browser mode.`);
+  console.error(`[callBridge Error] boltoolsBridge not initialized on window.`);
   return null;
 }
 
@@ -279,7 +286,8 @@ function updateBreadcrumb(crumbs) {
 
 // 1. Home Dashboard View
 function renderHome(container) {
-  const readyTools = state.tools.filter(t => t.status === 'installed' || t.status === 'update_available' || t.update_available);
+  const allReadyTools = state.tools.filter(t => t.status === 'installed' || t.status === 'update_available' || t.update_available);
+  const readyTools = allReadyTools.slice(0, 12); // Spec rule: at most 12 items on Home
   const updatesCount = state.updatesCount || state.tools.filter(t => t.update_available || t.status === 'update_available').length;
 
   // Compute Last Used 3 Utilities
@@ -504,87 +512,75 @@ function renderCategoryView(container, categoryId) {
   `;
 }
 
-// 2. Tool Hub & Catalog View
+// ── Tool Hub Search & Virtual Grid Controller ───────────────────────────────
+let activeHubVirtualGrid = null;
+let activeSearchIndex = null;
+let hubSearchDebounceTimer = null;
+
+function renderToolHubCard(t, index) {
+  const isUpdate = t.update_available || t.status === 'update_available';
+  const isInstalled = t.status === 'installed' || isUpdate;
+  const installedVer = t.installed_version || (t.status === 'installed' ? (t.version || '1.0.0') : null);
+  const remoteVer = t.remote_version || t.version || '1.0.0';
+
+  return `
+    <div id="hub-card-${t.id}" class="hairline-card p-4 rounded-xl bg-[var(--surface-card)] border ${isUpdate ? 'border-amber-500/40 shadow-sm' : 'border-[var(--border-subtle)]'} hover:border-[var(--border-hover)] flex flex-col justify-between relative overflow-hidden h-[190px]">
+      ${isUpdate ? `
+        <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-bl-lg tracking-wider uppercase flex items-center gap-1">
+          ${getIcon('refresh-cw', 'w-2.5 h-2.5')} Update Available
+        </div>
+      ` : ''}
+      <div>
+        <div class="flex items-center gap-2.5 mb-2.5">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)]">
+            ${getIcon(t.icon, 'w-4 h-4')}
+          </div>
+          <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${t.category_name}</span>
+          <span class="text-[10px] font-mono text-[var(--text-muted)]">v${installedVer || remoteVer}</span>
+        </div>
+        <h4 class="text-sm font-semibold text-[var(--text-primary)] truncate">${t.name}</h4>
+        <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${t.description}</p>
+      </div>
+      <div class="mt-3 pt-2.5 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
+        ${isUpdate ? `
+          <div class="flex items-center gap-2 w-full justify-between">
+            <button id="btn-action-${t.id}" onclick="handleInstallOrUpdateTool('${t.id}', true)" class="btn-primary px-3 py-1 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all flex items-center gap-1.5 cursor-pointer">
+              ${getIcon('download', 'w-3 h-3')}
+              <span>Update v${remoteVer}</span>
+            </button>
+            <button onclick="navigateTo('tool_studio', '${t.id}')" class="px-2 py-1 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-colors cursor-pointer">
+              <span>Launch</span>
+            </button>
+          </div>
+        ` : (isInstalled ? `
+          <button onclick="navigateTo('tool_studio', '${t.id}')" class="btn-primary px-3 py-1 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 cursor-pointer">
+            <span>Open Tool</span>
+            ${getIcon('arrow-right', 'w-3 h-3')}
+          </button>
+          <button onclick="openUninstallModal('${t.id}', '${t.name}')" class="px-2 py-1 text-xs font-normal rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer">
+            Uninstall
+          </button>
+        ` : `
+          <button id="btn-action-${t.id}" onclick="handleInstallOrUpdateTool('${t.id}', false)" class="btn-primary px-3 py-1 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 cursor-pointer">
+            ${getIcon('download', 'w-3 h-3')}
+            <span>+ Install</span>
+          </button>
+        `)}
+      </div>
+    </div>
+  `;
+}
+
 function renderToolHub(container) {
   const filterTab = state.hubFilterTab || 'All';
-  const query = state.searchQuery.toLowerCase().trim();
+  const query = state.searchQuery || '';
   const updatesCount = state.updatesCount || state.tools.filter(t => t.update_available || t.status === 'update_available').length;
 
-  let filtered = state.tools.filter(t => {
-    const isUpdate = t.update_available || t.status === 'update_available';
-    const isInstalled = t.status === 'installed' || isUpdate;
+  if (!activeSearchIndex || activeSearchIndex.rawTools !== state.tools) {
+    activeSearchIndex = new ToolSearchIndex(state.tools);
+  }
 
-    if (filterTab === 'Installed' && !isInstalled) return false;
-    if (filterTab === 'Updates' && !isUpdate) return false;
-    if ((filterTab === 'Hub Catalog' || filterTab === 'Catalog') && isInstalled) return false;
-
-    if (query) {
-      const match = t.name.toLowerCase().includes(query) ||
-                    t.description.toLowerCase().includes(query) ||
-                    t.category_name.toLowerCase().includes(query);
-      if (!match) return false;
-    }
-    return true;
-  });
-
-  const cardsHtml = filtered.map(t => {
-    const isUpdate = t.update_available || t.status === 'update_available';
-    const isInstalled = t.status === 'installed' || isUpdate;
-    const installedVer = t.installed_version || (t.status === 'installed' ? (t.version || '1.0.0') : null);
-    const remoteVer = t.remote_version || t.version || '1.0.0';
-
-    return `
-      <div class="p-4 rounded-xl bg-[var(--surface-card)] border ${isUpdate ? 'border-amber-500/40 shadow-sm' : 'border-[var(--border-subtle)]'} hover:border-[var(--border-hover)] transition-all flex flex-col justify-between relative overflow-hidden">
-        ${isUpdate ? `
-          <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-bl-lg tracking-wider uppercase flex items-center gap-1 shadow-xs">
-            ${getIcon('refresh-cw', 'w-2.5 h-2.5')} Update Available
-          </div>
-        ` : ''}
-        <div>
-          <div class="flex items-center gap-2.5 mb-3">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)]">
-              ${getIcon(t.icon, 'w-4 h-4')}
-            </div>
-            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${t.category_name}</span>
-            <span class="text-[10px] font-mono text-[var(--text-muted)]">v${installedVer || remoteVer}</span>
-          </div>
-          <h4 class="text-sm font-semibold text-[var(--text-primary)]">${t.name}</h4>
-          <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${t.description}</p>
-          ${isUpdate && t.release_notes ? `
-            <div class="mt-2.5 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 dark:text-amber-400">
-              <span class="font-semibold">What's New in v${remoteVer}:</span> ${t.release_notes}
-            </div>
-          ` : ''}
-        </div>
-        <div class="mt-4 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
-          ${isUpdate ? `
-            <div class="flex items-center gap-2 w-full justify-between">
-              <button id="btn-action-${t.id}" onclick="handleInstallOrUpdateTool('${t.id}', true)" class="btn-primary px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
-                ${getIcon('download', 'w-3.5 h-3.5')}
-                <span>Update Tool (v${remoteVer})</span>
-              </button>
-              <button onclick="navigateTo('tool_studio', '${t.id}')" class="px-2.5 py-1.5 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-colors cursor-pointer">
-                <span>Launch (v${installedVer || '1.0.0'})</span>
-              </button>
-            </div>
-          ` : (isInstalled ? `
-            <button onclick="navigateTo('tool_studio', '${t.id}')" class="btn-primary px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
-              <span>Open Tool</span>
-              ${getIcon('arrow-right', 'w-3 h-3')}
-            </button>
-            <button onclick="openUninstallModal('${t.id}', '${t.name}')" class="px-2.5 py-1.5 text-xs font-normal rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer">
-              Uninstall
-            </button>
-          ` : `
-            <button id="btn-action-${t.id}" onclick="handleInstallOrUpdateTool('${t.id}', false)" class="btn-primary px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-sm cursor-pointer">
-              ${getIcon('download', 'w-3.5 h-3.5')}
-              <span>+ Install (Free)</span>
-            </button>
-          `)}
-        </div>
-      </div>
-    `;
-  }).join('');
+  const matchingTools = activeSearchIndex.search(query, filterTab);
 
   const hubTabs = [
     { id: 'All', label: 'All' },
@@ -594,14 +590,14 @@ function renderToolHub(container) {
   ];
 
   container.innerHTML = `
-    <div class="max-w-5xl mx-auto space-y-6 pb-10">
+    <div class="max-w-5xl mx-auto space-y-5 pb-6 h-full flex flex-col">
       <div>
         <h2 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">Tool Hub</h2>
         <p class="text-xs text-[var(--text-secondary)] mt-1">Browse, install, and update modular offline tools directly on this PC.</p>
       </div>
 
       <!-- Filter Tabs & Search Bar -->
-      <div class="p-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] flex flex-col sm:flex-row items-center gap-3">
+      <div class="p-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] flex flex-col sm:flex-row items-center gap-3 shrink-0">
         <!-- Segmented Tabs -->
         <div class="flex items-center gap-1 p-1 bg-[var(--surface-inset)] rounded-lg shrink-0 overflow-x-auto max-w-full">
           ${hubTabs.map(tab => `
@@ -628,16 +624,25 @@ function renderToolHub(container) {
         </div>
       </div>
 
-      <!-- Tools Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-        ${cardsHtml.length > 0 ? cardsHtml : `
-          <div class="col-span-2 p-8 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center">
-            <p class="text-xs text-[var(--text-muted)]">No utilities match your filter query.</p>
-          </div>
-        `}
+      <!-- Virtualized Scroll Viewport Container -->
+      <div id="virtual-grid-viewport" class="flex-1 overflow-y-auto relative min-h-[400px]">
       </div>
     </div>
   `;
+
+  const viewport = document.getElementById('virtual-grid-viewport');
+  if (viewport) {
+    if (activeHubVirtualGrid) activeHubVirtualGrid.destroy();
+    activeHubVirtualGrid = new VirtualGrid({
+      container: viewport,
+      items: matchingTools,
+      cardHeight: 190,
+      gap: 14,
+      bufferRows: 3,
+      renderCard: renderToolHubCard
+    });
+    activeHubVirtualGrid.mount();
+  }
 }
 
 function setHubTab(tabName) {
@@ -648,8 +653,13 @@ function setHubTab(tabName) {
 
 function handleHubSearch(val) {
   state.searchQuery = val;
-  const container = document.getElementById('main-content');
-  if (container) renderToolHub(container);
+  if (hubSearchDebounceTimer) clearTimeout(hubSearchDebounceTimer);
+  hubSearchDebounceTimer = setTimeout(() => {
+    if (activeHubVirtualGrid && activeSearchIndex) {
+      const results = activeSearchIndex.search(val, state.hubFilterTab || 'All');
+      activeHubVirtualGrid.setItems(results);
+    }
+  }, 80);
 }
 
 async function handleInstallOrUpdateTool(toolId, isUpdate = false) {
@@ -2603,8 +2613,11 @@ async function initApp() {
   }
   syncBridgeData();
 
-  // Start system monitor ticker
-  setInterval(async () => {
+  // Start system monitor ticker (5s interval, only while Home & document are visible)
+  let sysPollTimer = null;
+
+  async function pollSystemStats() {
+    if (document.hidden || state.currentView !== 'home') return;
     const stats = await callBridge('get_system_stats');
     if (stats) {
       const cpu = document.getElementById('mon-cpu-fill');
@@ -2614,18 +2627,33 @@ async function initApp() {
       if (ram) ram.style.width = `${stats.ram}%`;
       if (disk) disk.style.width = `${stats.disk}%`;
     }
-    // Background check for newly arrived announcements
-    const latestAnnouncements = await callBridge('get_announcements');
-    if (latestAnnouncements && latestAnnouncements.length) {
-      state.announcements = latestAnnouncements;
-      const seenIds = JSON.parse(localStorage.getItem('boltools-seen-announcements') || '[]');
-      const unread = (state.announcements || []).filter(a => !seenIds.includes(a.id)).length;
-      updateBellBadge(unread > 0 ? unread : 0);
+  }
+
+  function startSystemPolling() {
+    if (sysPollTimer) clearInterval(sysPollTimer);
+    sysPollTimer = setInterval(pollSystemStats, 5000);
+  }
+
+  function stopSystemPolling() {
+    if (sysPollTimer) {
+      clearInterval(sysPollTimer);
+      sysPollTimer = null;
     }
-  }, 3000);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopSystemPolling();
+    } else {
+      if (state.currentView === 'home') pollSystemStats();
+      startSystemPolling();
+    }
+  });
+
+  startSystemPolling();
 }
 
-// ── Self-healing Bootstrap ──────────────────────────────────────────────────
+// ── Single Deterministic Bootstrap from Bridge Ready Promise ───────────────
 let appInitialized = false;
 
 async function bootstrapApp() {
@@ -2634,7 +2662,10 @@ async function bootstrapApp() {
   await initApp();
 }
 
-window.addEventListener('pywebviewready', bootstrapApp);
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(bootstrapApp, 20);
-});
+if (window.boltoolsBridge) {
+  window.boltoolsBridge.ready.then(() => {
+    bootstrapApp();
+  });
+} else {
+  window.addEventListener('pywebviewready', bootstrapApp);
+}
