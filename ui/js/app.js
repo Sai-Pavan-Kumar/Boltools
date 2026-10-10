@@ -2906,15 +2906,20 @@ async function initApp() {
   async function syncBridgeData() {
     let attempts = 0;
     while (attempts < 40) {
-      const data = await callBridge('get_initial_data');
-      if (data) {
-        if (data.categories && data.categories.length) state.categories = data.categories;
-        if (data.tools && data.tools.length) state.tools = data.tools;
-        if (data.favorites) state.favorites = data.favorites;
-        if (data.announcements && data.announcements.length) state.announcements = data.announcements;
-        if (data.updates_count !== undefined) state.updatesCount = data.updates_count;
-        if (data.system_stats) state.systemStats = data.system_stats;
-        if (data.default_downloads) state.defaultDownloads = data.default_downloads;
+      const initData = await callBridge('get_initial_data');
+      if (initData) {
+        if (initData.categories && initData.categories.length) state.categories = initData.categories;
+        if (initData.favorites) state.favorites = initData.favorites;
+        if (initData.announcements && initData.announcements.length) state.announcements = initData.announcements;
+        if (initData.updates_count !== undefined) state.updatesCount = initData.updates_count;
+        if (initData.system_stats) state.systemStats = initData.system_stats;
+        if (initData.default_downloads) state.defaultDownloads = initData.default_downloads;
+
+        // Fetch compact catalog summaries via get_catalog_summary
+        const summaryData = await callBridge('get_catalog_summary');
+        if (Array.isArray(summaryData)) {
+          state.tools = summaryData;
+        }
 
         // Check unread announcements and pending updates
         const seenIds = JSON.parse(localStorage.getItem('boltools-seen-announcements') || '[]');

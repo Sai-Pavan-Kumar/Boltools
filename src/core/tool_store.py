@@ -269,6 +269,40 @@ class ToolStoreService:
         self._cached_resolved_catalog = resolved_tools
         return resolved_tools
 
+    def get_catalog_counts(self) -> Dict[str, int]:
+        """Returns fast counts for installed tools and pending updates without payload overhead."""
+        tools = self.get_tools_catalog()
+        total = len(tools)
+        installed = sum(1 for t in tools if t.get("status") == "installed" or t.get("update_available"))
+        updates = sum(1 for t in tools if t.get("update_available"))
+        return {"total": total, "installed": installed, "updates": updates}
+
+    def get_catalog_summary(self) -> List[Dict[str, Any]]:
+        """Returns compact tool summaries optimized for virtual lists and rapid serialization.
+        
+        Fields returned: id, name, category_id, category_name, icon, status, version, size_mb, update_available, description (cut to 120 chars).
+        """
+        tools = self.get_tools_catalog()
+        summaries = []
+        for t in tools:
+            desc = t.get("description") or ""
+            if len(desc) > 120:
+                desc = desc[:117] + "..."
+            summaries.append({
+                "id": t.get("id"),
+                "name": t.get("name"),
+                "category_id": t.get("category_id"),
+                "category_name": t.get("category_name"),
+                "icon": t.get("icon"),
+                "status": t.get("status"),
+                "version": t.get("installed_version") or t.get("version"),
+                "remote_version": t.get("remote_version") or t.get("version"),
+                "size_mb": t.get("size_mb", 25),
+                "update_available": bool(t.get("update_available", False)),
+                "description": desc
+            })
+        return summaries
+
     def get_updates_count(self) -> int:
         """Returns the number of tools that have pending updates."""
         tools = self.get_tools_catalog()

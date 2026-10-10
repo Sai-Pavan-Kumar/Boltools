@@ -51,9 +51,8 @@ class DesktopBridge:
 
     # ── Initial State Dispatcher ─────────────────────────────────────────────
     def get_initial_data(self) -> Dict[str, Any]:
-        """Provides dynamic catalog, installed/update status, favorites, and system metrics to frontend."""
-        tools = tool_store_service.get_tools_catalog()
-        updates_count = tool_store_service.get_updates_count()
+        """Provides lightweight startup payload: counts, favorites, settings, and announcements (no full catalog)."""
+        counts = tool_store_service.get_catalog_counts()
 
         categories = [
             {"id": "video", "name": "Media & Video", "desc": "Fast offline video compression, extraction, and formatting", "icon": "video", "accent": "#2563EB"},
@@ -66,13 +65,20 @@ class DesktopBridge:
 
         return {
             "categories": categories,
-            "tools": tools,
-            "updates_count": updates_count,
+            "counts": counts,
+            "updates_count": counts.get("updates", 0),
             "favorites": favorites_service.get_all(),
+            "settings": {
+                "default_downloads": os.path.join(os.path.expanduser("~"), "Downloads")
+            },
             "announcements": announcement_service.cached_announcements,
             "system_stats": {"cpu": cpu, "ram": ram, "disk": disk},
             "default_downloads": os.path.join(os.path.expanduser("~"), "Downloads")
         }
+
+    def get_catalog_summary(self) -> List[Dict[str, Any]]:
+        """Returns compact tool summaries (id, name, category_id, status, version, size_mb, update flag, description cut to 120 chars)."""
+        return tool_store_service.get_catalog_summary()
 
     # ── Engine Execution (Language-Agnostic) ──────────────────────────────────
     def execute_tool(self, tool_id: str, input_files: List[str], options: Dict[str, Any], output_dir: str):
@@ -297,52 +303,10 @@ class DesktopBridge:
         """Returns the latest announcements from the service cache."""
         return announcement_service.cached_announcements
 
-    def search_tools(self, query: str = "", category: str = "", status: str = "", sort: str = "", offset: int = 0, limit: int = 200) -> Dict[str, Any]:
-        """Provides light, paginated summaries from in-memory cache."""
-        tools = tool_store_service.get_tools_catalog()
-        q = (query or "").strip().lower()
-
-        filtered = []
-        for t in tools:
-            if category and t.get("category_id") != category:
-                continue
-            if status:
-                is_up = t.get("update_available")
-                is_inst = (t.get("status") == "installed") or is_up
-                if status == "installed" and not is_inst:
-                    continue
-                if status == "update_available" and not is_up:
-                    continue
-                if status == "available" and is_inst:
-                    continue
-            if q:
-                name_match = q in t.get("name", "").lower()
-                desc_match = q in t.get("description", "").lower()
-                if not (name_match or desc_match):
-                    continue
-
-            # Return light summary (no heavy structures)
-            filtered.append({
-                "id": t.get("id"),
-                "name": t.get("name"),
-                "category_id": t.get("category_id"),
-                "category_name": t.get("category_name"),
-                "description": t.get("description"),
-                "icon": t.get("icon"),
-                "status": t.get("status"),
-                "version": t.get("version"),
-                "remote_version": t.get("remote_version"),
-                "update_available": t.get("update_available", False),
-                "size_mb": t.get("size_mb", 25)
-            })
-
-        total = len(filtered)
-        limit = min(max(1, limit), 200)
-        items = filtered[offset:offset + limit]
-
-        return {"total": total, "items": items}
-
     def get_tool_details(self, tool_id: str) -> Optional[Dict[str, Any]]:
+        """Returns complete tool definition."""
+        validate_identifier(tool_id, "tool_id")
+        return tool_store_service.get_tool_meta(tool_id)
         """Returns complete tool definition."""
         validate_identifier(tool_id, "tool_id")
         return tool_store_service.get_tool_meta(tool_id)

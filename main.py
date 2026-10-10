@@ -95,13 +95,16 @@ def main():
         js_api=desktop_bridge,
         text_select=False
     )
+    if window is None:
+        raise RuntimeError("Failed to create webview window.")
+
     desktop_bridge.set_window(window)
 
     # Launch Edge Chromium (WebView2) with custom window icon
     webview.start(
         _apply_win_icon,
-        window,
-        icon=icon_path if os.path.exists(icon_path) else None,
+        (window,),
+        icon=icon_path if (icon_path and os.path.exists(icon_path)) else None,
         gui="edgechromium",
         debug=False
     )
