@@ -121,8 +121,9 @@ class ToolStoreService:
         # Cleanup leftover .staging-* directories from interrupted installs on startup
         self._cleanup_leftover_staging()
 
-        # Resolve bundled factory engines directory
+        # Resolve bundled factory engines directory and local release bundles
         self.bundled_engines_dir = os.path.join(get_base_dir(), "engines")
+        self.release_bundles_dir = os.path.join(get_base_dir(), "release_bundles")
 
         self.tool_states = self._load_tool_states()
         self.cached_manifest = self._load_cached_manifest()
@@ -724,16 +725,32 @@ class ToolStoreService:
                 last_error = str(e)
                 continue
 
-        # If download failed, check if we have a bundled engine fallback
+        # If download failed, check if we have a local release bundle or bundled engine fallback
         if not download_bytes:
-            bundled_engine = os.path.join(self.bundled_engines_dir, folder, "engine.py")
-            if os.path.isfile(bundled_engine):
-                assert_inside_dir(bundled_engine, self.bundled_engines_dir)
+            # Check local release_bundles directory for .bolpack
+            candidate_pack = os.path.join(self.release_bundles_dir, f"{tool_id}-{remote_version}.bolpack")
+            if os.path.isfile(candidate_pack):
                 try:
-                    with open(bundled_engine, "rb") as f:
-                        download_bytes = f.read()
+                    with open(candidate_pack, "rb") as f:
+                        bundle_data = f.read()
+                    if expected_sha256:
+                        actual_sha = hashlib.sha256(bundle_data).hexdigest().lower()
+                        if actual_sha == expected_sha256.lower().strip():
+                            download_bytes = bundle_data
+                    else:
+                        download_bytes = bundle_data
                 except Exception as e:
                     last_error = str(e)
+
+            if not download_bytes:
+                bundled_engine = os.path.join(self.bundled_engines_dir, folder, "engine.py")
+                if os.path.isfile(bundled_engine):
+                    assert_inside_dir(bundled_engine, self.bundled_engines_dir)
+                    try:
+                        with open(bundled_engine, "rb") as f:
+                            download_bytes = f.read()
+                    except Exception as e:
+                        last_error = str(e)
 
         if not download_bytes:
             return {"success": False, "error": f"Failed to download tool package: {last_error or 'Network timeout'}"}
