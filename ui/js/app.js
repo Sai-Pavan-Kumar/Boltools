@@ -71,6 +71,16 @@ const DEFAULT_TOOLS = [
     icon: "type",
     is_implemented: true,
     status: "installed"
+  },
+  {
+    id: "hello_tool",
+    name: "Hello World Test Utility",
+    category_id: "system",
+    category_name: "System & Files",
+    description: "Test tool for validating process isolation, progress reporting, cancellation, and atomic updates.",
+    icon: "terminal",
+    is_implemented: true,
+    status: "available"
   }
 ];
 
