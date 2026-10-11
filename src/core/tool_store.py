@@ -336,10 +336,14 @@ class ToolStoreService:
         pointer_file = os.path.join(tool_dir, "current.json")
         temp_pointer = os.path.join(tool_dir, f".current_{uuid.uuid4().hex[:8]}.tmp")
 
+        existing_ptr = self.get_active_pointer(tool_id)
+        prev_v = existing_ptr.get("version") if existing_ptr else None
+
         payload = {
             "version": version,
             "entry": entry,
             "runtime": runtime,
+            "previous_version": prev_v,
             "updated_at": datetime.now().isoformat()
         }
         try:
