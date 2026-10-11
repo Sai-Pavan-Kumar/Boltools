@@ -2,21 +2,41 @@
 
 Architecture & Capabilities:
 - Zero Installer Overhead: Tools and engine bug-fixes are delivered modularly Over-The-Air (OTA).
-- Decentralized ₹0 Serverless CDN: Manifests & Python engines are fetched from Cloudflare Pages CDN
+- Decentralized ₹0 Serverless CDN: Manifests & Python/EXE tool packs are fetched from Cloudflare Pages CDN
   (https://boltools.thesurfboard.in) with GitHub Raw automatic failover.
-- Safe Dynamic Resolution: Resolves engine execution to ~/.boltools/engines/<tool_id>/engine.py
-  (updated version) before falling back to factory bundled engines.
-- Atomic SemVer Engine Upgrades: Automatically detects newer tool versions and facilitates 1-click in-app updates.
-- 100% Offline Resilience: Caches remote manifest in ~/.boltools/manifest_cache.json.
+- Tool Pack v1 Architecture:
+  * Pack format: <tool_id>-<version>.bolpack (standard ZIP)
+  * Manifest: pack.json with id, name, version, min_app_version, runtime, entry, and files hash list.
+  * Pack.json is excluded from its own files hash list.
+  * Strict extraction security:
+    - Zip-slip guard: reject "..", absolute paths, drive letters, backslashes, ":", Windows reserved names.
+    - Symlink detection: checks ZipInfo mode bits in external_attr (0o120000).
+    - Zip-bomb defense: count real bytes streamed during extraction (max 500 MB global ceiling + manifest size).
+    - Limit file count (max 1000 files) and detect case-insensitive duplicates.
+  * Atomic directory structure:
+    ~/.boltools/engines/<tool_id>/
+      ├── current.json (atomic pointer to active version: {"version": "1.0.0", "entry": "engine.py", "runtime": "python"})
+      ├── v1.0.0/
+      │    ├── pack.json
+      │    └── engine.py
+      └── v1.0.1/
+  * Two-version retention: keeps current and previous version for instant rollback.
+  * Staging: extracts to .staging-<token>, verifies every file SHA256, renames to v<version>/, then atomically writes current.json.
+  * Leftover .staging-* wiped on startup. Single install lock per tool.
 """
 
 import os
 import sys
 import json
 import re
+import io
+import zipfile
 import urllib.request
 import threading
-from typing import List, Dict, Any, Optional, Tuple
+import hashlib
+import uuid
+import shutil
+from typing import List, Dict, Any, Optional, Tuple, Set
 from datetime import datetime
 
 from src.core.paths import get_data_path, get_base_dir
@@ -24,6 +44,18 @@ from src.core.paths import get_data_path, get_base_dir
 PRIMARY_MANIFEST_URL = "https://boltools.thesurfboard.in/tools_manifest.json"
 FALLBACK_MANIFEST_URL = "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/tools_manifest.json"
 MANIFEST_ENDPOINTS = [PRIMARY_MANIFEST_URL, FALLBACK_MANIFEST_URL]
+
+# Security Limits
+MAX_GLOBAL_PACK_SIZE = 150 * 1024 * 1024   # 150 MB max download ceiling
+MAX_GLOBAL_EXTRACT_SIZE = 500 * 1024 * 1024 # 500 MB max extracted byte ceiling (zip bomb guard)
+MAX_PACK_FILE_COUNT = 1000                 # Max 1000 files per pack
+
+# Windows Reserved Device Names
+WINDOWS_RESERVED_NAMES = {
+    "CON", "PRN", "AUX", "NUL",
+    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+}
 
 
 def parse_semver(version_str: str) -> Tuple[int, ...]:
@@ -60,7 +92,7 @@ def assert_inside_dir(child_path: str, parent_dir: str):
 
 
 class ToolStoreService:
-    """Manages remote tool discovery, modular downloads, and dynamic engine resolution."""
+    """Manages remote tool discovery, modular downloads, zip verification, and atomic versioning."""
 
     def __init__(self):
         self.state_dir = os.path.realpath(os.path.abspath(os.path.join(os.path.expanduser("~"), ".boltools")))
@@ -73,6 +105,9 @@ class ToolStoreService:
         os.makedirs(self.engines_dir, exist_ok=True)
         os.makedirs(self.tools_data_dir, exist_ok=True)
 
+        # Cleanup leftover .staging-* directories from interrupted installs on startup
+        self._cleanup_leftover_staging()
+
         # Resolve bundled factory engines directory
         self.bundled_engines_dir = os.path.join(get_base_dir(), "engines")
 
@@ -80,8 +115,36 @@ class ToolStoreService:
         self.cached_manifest = self._load_cached_manifest()
         self._cached_resolved_catalog: Optional[List[Dict[str, Any]]] = None
 
+        # Lock dictionary for synchronizing concurrent installs per tool
+        self._tool_locks: Dict[str, threading.Lock] = {}
+        self._global_lock = threading.Lock()
+
         # Defer manifest network synchronization by 10s to avoid blocking startup
         threading.Timer(10.0, self.sync_manifest_async).start()
+
+    def _get_tool_lock(self, tool_id: str) -> threading.Lock:
+        """Retrieves or creates a thread lock for a given tool_id."""
+        with self._global_lock:
+            if tool_id not in self._tool_locks:
+                self._tool_locks[tool_id] = threading.Lock()
+            return self._tool_locks[tool_id]
+
+    def _cleanup_leftover_staging(self):
+        """Scans engine directories and removes any lingering .staging-* folders."""
+        try:
+            if os.path.exists(self.engines_dir):
+                for tool_name in os.listdir(self.engines_dir):
+                    t_dir = os.path.join(self.engines_dir, tool_name)
+                    if os.path.isdir(t_dir):
+                        for sub in os.listdir(t_dir):
+                            if sub.startswith(".staging-"):
+                                staging_path = os.path.join(t_dir, sub)
+                                try:
+                                    shutil.rmtree(staging_path)
+                                except Exception:
+                                    pass
+        except Exception:
+            pass
 
     def invalidate_cache(self):
         """Invalidates resolved catalog cache on install/uninstall or sync."""
@@ -94,7 +157,6 @@ class ToolStoreService:
                 with open(self.tool_states_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     if isinstance(data, dict):
-                        # Convert legacy format if needed
                         normalized = {}
                         for k, v in data.items():
                             if isinstance(v, str):
@@ -120,7 +182,6 @@ class ToolStoreService:
 
     def _load_cached_manifest(self) -> Dict[str, Any]:
         """Loads manifest from cache or bundled local fallback."""
-        # 1. Try disk cache in ~/.boltools/manifest_cache.json
         if os.path.exists(self.manifest_cache_file):
             try:
                 with open(self.manifest_cache_file, "r", encoding="utf-8") as f:
@@ -130,7 +191,6 @@ class ToolStoreService:
             except Exception:
                 pass
 
-        # 2. Try bundled tools_manifest.json in software bundle
         bundled_manifest_path = get_data_path("tools_manifest.json")
         if os.path.exists(bundled_manifest_path):
             try:
@@ -177,57 +237,107 @@ class ToolStoreService:
         tools = self.cached_manifest.get("tools", [])
         return next((t for t in tools if t.get("id") == tool_id), None)
 
+    # ── Active Version Pointer Resolution (current.json) ──────────────────────
+    def get_active_pointer(self, tool_id: str) -> Optional[Dict[str, Any]]:
+        """Reads current.json pointer for a tool to find active version and entry target."""
+        validate_id(tool_id, "tool_id")
+        pointer_file = os.path.join(self.engines_dir, tool_id, "current.json")
+        if os.path.isfile(pointer_file):
+            try:
+                with open(pointer_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict) and "version" in data and "entry" in data:
+                        return data
+            except Exception:
+                pass
+        return None
+
+    def _set_active_pointer(self, tool_id: str, version: str, entry: str, runtime: str = "python") -> bool:
+        """Atomically writes current.json pointer using os.replace."""
+        validate_id(tool_id, "tool_id")
+        tool_dir = os.path.join(self.engines_dir, tool_id)
+        os.makedirs(tool_dir, exist_ok=True)
+        pointer_file = os.path.join(tool_dir, "current.json")
+        temp_pointer = os.path.join(tool_dir, f".current_{uuid.uuid4().hex[:8]}.tmp")
+
+        payload = {
+            "version": version,
+            "entry": entry,
+            "runtime": runtime,
+            "updated_at": datetime.now().isoformat()
+        }
+        try:
+            with open(temp_pointer, "w", encoding="utf-8") as f:
+                json.dump(payload, f, indent=2)
+            os.replace(temp_pointer, pointer_file)
+            return True
+        except Exception:
+            if os.path.exists(temp_pointer):
+                try:
+                    os.remove(temp_pointer)
+                except Exception:
+                    pass
+            return False
+
     def is_engine_installed_locally(self, tool_id: str, engine_folder: str = "") -> bool:
         """Checks if a tool engine is physically present either locally or bundled."""
-        dyn_engine = os.path.join(self.engines_dir, tool_id, "engine.py")
-        if os.path.isfile(dyn_engine):
-            return True
-
-        folder = engine_folder or tool_id
-        bundled_engine = os.path.join(self.bundled_engines_dir, folder, "engine.py")
-        return os.path.isfile(bundled_engine)
+        target = self.get_engine_target(tool_id)
+        return bool(target and os.path.isfile(target))
 
     def get_engine_target(self, tool_id: str) -> Optional[str]:
         """Resolves the executable engine target file path.
         
-        Prioritizes the dynamically downloaded/updated engine in ~/.boltools/engines/<tool_id>/engine.py,
-        falling back to the factory bundled engine in software/engines/<folder>/engine.py.
+        Priority:
+        1. Dynamic version folder resolved via ~/.boltools/engines/<tool_id>/current.json
+        2. Legacy flat ~/.boltools/engines/<tool_id>/engine.py
+        3. Factory bundled engine in software/engines/<folder>/engine.py
         """
         validate_id(tool_id, "tool_id")
 
-        # 1. User/Dynamic engine override (highest priority)
+        # 1. Versioned current.json resolution
+        pointer = self.get_active_pointer(tool_id)
+        if pointer:
+            v_folder = f"v{pointer['version']}"
+            entry_file = pointer.get("entry", "engine.py")
+            target_path = os.path.join(self.engines_dir, tool_id, v_folder, entry_file)
+            assert_inside_dir(target_path, self.engines_dir)
+            if os.path.isfile(target_path):
+                return target_path
+
+        # 2. User/Dynamic legacy engine override (fallback)
         dyn_engine = os.path.join(self.engines_dir, tool_id, "engine.py")
-        assert_inside_dir(dyn_engine, self.engines_dir)
         if os.path.isfile(dyn_engine):
+            assert_inside_dir(dyn_engine, self.engines_dir)
             return dyn_engine
 
-        # 2. Bundled factory engine (fallback)
+        # 3. Bundled factory engine (fallback)
         meta = self.get_tool_meta(tool_id)
         folder = validate_id((meta.get("engine_folder") or tool_id) if meta else tool_id, "engine_folder")
         bundled_engine = os.path.join(self.bundled_engines_dir, folder, "engine.py")
-        assert_inside_dir(bundled_engine, self.bundled_engines_dir)
         if os.path.isfile(bundled_engine):
+            assert_inside_dir(bundled_engine, self.bundled_engines_dir)
             return bundled_engine
 
         return None
 
     def get_tools_catalog(self) -> List[Dict[str, Any]]:
-        """Constructs complete dynamic tools list with live installation and update statuses.
-        Uses in-memory cache to guarantee sub-millisecond responses on 10,000 tools.
-        """
+        """Constructs complete dynamic tools list with live installation and update statuses."""
         if self._cached_resolved_catalog is not None:
             return self._cached_resolved_catalog
 
         manifest_tools = self.cached_manifest.get("tools", [])
         resolved_tools = []
 
-        # Pre-scan existing dynamic engines in ~/.boltools/engines once to avoid N file stats
-        installed_dynamic_ids = set()
+        # Pre-scan installed tool ids
+        installed_ids = set()
         if os.path.exists(self.engines_dir):
             try:
                 for entry in os.scandir(self.engines_dir):
-                    if entry.is_dir() and os.path.isfile(os.path.join(entry.path, "engine.py")):
-                        installed_dynamic_ids.add(entry.name)
+                    if entry.is_dir():
+                        pointer_file = os.path.join(entry.path, "current.json")
+                        legacy_file = os.path.join(entry.path, "engine.py")
+                        if os.path.isfile(pointer_file) or os.path.isfile(legacy_file):
+                            installed_ids.add(entry.name)
             except Exception:
                 pass
 
@@ -235,19 +345,20 @@ class ToolStoreService:
             tool_id = m_tool["id"]
             remote_version = m_tool.get("version", "1.0.0")
 
-            # Check local file presence from pre-scanned set or saved state
-            has_engine = (tool_id in installed_dynamic_ids)
-
-            # Check user saved state
+            has_engine = (tool_id in installed_ids)
             saved_state = self.tool_states.get(tool_id, {})
             saved_status = saved_state.get("status")
+
+            # Check version from current.json if available
+            pointer = self.get_active_pointer(tool_id)
+            active_version = pointer.get("version") if pointer else saved_state.get("version", "1.0.0")
 
             if saved_status == "available":
                 status = "available"
                 installed_version = None
                 update_available = False
             elif has_engine or saved_status == "installed":
-                installed_version = saved_state.get("version", "1.0.0")
+                installed_version = active_version
                 if is_newer_version(remote_version, installed_version):
                     status = "update_available"
                     update_available = True
@@ -278,10 +389,7 @@ class ToolStoreService:
         return {"total": total, "installed": installed, "updates": updates}
 
     def get_catalog_summary(self) -> List[Dict[str, Any]]:
-        """Returns compact tool summaries optimized for virtual lists and rapid serialization.
-        
-        Fields returned: id, name, category_id, category_name, icon, status, version, size_mb, update_available, description (cut to 120 chars).
-        """
+        """Returns compact tool summaries optimized for virtual lists and rapid serialization."""
         tools = self.get_tools_catalog()
         summaries = []
         for t in tools:
@@ -308,36 +416,145 @@ class ToolStoreService:
         tools = self.get_tools_catalog()
         return sum(1 for t in tools if t.get("update_available"))
 
+    # ── Safe ZIP Extraction & Verification Engine ─────────────────────────────
+    @staticmethod
+    def _is_symlink(zip_info: zipfile.ZipInfo) -> bool:
+        """Detects if a ZipInfo entry is a symlink via UNIX mode bits in external_attr."""
+        mode = zip_info.external_attr >> 16
+        # S_IFLNK mode bit is 0o120000 (0xA000)
+        return (mode & 0o170000) == 0o120000
+
+    @classmethod
+    def validate_zip_entry_path(cls, filename: str):
+        """Strictly validates entry paths against zip-slip, drive letters, reserved names, and colons."""
+        if not filename or filename.startswith("/") or filename.startswith("\\"):
+            raise ValueError(f"Zip security violation: Entry starts with root/slash: {filename}")
+
+        if "\\" in filename:
+            raise ValueError(f"Zip security violation: Backslash in entry path: {filename}")
+
+        if ":" in filename:
+            raise ValueError(f"Zip security violation: Colon/drive letter in path: {filename}")
+
+        parts = filename.split("/")
+        for part in parts:
+            if not part or part == ".":
+                continue
+            if part == "..":
+                raise ValueError(f"Zip security violation: Directory traversal '..' in entry: {filename}")
+
+            base = part.split(".")[0].upper()
+            if base in WINDOWS_RESERVED_NAMES:
+                raise ValueError(f"Zip security violation: Windows reserved device name '{part}' in path: {filename}")
+
+    def safe_extract_pack(self, zip_bytes: bytes, target_dir: str, max_extract_size: int = MAX_GLOBAL_EXTRACT_SIZE) -> Dict[str, Any]:
+        """Extracts tool pack with zip-slip guard, symlink rejection, and byte-counted zip-bomb guard."""
+        os.makedirs(target_dir, exist_ok=True)
+        assert_inside_dir(target_dir, self.engines_dir)
+
+        try:
+            with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+                infolist = zf.infolist()
+                if len(infolist) > MAX_PACK_FILE_COUNT:
+                    raise ValueError(f"Zip security violation: Tool pack contains {len(infolist)} files (max {MAX_PACK_FILE_COUNT}).")
+
+                # Detect case-insensitive duplicates
+                seen_lower: Set[str] = set()
+                total_extracted_bytes = 0
+
+                for info in infolist:
+                    norm_name = info.filename.rstrip("/")
+                    if not norm_name:
+                        continue
+
+                    lower_name = norm_name.lower()
+                    if lower_name in seen_lower:
+                        raise ValueError(f"Zip security violation: Case-insensitive duplicate entry '{norm_name}'.")
+                    seen_lower.add(lower_name)
+
+                    # Validate path traversal and forbidden characters
+                    self.validate_zip_entry_path(info.filename)
+
+                    # Symlink detection via mode bits
+                    if self._is_symlink(info):
+                        raise ValueError(f"Zip security violation: Symlinks are forbidden in tool packs: {info.filename}")
+
+                # Extract files with byte-counting streaming guard
+                for info in infolist:
+                    if info.is_dir():
+                        dir_path = os.path.join(target_dir, info.filename)
+                        assert_inside_dir(dir_path, target_dir)
+                        os.makedirs(dir_path, exist_ok=True)
+                        continue
+
+                    dest_file = os.path.join(target_dir, info.filename)
+                    assert_inside_dir(dest_file, target_dir)
+                    os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+
+                    # Stream extract and count real bytes
+                    with zf.open(info) as src, open(dest_file, "wb") as dst:
+                        while True:
+                            chunk = src.read(64 * 1024)
+                            if not chunk:
+                                break
+                            total_extracted_bytes += len(chunk)
+                            if total_extracted_bytes > max_extract_size:
+                                raise ValueError(f"Zip-bomb defense triggered: Extracted bytes exceeded limit ({max_extract_size} bytes).")
+                            dst.write(chunk)
+
+            # Read and parse pack.json
+            pack_json_path = os.path.join(target_dir, "pack.json")
+            if not os.path.isfile(pack_json_path):
+                raise ValueError("Tool pack missing mandatory pack.json manifest.")
+
+            with open(pack_json_path, "r", encoding="utf-8") as f:
+                pack_manifest = json.load(f)
+
+            # Verify every file listed in pack.json
+            files_map = pack_manifest.get("files", {})
+            for rel_path, expected_hash in files_map.items():
+                self.validate_zip_entry_path(rel_path)
+                f_path = os.path.join(target_dir, rel_path)
+                assert_inside_dir(f_path, target_dir)
+                if not os.path.isfile(f_path):
+                    raise ValueError(f"Tool pack integrity error: Missing file '{rel_path}' listed in pack.json.")
+
+                with open(f_path, "rb") as ef:
+                    actual_hash = hashlib.sha256(ef.read()).hexdigest().lower()
+                if actual_hash != expected_hash.lower().strip():
+                    raise ValueError(f"File integrity mismatch for '{rel_path}': expected {expected_hash}, got {actual_hash}")
+
+            return {
+                "success": True,
+                "pack_manifest": pack_manifest,
+                "total_bytes": total_extracted_bytes
+            }
+
+        except Exception as e:
+            # Wipe partially extracted contents on failure
+            if os.path.exists(target_dir):
+                shutil.rmtree(target_dir, ignore_errors=True)
+            raise e
+
+    # ── Tool Installation & Rollback Lifecycle ────────────────────────────────
     def install_or_update_tool(self, tool_id: str) -> Dict[str, Any]:
-        """Downloads/updates a tool engine over the air without restarting or re-running installers."""
+        """Downloads, verifies, unpacks, and atomically activates a tool pack."""
         validate_id(tool_id, "tool_id")
         meta = self.get_tool_meta(tool_id)
         if not meta:
             return {"success": False, "error": f"Tool '{tool_id}' not found in catalog manifest."}
 
-        target_dir = os.path.join(self.engines_dir, tool_id)
-        assert_inside_dir(target_dir, self.engines_dir)
-        os.makedirs(target_dir, exist_ok=True)
-        target_engine_file = os.path.join(target_dir, "engine.py")
-        assert_inside_dir(target_engine_file, self.engines_dir)
+        # Single install lock per tool
+        lock = self._get_tool_lock(tool_id)
+        if not lock.acquire(blocking=False):
+            return {"success": False, "error": f"Installation already in progress for '{tool_id}'."}
 
-        urls_to_try = []
-        if meta.get("engine_url"):
-            urls_to_try.append(meta["engine_url"])
-        if meta.get("engine_fallback_url"):
-            urls_to_try.append(meta["engine_fallback_url"])
-        
-        # Additional fallbacks
-        folder = validate_id(meta.get("engine_folder", tool_id), "engine_folder")
-        urls_to_try.append(f"https://boltools.thesurfboard.in/engines/{folder}/engine.py")
-        urls_to_try.append(f"https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/{folder}/engine.py")
+        try:
+            return self._perform_install_or_update(tool_id, meta)
+        finally:
+            lock.release()
 
-        download_success = False
-        last_error = ""
-
-        # Refuse installation if sha256 checksum is missing (allowed only when BOLTOOLS_DEV=1)
-        # TODO: Implement Ed25519 manifest signature verification (.sig) together with the new tool pack
-        # format (.zip) prior to the first public downloadable tool release.
+    def _perform_install_or_update(self, tool_id: str, meta: Dict[str, Any]) -> Dict[str, Any]:
         expected_sha256 = meta.get("sha256")
         if not expected_sha256 and os.environ.get("BOLTOOLS_DEV") != "1":
             return {
@@ -345,71 +562,230 @@ class ToolStoreService:
                 "error": f"Refusing to install tool '{tool_id}': Missing sha256 checksum in manifest entry. Set BOLTOOLS_DEV=1 to bypass."
             }
 
+        tool_root_dir = os.path.join(self.engines_dir, tool_id)
+        assert_inside_dir(tool_root_dir, self.engines_dir)
+        os.makedirs(tool_root_dir, exist_ok=True)
+
+        # Build candidate download URLs
+        urls_to_try = []
+        if meta.get("pack_url"):
+            urls_to_try.append(meta["pack_url"])
+        if meta.get("engine_url"):
+            urls_to_try.append(meta["engine_url"])
+        if meta.get("engine_fallback_url"):
+            urls_to_try.append(meta["engine_fallback_url"])
+
+        folder = validate_id(meta.get("engine_folder", tool_id), "engine_folder")
+        remote_version = meta.get("version", "1.0.0")
+        urls_to_try.append(f"https://boltools.thesurfboard.in/engines/{folder}/{tool_id}-{remote_version}.bolpack")
+        urls_to_try.append(f"https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/{folder}/engine.py")
+
+        download_bytes: Optional[bytes] = None
+        last_error = ""
+
+        # Enforce size limits: use size_bytes from manifest + global ceiling
+        manifest_size = meta.get("size_bytes") or (meta.get("size_mb", 25) * 1024 * 1024)
+        max_download_allowed = min(MAX_GLOBAL_PACK_SIZE, int(manifest_size * 2))
+
         for url in urls_to_try:
             try:
-                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"})
-                with urllib.request.urlopen(req, timeout=10.0) as resp:
+                req = urllib.request.Request(
+                    url,
+                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+                )
+                with urllib.request.urlopen(req, timeout=12.0) as resp:
                     if resp.status == 200:
-                        content = resp.read()
-                        # Reject HTML error pages or non-script payloads
-                        if content.lstrip().startswith(b"<"):
-                            last_error = f"Invalid response from {url}: received HTML response instead of Python script"
+                        content = resp.read(max_download_allowed + 1024)
+                        if len(content) > max_download_allowed:
+                            last_error = f"Download exceeded size ceiling ({max_download_allowed} bytes)."
                             continue
 
-                        if len(content) > 100:  # Valid non-empty file check
+                        # Reject HTML error pages
+                        if content.lstrip().startswith(b"<"):
+                            last_error = f"Invalid response from {url}: received HTML response instead of tool payload."
+                            continue
+
+                        if len(content) > 100:
                             if expected_sha256:
-                                import hashlib
-                                actual_sha256 = hashlib.sha256(content).hexdigest().lower()
-                                if actual_sha256 != expected_sha256.lower().strip():
-                                    last_error = f"SHA256 mismatch for {tool_id}: expected {expected_sha256}, got {actual_sha256}"
+                                actual_sha = hashlib.sha256(content).hexdigest().lower()
+                                if actual_sha != expected_sha256.lower().strip():
+                                    last_error = f"SHA256 mismatch for {tool_id}: expected {expected_sha256}, got {actual_sha}"
                                     continue
 
-                            temp_path = target_engine_file + ".tmp"
-                            with open(temp_path, "wb") as f:
-                                f.write(content)
-                            # Single atomic replace without os.remove/os.rename race
-                            os.replace(temp_path, target_engine_file)
-                            download_success = True
+                            download_bytes = content
                             break
             except Exception as e:
                 last_error = str(e)
                 continue
 
-        if not download_success:
-            # If download fails, check if we have a bundled engine to copy
+        # If download failed, check if we have a bundled engine fallback
+        if not download_bytes:
             bundled_engine = os.path.join(self.bundled_engines_dir, folder, "engine.py")
-            assert_inside_dir(bundled_engine, self.bundled_engines_dir)
             if os.path.isfile(bundled_engine):
+                assert_inside_dir(bundled_engine, self.bundled_engines_dir)
                 try:
-                    import shutil
-                    shutil.copy2(bundled_engine, target_engine_file)
-                    download_success = True
+                    with open(bundled_engine, "rb") as f:
+                        download_bytes = f.read()
                 except Exception as e:
                     last_error = str(e)
 
-        if download_success:
-            new_version = meta.get("version", "1.0.0")
+        if not download_bytes:
+            return {"success": False, "error": f"Failed to download tool package: {last_error or 'Network timeout'}"}
+
+        # Staging directory for atomic extraction
+        staging_dir = os.path.join(tool_root_dir, f".staging-{uuid.uuid4().hex[:8]}")
+        previous_pointer = self.get_active_pointer(tool_id)
+
+        try:
+            # Check if payload is a .bolpack ZIP archive or a raw single engine.py
+            is_zip = download_bytes.startswith(b"PK\x03\x04")
+
+            if is_zip:
+                # Safe ZIP extraction & pack.json hash verification
+                extract_res = self.safe_extract_pack(download_bytes, staging_dir)
+                pack_manifest = extract_res["pack_manifest"]
+                version = pack_manifest.get("version", remote_version)
+                entry = pack_manifest.get("entry", "engine.py")
+                runtime = pack_manifest.get("runtime", "python")
+            else:
+                # Raw engine.py fallback compatibility
+                os.makedirs(staging_dir, exist_ok=True)
+                dest_engine = os.path.join(staging_dir, "engine.py")
+                with open(dest_engine, "wb") as f:
+                    f.write(download_bytes)
+
+                version = remote_version
+                entry = "engine.py"
+                runtime = meta.get("engine_type", "python")
+
+                # Synthetic pack.json for uniformity
+                pack_manifest = {
+                    "id": tool_id,
+                    "name": meta.get("name", tool_id),
+                    "version": version,
+                    "min_app_version": "1.0.0",
+                    "runtime": runtime,
+                    "entry": entry,
+                    "files": {
+                        "engine.py": hashlib.sha256(download_bytes).hexdigest().lower()
+                    }
+                }
+                with open(os.path.join(staging_dir, "pack.json"), "w", encoding="utf-8") as f:
+                    json.dump(pack_manifest, f, indent=2)
+
+            # Target version folder
+            target_v_folder = os.path.join(tool_root_dir, f"v{version}")
+
+            # If target version folder exists, remove it atomically before replacing
+            if os.path.exists(target_v_folder):
+                shutil.rmtree(target_v_folder)
+
+            os.replace(staging_dir, target_v_folder)
+
+            # Switch current.json pointer atomically
+            switch_ok = self._set_active_pointer(tool_id, version, entry, runtime)
+            if not switch_ok:
+                raise RuntimeError("Failed to switch current.json active version pointer.")
+
+            # Prune old versions (keep current and previous version only)
+            self._prune_old_versions(tool_root_dir, keep_versions={version, previous_pointer.get("version") if previous_pointer else None})
+
+            # Update tool_states.json
             self.tool_states[tool_id] = {
                 "status": "installed",
-                "version": new_version,
+                "version": version,
                 "installed_at": datetime.now().isoformat()
             }
             self._save_tool_states()
+
             return {
                 "success": True,
                 "tool_id": tool_id,
-                "version": new_version,
+                "version": version,
                 "name": meta.get("name", tool_id),
-                "message": f"Successfully installed {meta.get('name', tool_id)} v{new_version}."
-            }
-        else:
-            return {
-                "success": False,
-                "error": f"Failed to download engine: {last_error or 'Network timeout'}"
+                "message": f"Successfully installed {meta.get('name', tool_id)} v{version}."
             }
 
+        except Exception as e:
+            # Clean up staging directory
+            if os.path.exists(staging_dir):
+                shutil.rmtree(staging_dir, ignore_errors=True)
+
+            # Rollback: restore previous version pointer if it was affected
+            if previous_pointer:
+                self._set_active_pointer(
+                    tool_id,
+                    previous_pointer["version"],
+                    previous_pointer["entry"],
+                    previous_pointer.get("runtime", "python")
+                )
+
+            return {
+                "success": False,
+                "error": f"Tool installation failed: {str(e)}"
+            }
+
+    def _prune_old_versions(self, tool_root_dir: str, keep_versions: Set[Optional[str]]):
+        """Retains only active and immediately previous version folders for rollback."""
+        valid_keep = {f"v{v}" for v in keep_versions if v}
+        try:
+            for item in os.listdir(tool_root_dir):
+                item_path = os.path.join(tool_root_dir, item)
+                if os.path.isdir(item_path) and item.startswith("v") and item not in valid_keep:
+                    shutil.rmtree(item_path, ignore_errors=True)
+        except Exception:
+            pass
+
+    def rollback_tool(self, tool_id: str) -> Dict[str, Any]:
+        """Rolls back tool to the previous installed version if available."""
+        validate_id(tool_id, "tool_id")
+        tool_root_dir = os.path.join(self.engines_dir, tool_id)
+        if not os.path.isdir(tool_root_dir):
+            return {"success": False, "error": f"Tool '{tool_id}' is not installed."}
+
+        current_ptr = self.get_active_pointer(tool_id)
+        curr_v = f"v{current_ptr['version']}" if current_ptr else None
+
+        # Find available version folders
+        versions = []
+        for item in os.listdir(tool_root_dir):
+            if os.path.isdir(os.path.join(tool_root_dir, item)) and item.startswith("v"):
+                versions.append(item)
+
+        candidates = [v for v in versions if v != curr_v]
+        if not candidates:
+            return {"success": False, "error": "No previous version available for rollback."}
+
+        # Pick latest previous version
+        candidates.sort(key=lambda x: parse_semver(x[1:]), reverse=True)
+        target_v_str = candidates[0][1:]
+        target_v_dir = os.path.join(tool_root_dir, candidates[0])
+
+        pack_json_file = os.path.join(target_v_dir, "pack.json")
+        entry = "engine.py"
+        runtime = "python"
+        if os.path.isfile(pack_json_file):
+            try:
+                with open(pack_json_file, "r", encoding="utf-8") as f:
+                    p = json.load(f)
+                    entry = p.get("entry", "engine.py")
+                    runtime = p.get("runtime", "python")
+            except Exception:
+                pass
+
+        if self._set_active_pointer(tool_id, target_v_str, entry, runtime):
+            self.tool_states[tool_id] = {
+                "status": "installed",
+                "version": target_v_str,
+                "installed_at": datetime.now().isoformat()
+            }
+            self._save_tool_states()
+            return {"success": True, "version": target_v_str, "message": f"Successfully rolled back to v{target_v_str}."}
+
+        return {"success": False, "error": "Failed to switch rollback pointer."}
+
     def uninstall_tool(self, tool_id: str, purge_data: bool = False) -> bool:
-        """Uninstalls tool and updates state."""
+        """Uninstalls tool by deleting engine folder and updating state."""
         validate_id(tool_id, "tool_id")
         self.tool_states[tool_id] = {
             "status": "available",
@@ -417,13 +793,12 @@ class ToolStoreService:
         }
         self._save_tool_states()
 
-        # Delete dynamic engine folder if present
-        dyn_dir = os.path.join(self.engines_dir, tool_id)
-        assert_inside_dir(dyn_dir, self.engines_dir)
-        if os.path.exists(dyn_dir):
+        # Delete dynamic engine folder
+        tool_dir = os.path.join(self.engines_dir, tool_id)
+        assert_inside_dir(tool_dir, self.engines_dir)
+        if os.path.exists(tool_dir):
             try:
-                import shutil
-                shutil.rmtree(dyn_dir)
+                shutil.rmtree(tool_dir)
             except Exception:
                 pass
 
@@ -432,7 +807,6 @@ class ToolStoreService:
             assert_inside_dir(user_data_dir, self.tools_data_dir)
             if os.path.exists(user_data_dir):
                 try:
-                    import shutil
                     shutil.rmtree(user_data_dir)
                 except Exception:
                     pass
