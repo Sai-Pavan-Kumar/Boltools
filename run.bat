@@ -1,11 +1,13 @@
 @echo off
-title Boltools Desktop Suite
-cd /d "%~dp0"
+setlocal
+echo =======================================================
+echo LAUNCHING BOLTOOLS DESKTOP APP (DEV MODE)
+echo =======================================================
 
-if exist ".venv\Scripts\pythonw.exe" (
-    start "" ".venv\Scripts\pythonw.exe" "main.py"
-) else if exist ".venv\Scripts\python.exe" (
-    start "" ".venv\Scripts\python.exe" "main.py"
+set BOLTOOLS_DEV=1
+
+if exist ".\.venv\Scripts\python.exe" (
+    .\.venv\Scripts\python.exe main.py
 ) else (
-    start "" python "main.py"
+    python main.py
 )
