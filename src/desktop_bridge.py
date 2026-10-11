@@ -108,10 +108,12 @@ class DesktopBridge:
         def _on_log(msg: str):
             self._notify_frontend("onToolLog", msg)
 
-        def _on_complete(out_path: str):
-            self._notify_frontend("onToolComplete", {"output_file": out_path})
+        def _on_complete(outputs: Any):
+            primary = outputs[0] if isinstance(outputs, list) and outputs else outputs
+            self._notify_frontend("onToolComplete", {"output_file": primary, "outputs": outputs})
 
-        def _on_error(err_msg: str):
+        def _on_error(err: Any):
+            err_msg = err.get("message") if isinstance(err, dict) else str(err)
             self._notify_frontend("onToolError", err_msg)
 
         engine_runner.run_engine(
@@ -130,9 +132,6 @@ class DesktopBridge:
     def cancel_tool(self) -> bool:
         """Stops active engine process cleanly."""
         res = engine_runner.cancel_active()
-        if res:
-            self._notify_frontend("onToolLog", "Operation cancelled by user.")
-            self._notify_frontend("onToolError", "Operation cancelled.")
         return res
 
     # ── Native Dialogs & System Explorer ─────────────────────────────────────
