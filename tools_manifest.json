@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "sequence": 3,
+  "sequence": 5,
   "updated_at": "2026-10-10T13:30:00Z",
   "tools": [
     {
@@ -112,7 +112,7 @@
       "is_implemented": true,
       "size_bytes": 1797,
       "size_mb": 1,
-      "sha256": "f6aabe0d4b94da2bb006a7098937bb640f4ecdc135bf5233f7f3ecfc591d3c6f"
+      "sha256": "145287b12a6c0708e4c56072b8bc02889b783fe48ff77850253a6ec9a293e167"
     }
   ]
 }

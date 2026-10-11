@@ -11,78 +11,10 @@ const DEFAULT_CATEGORIES = [
   { id: "system", name: "System & Files", desc: "Power file renaming, extension repair, and organization", icon: "sliders", accent: "#475569" }
 ];
 
-const DEFAULT_TOOLS = [
-  {
-    id: "media_audio_extractor",
-    name: "Audio Extractor",
-    category_id: "video",
-    category_name: "Media & Video",
-    description: "Extract clean MP3, WAV, AAC, or FLAC audio tracks from video and audio files locally.",
-    icon: "music",
-    is_implemented: true,
-    status: "installed"
-  },
-  {
-    id: "video_compressor",
-    name: "Video Compressor",
-    category_id: "video",
-    category_name: "Media & Video",
-    description: "Compress video files with Low, Balanced, and Maximum compression presets.",
-    icon: "video",
-    is_implemented: true,
-    status: "installed"
-  },
-  {
-    id: "pdf_converter",
-    name: "PDF & Image Converter",
-    category_id: "pdf",
-    category_name: "PDF Studio",
-    description: "Convert PDF pages to high-resolution PNG/JPG images or compile multiple images into a PDF.",
-    icon: "file-text",
-    is_implemented: true,
-    status: "installed"
-  },
-  {
-    id: "image_webp_compress",
-    name: "WebP Image Compressor",
-    category_id: "image",
-    category_name: "Image Studio",
-    description: "Bulk compress photos into web-optimized WebP images with custom quality controls.",
-    icon: "image",
-    is_implemented: true,
-    status: "installed"
-  },
-  {
-    id: "system_batch_rename",
-    name: "Bulk File Renamer",
-    category_id: "system",
-    category_name: "System & Files",
-    description: "Batch rename files with rule-based prefix, suffix, sequence numbering, and find-and-replace.",
-    icon: "sliders",
-    is_implemented: true,
-    status: "installed"
-  },
-  {
-    id: "subtitle_animator",
-    name: "Subtitle Animation Maker",
-    category_id: "video",
-    category_name: "Media & Video",
-    description: "Create viral animated subtitles with word-by-word karaoke highlight, custom fonts, colors, and live timing editor.",
-    icon: "type",
-    is_implemented: true,
-    status: "installed"
-  },
-  {
-    id: "hello_tool",
-    name: "Hello World Test Utility",
-    category_id: "system",
-    category_name: "System & Files",
-    description: "Test tool for validating process isolation, progress reporting, cancellation, and atomic updates.",
-    icon: "terminal",
-    is_implemented: true,
-    status: "available"
-  }
 ];
+
+// Pure Modular Shell: No tools are pre-bundled. Tools are loaded dynamically from catalog.
+const DEFAULT_TOOLS = [];
 
 // ── Application State ────────────────────────────────────────────────────────
 const state = (window.boltoolsStore && window.boltoolsStore.state) ? window.boltoolsStore.state : {
