@@ -128,6 +128,9 @@ def generate_keypair(output_key_path: str, passphrase: Optional[str] = None):
     from cryptography.hazmat.primitives import serialization
 
     if not passphrase:
+        passphrase = os.environ.get("BOLTOOLS_KEY_PASSPHRASE")
+
+    if not passphrase:
         passphrase = getpass.getpass("Enter passphrase to encrypt private key: ")
         confirm = getpass.getpass("Confirm passphrase: ")
         if passphrase != confirm:
