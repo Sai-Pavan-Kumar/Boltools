@@ -11,8 +11,6 @@ const DEFAULT_CATEGORIES = [
   { id: "system", name: "System & Files", desc: "Power file renaming, extension repair, and organization", icon: "sliders", accent: "#475569" }
 ];
 
-];
-
 // Pure Modular Shell: No tools are pre-bundled. Tools are loaded dynamically from catalog.
 const DEFAULT_TOOLS = [];
 
