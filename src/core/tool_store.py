@@ -40,10 +40,23 @@ from typing import List, Dict, Any, Optional, Tuple, Set
 from datetime import datetime
 
 from src.core.paths import get_data_path, get_base_dir
+from src._build import IS_RELEASE, BUILD_MIN_SEQUENCE, APP_VERSION, EMBEDDED_PUBLIC_KEYS
+
+try:
+    import nacl.signing
+    import nacl.exceptions
+    HAS_PYNACL = True
+except ImportError:
+    HAS_PYNACL = False
 
 PRIMARY_MANIFEST_URL = "https://boltools.thesurfboard.in/tools_manifest.json"
+PRIMARY_SIG_URL = "https://boltools.thesurfboard.in/tools_manifest.sig"
 FALLBACK_MANIFEST_URL = "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/tools_manifest.json"
-MANIFEST_ENDPOINTS = [PRIMARY_MANIFEST_URL, FALLBACK_MANIFEST_URL]
+FALLBACK_SIG_URL = "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/tools_manifest.sig"
+MANIFEST_ENDPOINTS = [
+    (PRIMARY_MANIFEST_URL, PRIMARY_SIG_URL),
+    (FALLBACK_MANIFEST_URL, FALLBACK_SIG_URL)
+]
 
 # Security Limits
 MAX_GLOBAL_PACK_SIZE = 150 * 1024 * 1024   # 150 MB max download ceiling
@@ -201,26 +214,89 @@ class ToolStoreService:
 
         return {"schema_version": "1.0.0", "tools": []}
 
+    def verify_manifest_signature(self, manifest_bytes: bytes, sig_bytes: bytes, key_id: str = "key_1") -> bool:
+        """Verifies Ed25519 signature against exact raw manifest bytes BEFORE parsing JSON."""
+        # Development bypass: only allowed when NOT in a release build
+        if not IS_RELEASE and os.environ.get("BOLTOOLS_DEV") == "1":
+            return True
+
+        if not HAS_PYNACL:
+            return False
+
+        pub_key_hex = EMBEDDED_PUBLIC_KEYS.get(key_id) or EMBEDDED_PUBLIC_KEYS.get("key_1")
+        if not pub_key_hex or len(pub_key_hex) != 64:
+            return False
+
+        try:
+            pub_raw = bytes.fromhex(pub_key_hex)
+            verify_key = nacl.signing.VerifyKey(pub_raw)
+            verify_key.verify(manifest_bytes, sig_bytes)
+            return True
+        except Exception:
+            return False
+
     def sync_manifest_async(self, on_complete=None):
-        """Fetches remote manifest over Cloudflare CDN with background threading."""
+        """Fetches remote manifest and companion .sig over CDN with Ed25519 verification."""
         def _fetch():
-            for endpoint in MANIFEST_ENDPOINTS:
+            last_accepted_seq = self.cached_manifest.get("sequence", BUILD_MIN_SEQUENCE) if isinstance(self.cached_manifest, dict) else BUILD_MIN_SEQUENCE
+
+            for manifest_url, sig_url in MANIFEST_ENDPOINTS:
                 try:
-                    req = urllib.request.Request(
-                        endpoint,
+                    # 1. Fetch raw manifest bytes
+                    m_req = urllib.request.Request(
+                        manifest_url,
                         headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
                     )
-                    with urllib.request.urlopen(req, timeout=4.0) as resp:
-                        if resp.status == 200:
-                            data = json.loads(resp.read().decode("utf-8"))
-                            if isinstance(data, dict) and "tools" in data and len(data["tools"]) > 0:
-                                self.cached_manifest = data
-                                try:
-                                    with open(self.manifest_cache_file, "w", encoding="utf-8") as f:
-                                        json.dump(data, f, indent=2)
-                                except Exception:
-                                    pass
-                                break
+                    with urllib.request.urlopen(m_req, timeout=4.0) as m_resp:
+                        if m_resp.status != 200:
+                            continue
+                        manifest_bytes = m_resp.read()
+
+                    # 2. Fetch signature bytes
+                    sig_bytes = b""
+                    try:
+                        s_req = urllib.request.Request(
+                            sig_url,
+                            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+                        )
+                        with urllib.request.urlopen(s_req, timeout=4.0) as s_resp:
+                            if s_resp.status == 200:
+                                sig_bytes = s_resp.read()
+                    except Exception:
+                        pass
+
+                    # 3. Verify signature BEFORE parsing JSON
+                    is_dev_bypass = (not IS_RELEASE) and (os.environ.get("BOLTOOLS_DEV") == "1")
+                    if not is_dev_bypass:
+                        if not sig_bytes:
+                            # Signature missing: reject and retain cached manifest
+                            continue
+
+                        # Check signature with key_id
+                        if not self.verify_manifest_signature(manifest_bytes, sig_bytes):
+                            continue
+
+                    # 4. Safe parsing after cryptographic verification
+                    data = json.loads(manifest_bytes.decode("utf-8"))
+                    if not isinstance(data, dict) or "tools" not in data:
+                        continue
+
+                    # 5. Anti-rollback sequence guard
+                    remote_seq = data.get("sequence", 0)
+                    if remote_seq < last_accepted_seq:
+                        # Replay attack: older sequence than previously accepted
+                        continue
+
+                    # Accepted new verified manifest
+                    self.cached_manifest = data
+                    self.invalidate_cache()
+                    try:
+                        with open(self.manifest_cache_file, "w", encoding="utf-8") as f:
+                            json.dump(data, f, indent=2)
+                    except Exception:
+                        pass
+                    break
+
                 except Exception:
                     continue
 
@@ -343,6 +419,12 @@ class ToolStoreService:
 
         for m_tool in manifest_tools:
             tool_id = m_tool["id"]
+            # Exclude engines/hello_tool from user catalog unless BOLTOOLS_DEV is set in a dev build
+            if tool_id == "hello_tool":
+                is_dev = (not IS_RELEASE) and (os.environ.get("BOLTOOLS_DEV") == "1")
+                if not is_dev:
+                    continue
+
             remote_version = m_tool.get("version", "1.0.0")
 
             has_engine = (tool_id in installed_ids)
@@ -561,6 +643,26 @@ class ToolStoreService:
                 "success": False,
                 "error": f"Refusing to install tool '{tool_id}': Missing sha256 checksum in manifest entry. Set BOLTOOLS_DEV=1 to bypass."
             }
+
+        # Validate min_app_version requirement
+        min_app_v = meta.get("min_app_version")
+        if min_app_v:
+            from packaging.version import parse as parse_version
+            try:
+                if parse_version(APP_VERSION) < parse_version(min_app_v):
+                    return {
+                        "success": False,
+                        "error": f"Tool '{tool_id}' requires Boltools app version {min_app_v} or higher (current: {APP_VERSION}). Please update the app."
+                    }
+            except Exception:
+                # Fallback simple tuple comparison if packaging is not available
+                def _tuple_ver(v_str):
+                    return tuple(int(x) for x in re.sub(r'[^0-9.]', '', str(v_str)).split('.') if x)
+                if _tuple_ver(APP_VERSION) < _tuple_ver(min_app_v):
+                    return {
+                        "success": False,
+                        "error": f"Tool '{tool_id}' requires Boltools app version {min_app_v} or higher (current: {APP_VERSION}). Please update the app."
+                    }
 
         tool_root_dir = os.path.join(self.engines_dir, tool_id)
         assert_inside_dir(tool_root_dir, self.engines_dir)

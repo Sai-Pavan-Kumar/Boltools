@@ -1,0 +1,4 @@
+# Boltools Dev & Release Tooling Dependencies
+# Used exclusively by release_tool.py for packaging and Ed25519 manifest signing
+cryptography>=42.0.0
+playwright>=1.40.0
