@@ -1019,3 +1019,38 @@ html.lenis, html.lenis body {
   background-color: var(--brand-light);
 }
 
+/* Indeterminate progress bar animation */
+@keyframes indeterminate-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.progress-indeterminate {
+  width: 50% !important;
+  animation: indeterminate-shimmer 1.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Drag-to-reorder file list styles */
+.file-drag-item {
+  cursor: grab;
+  user-select: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.file-drag-item:active {
+  cursor: grabbing;
+}
+.file-drag-item.dragging {
+  opacity: 0.45;
+  transform: scale(0.98);
+}
+.file-drag-item.drag-over-top {
+  border-top: 2px solid var(--brand-primary) !important;
+}
+.file-drag-item.drag-over-bottom {
+  border-bottom: 2px solid var(--brand-primary) !important;
+}
+

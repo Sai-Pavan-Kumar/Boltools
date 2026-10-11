@@ -469,6 +469,22 @@
       "is_offline": true
     },
     {
+      "num": "3.0",
+      "id": "pdf_studio",
+      "name": "PDF Studio (Merge & Split)",
+      "category_id": "pdf",
+      "category_name": "PDF Master Studio",
+      "glyph": "\u25a4",
+      "icon": "\ud83d\udcc4",
+      "description": "Offline PDF Merge and Split utility powered by QPDF v12.4.2. Instant zero-upload processing without file size limits.",
+      "status": "available",
+      "batch_drop": 1,
+      "version": "0.1.0",
+      "size_mb": 4,
+      "engine": "QPDF v12.4.2 Native Binary Core",
+      "is_offline": true
+    },
+    {
       "num": "3.2",
       "id": "pdf_split_merge",
       "name": "Master Document Split & Merge Hub",

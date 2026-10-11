@@ -1063,6 +1063,7 @@ function renderToolStudio(container, toolId) {
 }
 
 function getDefaultOptionsForTool(toolId) {
+  if (toolId === 'pdf_studio') return { mode: 'merge', split_mode: 'ranges', ranges: '1-', every_n: 1 };
   if (toolId === 'media_audio_extractor') return { format: 'MP3 (320 kbps Studio Quality)' };
   if (toolId === 'video_compressor') return { mode: 'Balanced', target_mb: 50 };
   if (toolId === 'pdf_converter') return { mode: 'PDF to Images (PNG)' };
@@ -1086,6 +1087,7 @@ function getDefaultOptionsForTool(toolId) {
 }
 
 function getDropzoneHint(toolId) {
+  if (toolId === 'pdf_studio') return 'Select or drop PDF documents (drag list items to reorder merge sequence)';
   if (toolId === 'media_audio_extractor') return 'Supports MP4, MKV, MOV, WebM, AVI, FLV, WMV';
   if (toolId === 'video_compressor') return 'Supports MP4, MKV, MOV, WebM, AVI';
   if (toolId === 'pdf_converter') return 'Supports PDF documents and JPG/PNG images';
@@ -1096,7 +1098,95 @@ function getDropzoneHint(toolId) {
 }
 
 function renderToolSpecificOptions(toolId) {
-  if (toolId === 'media_audio_extractor') {
+  if (toolId === 'pdf_studio') {
+    const mode = state.activeToolOptions.mode || 'merge';
+    const splitMode = state.activeToolOptions.split_mode || 'ranges';
+    const ranges = state.activeToolOptions.ranges || '1-';
+    const everyN = state.activeToolOptions.every_n || 1;
+
+    return `
+      <!-- Operation Mode Tabs -->
+      <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Operation Mode</span>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button 
+          type="button"
+          data-action="set-pdf-mode" data-mode="merge"
+          class="p-2.5 rounded-lg border text-center text-xs transition-all ${mode === 'merge' ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
+        >
+          Merge Documents
+        </button>
+        <button 
+          type="button"
+          data-action="set-pdf-mode" data-mode="split"
+          class="p-2.5 rounded-lg border text-center text-xs transition-all ${mode === 'split' ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
+        >
+          Split Document
+        </button>
+      </div>
+
+      ${mode === 'merge' ? `
+        <div class="p-3 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] space-y-1">
+          <div class="font-medium text-[var(--text-primary)]">Merge Behavior:</div>
+          <div>• Merges files in the exact order shown above (drag items to reorder).</div>
+          <div>• Bookmarks are preserved hierarchically with document names.</div>
+          <div>• Output file is saved with no overwrites and zero memory spikes.</div>
+        </div>
+      ` : `
+        <div class="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
+          <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Split Mode</span>
+          <div class="grid grid-cols-3 gap-2">
+            ${[
+              { id: 'ranges', label: 'By Page Ranges' },
+              { id: 'each_page', label: 'Every Single Page' },
+              { id: 'every_n', label: 'Every N Pages' }
+            ].map(sm => `
+              <button 
+                type="button"
+                data-action="set-pdf-split-mode" data-split-mode="${escapeAttr(sm.id)}"
+                class="p-2 rounded-lg border text-center text-xs transition-all ${splitMode === sm.id ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
+              >
+                ${sm.label}
+              </button>
+            `).join('')}
+          </div>
+
+          ${splitMode === 'ranges' ? `
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-[var(--text-secondary)]">Page Ranges (e.g. 1-3, 5, 8-)</label>
+              <input 
+                type="text" 
+                value="${escapeAttr(ranges)}" 
+                data-action="pdf-ranges-input" 
+                placeholder="1-3, 5, 8-" 
+                class="w-full px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono"
+              />
+              <span class="text-[10px] text-[var(--text-muted)]">Separate ranges with commas. Use '8-' for page 8 to end.</span>
+            </div>
+          ` : ''}
+
+          ${splitMode === 'every_n' ? `
+            <div class="space-y-1.5">
+              <label class="text-xs font-medium text-[var(--text-secondary)]">Split Every N Pages</label>
+              <input 
+                type="number" 
+                min="1" 
+                max="500" 
+                value="${everyN}" 
+                data-action="pdf-every-n-input" 
+                class="w-full px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono"
+              />
+            </div>
+          ` : ''}
+
+          ${splitMode === 'each_page' ? `
+            <div class="p-2.5 rounded-lg bg-[var(--surface-inset)] text-[11px] text-[var(--text-secondary)]">
+              Extracts each page as an individual zero-padded PDF (<code class="text-[var(--brand-primary)] font-mono">page_001.pdf</code>).
+            </div>
+          ` : ''}
+        </div>
+      `}
+    `;
+  } else if (toolId === 'media_audio_extractor') {
     return `
       <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Target Audio Format & Bitrate</span>
       ${renderCustomDropdown({
@@ -1494,7 +1584,9 @@ function setStudioMode(modeName) {
 
 async function handleStudioBrowseFiles(toolId) {
   let fileTypes = [];
-  if (toolId === 'video_compressor') {
+  if (toolId === 'pdf_studio') {
+    fileTypes = ['PDF Documents (*.pdf)', 'All Files (*.*)'];
+  } else if (toolId === 'video_compressor') {
     fileTypes = ['Video Files (*.mp4;*.mkv;*.mov;*.webm;*.avi;*.flv;*.wmv;*.m4v)'];
   } else if (toolId === 'media_audio_extractor') {
     fileTypes = ['Audio Video Files (*.mp4;*.mkv;*.mov;*.webm;*.avi;*.flv;*.wmv;*.mp3;*.wav;*.m4a;*.flac;*.ogg)'];
@@ -1512,10 +1604,39 @@ async function handleStudioBrowseFiles(toolId) {
   if (files && files.length > 0) {
     state.selectedFiles = files;
     updateStudioFilesUI();
-    if (toolId === 'subtitle_animator') {
+    if (toolId === 'pdf_studio') {
+      inspectSelectedPdfFiles(files);
+    } else if (toolId === 'subtitle_animator') {
       await handleSubtitleFilesLoaded(files);
     }
   }
+}
+
+// PDF Inspection Cache for badges
+let pdfFilesMeta = {};
+
+async function inspectSelectedPdfFiles(files) {
+  try {
+    const inspected = await callBridge('inspect_pdf', files);
+    if (inspected && Array.isArray(inspected)) {
+      inspected.forEach(item => {
+        if (item.file) {
+          pdfFilesMeta[item.file] = item;
+        }
+      });
+      updateStudioFilesUI();
+    }
+  } catch (e) {
+    console.error('PDF inspect error:', e);
+  }
+}
+
+function formatBytes(bytes) {
+  if (!bytes || bytes <= 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
 function updateStudioFilesUI() {
@@ -1531,16 +1652,108 @@ function updateStudioFilesUI() {
 
   wrap.classList.remove('hidden');
   countLbl.innerText = `${state.selectedFiles.length} file${state.selectedFiles.length > 1 ? 's' : ''} loaded`;
-  list.innerHTML = state.selectedFiles.map(f => `
-    <div class="px-2.5 py-1.5 rounded-md bg-[var(--surface-inset)] flex items-center justify-between text-xs text-[var(--text-primary)]">
-      <span class="truncate pr-2">${f.split('\\\\').pop()}</span>
-      <span class="text-[10px] text-[var(--text-muted)] shrink-0">Ready</span>
-    </div>
-  `).join('');
+
+  if (state.activeToolId === 'pdf_studio') {
+    list.innerHTML = state.selectedFiles.map((f, idx) => {
+      const meta = pdfFilesMeta[f] || {};
+      const pages = meta.pages !== undefined ? meta.pages : null;
+      const sizeStr = meta.size_bytes ? formatBytes(meta.size_bytes) : '';
+      const isLocked = meta.is_locked || false;
+
+      let badgeHtml = '';
+      if (isLocked) {
+        badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0 flex items-center gap-1">🔒 Locked</span>`;
+      } else if (pages !== null) {
+        badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-subtle)] shrink-0 font-mono">${pages} pg${pages === 1 ? '' : 's'}${sizeStr ? ' • ' + sizeStr : ''}</span>`;
+      } else {
+        badgeHtml = `<span class="text-[10px] text-[var(--text-muted)] shrink-0">Inspecting...</span>`;
+      }
+
+      return `
+        <div 
+          class="file-drag-item px-2.5 py-1.5 rounded-lg bg-[var(--surface-inset)] border border-transparent hover:border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-primary)] gap-2"
+          draggable="true"
+          data-file-idx="${idx}"
+          ondragstart="handlePdfDragStart(event, ${idx})"
+          ondragover="handlePdfDragOver(event)"
+          ondragleave="handlePdfDragLeave(event)"
+          ondrop="handlePdfDrop(event, ${idx})"
+        >
+          <div class="flex items-center gap-2 truncate min-w-0">
+            <span class="text-[var(--text-muted)] cursor-grab shrink-0">⋮⋮</span>
+            <span class="truncate font-medium">${f.split('\\\\').pop().split('/').pop()}</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            ${badgeHtml}
+            <button 
+              type="button" 
+              onclick="removePdfFile(${idx})" 
+              class="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors"
+              title="Remove file"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    list.innerHTML = state.selectedFiles.map(f => `
+      <div class="px-2.5 py-1.5 rounded-md bg-[var(--surface-inset)] flex items-center justify-between text-xs text-[var(--text-primary)]">
+        <span class="truncate pr-2">${f.split('\\\\').pop().split('/').pop()}</span>
+        <span class="text-[10px] text-[var(--text-muted)] shrink-0">Ready</span>
+      </div>
+    `).join('');
+  }
 }
+
+// HTML5 Drag-to-reorder handlers for PDF list
+let draggedPdfIndex = null;
+
+window.handlePdfDragStart = function(e, idx) {
+  draggedPdfIndex = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.classList.add('dragging');
+};
+
+window.handlePdfDragOver = function(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const target = e.currentTarget;
+  const rect = target.getBoundingClientRect();
+  const relY = e.clientY - rect.top;
+  if (relY < rect.height / 2) {
+    target.classList.add('drag-over-top');
+    target.classList.remove('drag-over-bottom');
+  } else {
+    target.classList.add('drag-over-bottom');
+    target.classList.remove('drag-over-top');
+  }
+};
+
+window.handlePdfDragLeave = function(e) {
+  e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
+};
+
+window.handlePdfDrop = function(e, targetIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
+  if (draggedPdfIndex === null || draggedPdfIndex === targetIdx) return;
+
+  const item = state.selectedFiles.splice(draggedPdfIndex, 1)[0];
+  state.selectedFiles.splice(targetIdx, 0, item);
+  draggedPdfIndex = null;
+  updateStudioFilesUI();
+};
+
+window.removePdfFile = function(idx) {
+  state.selectedFiles.splice(idx, 1);
+  updateStudioFilesUI();
+};
 
 function clearStudioFiles() {
   state.selectedFiles = [];
+  pdfFilesMeta = {};
   updateStudioFilesUI();
 }
 
@@ -1606,15 +1819,26 @@ async function handleCancelTool() {
 
 // Bridge Event Handlers (Called by Python evaluate_js)
 window.onToolProgress = function(data) {
-  const pct = data.percent || 0;
+  const pct = data.percent !== undefined ? data.percent : 0;
   const status = data.status || 'Processing...';
+  const isIndeterminate = data.indeterminate || pct < 0;
 
   const fill = document.getElementById('studio-progress-fill');
   const pctTxt = document.getElementById('studio-pct-txt');
   const statusTxt = document.getElementById('studio-status-txt');
 
-  if (fill) fill.style.width = `${pct}%`;
-  if (pctTxt) pctTxt.innerText = `${Math.round(pct)}%`;
+  if (fill) {
+    if (isIndeterminate) {
+      fill.classList.add('progress-indeterminate');
+    } else {
+      fill.classList.remove('progress-indeterminate');
+      fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+    }
+  }
+
+  if (pctTxt) {
+    pctTxt.innerText = isIndeterminate ? '...' : `${Math.round(pct)}%`;
+  }
   if (statusTxt) statusTxt.innerText = status;
 };
 
@@ -1629,11 +1853,57 @@ window.onToolLog = function(msg) {
 window.onToolComplete = function(data) {
   state.isToolRunning = false;
   state.lastOutputFile = data.output_file || '';
+  const stats = data.stats || null;
 
   const btnExec = document.getElementById('studio-btn-execute');
   if (btnExec) {
     btnExec.disabled = false;
     btnExec.classList.remove('opacity-50');
+  }
+
+  const fill = document.getElementById('studio-progress-fill');
+  if (fill) {
+    fill.classList.remove('progress-indeterminate');
+    fill.style.width = '100%';
+  }
+
+  // Format stats cards if available
+  let statsHtml = '';
+  if (stats) {
+    const timeMs = stats.total_time_ms !== undefined ? stats.total_time_ms : null;
+    const timeStr = timeMs !== null ? (timeMs < 1000 ? `${timeMs}ms` : `${(timeMs / 1000).toFixed(2)}s`) : '';
+    const bytesStr = stats.total_bytes ? formatBytes(stats.total_bytes) : '';
+    const chunks = stats.total_chunks !== undefined ? stats.total_chunks : null;
+    const pages = stats.output_pages !== undefined ? stats.output_pages : null;
+
+    statsHtml = `
+      <div class="grid grid-cols-2 gap-2 my-4 p-3 rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-left">
+        ${timeStr ? `
+          <div>
+            <div class="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Duration</div>
+            <div class="text-xs font-bold text-[var(--text-primary)] font-mono">${timeStr}</div>
+          </div>
+        ` : ''}
+        ${bytesStr ? `
+          <div>
+            <div class="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Output Size</div>
+            <div class="text-xs font-bold text-[var(--brand-primary)] font-mono">${bytesStr}</div>
+          </div>
+        ` : ''}
+        ${pages ? `
+          <div class="col-span-2 pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
+            <span>Verified Page Count:</span>
+            <span class="font-bold text-[var(--text-primary)] font-mono">${pages} pages</span>
+          </div>
+        ` : ''}
+        ${chunks ? `
+          <div class="col-span-2 pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
+            <span>Generated Files:</span>
+            <span class="font-bold text-[var(--text-primary)] font-mono">${chunks} files</span>
+          </div>
+        ` : ''}
+      </div>
+    `;
   }
 
   const stage = document.getElementById('studio-stage-card');
@@ -1643,8 +1913,9 @@ window.onToolComplete = function(data) {
         ${getIcon('check', 'w-6 h-6')}
       </div>
       <h4 class="text-sm font-semibold text-[var(--text-primary)]">Processing Complete!</h4>
-      <p class="text-xs text-[var(--text-secondary)] mt-1 mb-5">Your output file was successfully generated.</p>
-      <div class="space-y-2">
+      <p class="text-xs text-[var(--text-secondary)] mt-1">Your documents have been processed offline with zero quality loss.</p>
+      ${statsHtml}
+      <div class="space-y-2 mt-2">
         <button data-action="open-output-file" class="btn-primary w-full py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer">
           <span>Open Output File</span>
           ${getIcon('arrow-right', 'w-3.5 h-3.5')}
@@ -2674,6 +2945,26 @@ async function initApp() {
         break;
       }
 
+      case 'set-pdf-mode': {
+        const mode = el.dataset.mode;
+        if (mode) {
+          state.activeToolOptions.mode = mode;
+          const optBox = document.getElementById('studio-options-box');
+          if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
+        }
+        break;
+      }
+
+      case 'set-pdf-split-mode': {
+        const sm = el.dataset.splitMode;
+        if (sm) {
+          state.activeToolOptions.split_mode = sm;
+          const optBox = document.getElementById('studio-options-box');
+          if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
+        }
+        break;
+      }
+
       case 'sub-select-style': {
         const style = el.dataset.style;
         if (style) handleSelectSubtitleStyle(style);
@@ -2813,6 +3104,16 @@ async function initApp() {
       case 'renamer-text-input':
         state.activeToolOptions.text1 = el.value;
         break;
+
+      case 'pdf-ranges-input':
+        state.activeToolOptions.ranges = el.value;
+        break;
+
+      case 'pdf-every-n-input': {
+        const val = parseInt(el.value, 10);
+        state.activeToolOptions.every_n = isNaN(val) || val < 1 ? 1 : val;
+        break;
+      }
 
       case 'sub-scrubber-input':
         handleSubtitleScrub(el.value);

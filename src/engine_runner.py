@@ -208,14 +208,14 @@ class EngineRunner:
                     self.current_job_id = tool_id
                     self.current_win_job = win_job
 
-                # Send single JSON-line request to stdin
+                # Send single JSON-line request to stdin (keep stdin open for cancel commands)
                 proc.stdin.write(payload_json + "\n")
                 proc.stdin.flush()
-                proc.stdin.close()
 
                 # Process JSON-lines on stdout
                 outputs = None
                 structured_error = None
+                output_stats = None
 
                 for line in proc.stdout:
                     line = line.strip()
@@ -233,6 +233,7 @@ class EngineRunner:
                                 on_log(msg.get("message", ""))
                             elif m_type == "done":
                                 outputs = msg.get("outputs") or [msg.get("output_file")]
+                                output_stats = msg.get("stats")
                             elif m_type == "error":
                                 structured_error = {
                                     "code": msg.get("code", "ENGINE_ERROR"),
@@ -265,7 +266,10 @@ class EngineRunner:
                     on_error(structured_error)
                 else:
                     on_progress(100.0, "Complete")
-                    on_complete(outputs or [output_dir])
+                    if output_stats:
+                        on_complete({"outputs": outputs or [output_dir], "stats": output_stats})
+                    else:
+                        on_complete(outputs or [output_dir])
 
             except Exception as e:
                 with self.lock:
@@ -274,6 +278,11 @@ class EngineRunner:
                         return
                 on_error({"code": "PROCESS_FAILED", "message": f"Engine execution failed: {str(e)}"})
             finally:
+                try:
+                    if proc.stdin and not proc.stdin.closed:
+                        proc.stdin.close()
+                except Exception:
+                    pass
                 try:
                     if proc.stdout:
                         proc.stdout.close()
@@ -295,20 +304,38 @@ class EngineRunner:
         threading.Thread(target=_worker, daemon=True).start()
 
     def cancel_active(self) -> bool:
-        """Forcefully terminates the active engine process tree."""
+        """Sends {"cmd":"cancel"} on stdin, waits up to 3s, then forcefully terminates process tree."""
         with self.lock:
             if self.current_process is None:
                 return False
             self.is_cancelled = True
+            proc = self.current_process
+
+        # 1. Graceful cancel via stdin
+        try:
+            if proc.stdin and not proc.stdin.closed:
+                proc.stdin.write('{"cmd":"cancel"}\n')
+                proc.stdin.flush()
+        except Exception:
+            pass
+
+        # 2. Wait up to 3.0s for engine to cleanly exit
+        def _wait_and_kill():
             try:
-                pid = self.current_process.pid
-                if sys.platform == "win32":
-                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True)
-                else:
-                    self.current_process.kill()
-                return True
+                proc.wait(timeout=3.0)
             except Exception:
-                return False
+                # Force kill if not exited after 3 seconds
+                try:
+                    pid = proc.pid
+                    if sys.platform == "win32":
+                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True)
+                    else:
+                        proc.kill()
+                except Exception:
+                    pass
+
+        threading.Thread(target=_wait_and_kill, daemon=True).start()
+        return True
 
 
 # Global Singleton

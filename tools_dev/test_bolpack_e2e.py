@@ -245,10 +245,16 @@ class TestBolpackE2E(unittest.TestCase):
             on_complete=lambda o: None,
             on_error=lambda e: cancel_errs.append(e)
         )
-        time.sleep(0.2)
+        for _ in range(50):
+            if runner.current_process is not None:
+                break
+            time.sleep(0.05)
         cancel_res = runner.cancel_active()
         self.assertTrue(cancel_res)
-        time.sleep(0.3)
+        for _ in range(50):
+            if cancel_errs:
+                break
+            time.sleep(0.1)
         self.assertTrue(any("CANCELLED" in str(e) for e in cancel_errs))
 
 

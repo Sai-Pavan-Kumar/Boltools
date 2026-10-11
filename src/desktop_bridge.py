@@ -109,8 +109,12 @@ class DesktopBridge:
             self._notify_frontend("onToolLog", msg)
 
         def _on_complete(outputs: Any):
+            stats = None
+            if isinstance(outputs, dict) and "outputs" in outputs:
+                stats = outputs.get("stats")
+                outputs = outputs.get("outputs")
             primary = outputs[0] if isinstance(outputs, list) and outputs else outputs
-            self._notify_frontend("onToolComplete", {"output_file": primary, "outputs": outputs})
+            self._notify_frontend("onToolComplete", {"output_file": primary, "outputs": outputs, "stats": stats})
 
         def _on_error(err: Any):
             err_msg = err.get("message") if isinstance(err, dict) else str(err)
@@ -254,6 +258,55 @@ class DesktopBridge:
             }
         except Exception as ex:
             return {"success": False, "error": str(ex)}
+
+    def inspect_pdf(self, file_paths: List[str]) -> List[Dict[str, Any]]:
+        """Inspects PDF files to get page count, size, and password lock status via bundled pdf_engine."""
+        if not file_paths:
+            return []
+        
+        # Locate pdf_engine.exe
+        engine_exe = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "engines", "pdf_studio", "pdf_engine.exe"))
+        if not os.path.exists(engine_exe):
+            # Fallback using os.path metadata
+            results = []
+            for fp in file_paths:
+                results.append({
+                    "file": fp,
+                    "pages": 0,
+                    "size_bytes": os.path.getsize(fp) if os.path.exists(fp) else 0,
+                    "is_locked": False
+                })
+            return results
+
+        try:
+            creation_flags = 0
+            if sys.platform == "win32":
+                creation_flags = 0x08000000  # CREATE_NO_WINDOW
+            
+            p = subprocess.Popen(
+                [engine_exe],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                creationflags=creation_flags
+            )
+            payload = json.dumps({"subcommand": "info", "input_files": file_paths}) + "\n"
+            out, _ = p.communicate(payload, timeout=10.0)
+            
+            results = []
+            for line in out.splitlines():
+                line = line.strip()
+                if line.startswith("{") and line.endswith("}"):
+                    try:
+                        item = json.loads(line)
+                        if item.get("type") == "info":
+                            results.append(item)
+                    except Exception:
+                        pass
+            return results
+        except Exception:
+            return []
 
     # ── Favorites & Lifecycle Services ───────────────────────────────────────
     def toggle_favorite(self, tool_id: str) -> List[str]:

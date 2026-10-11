@@ -110,9 +110,26 @@
       "engine_type": "python",
       "engine_folder": "hello_tool",
       "is_implemented": true,
-      "size_bytes": 1797,
+      "size_bytes": 2031,
       "size_mb": 1,
-      "sha256": "145287b12a6c0708e4c56072b8bc02889b783fe48ff77850253a6ec9a293e167"
+      "sha256": "785211c8cadf3d3554648f76e78c65db8fb51456e4af82546f6224361dfe4f38"
+    },
+    {
+      "id": "pdf_studio",
+      "name": "PDF Studio (Merge & Split)",
+      "category_id": "pdf",
+      "category_name": "PDF Master Studio",
+      "description": "Offline PDF merge and split utility powered by QPDF v12.4.2. Unlimited file processing with zero cloud uploads.",
+      "icon": "file-text",
+      "version": "0.1.0",
+      "engine_type": "exe",
+      "engine_folder": "pdf_studio",
+      "entry": "pdf_engine.exe",
+      "release_notes": "Initial v0.1 release: High-performance local PDF Merge and Split without memory spikes.",
+      "is_implemented": true,
+      "size_bytes": 3762186,
+      "size_mb": 4,
+      "sha256": "aa71e0f7335c2d2c83ce51275c8f69e950cf443a151b7a4e1b4a708746a301f5"
     }
   ]
 }

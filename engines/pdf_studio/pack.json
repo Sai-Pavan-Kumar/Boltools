@@ -1,0 +1,26 @@
+{
+  "id": "pdf_studio",
+  "name": "PDF Studio (Merge & Split)",
+  "version": "0.1.0",
+  "min_app_version": "1.0.0",
+  "runtime": "exe",
+  "entry": "pdf_engine.exe",
+  "description": "High-throughput local PDF merge and split engine powered by QPDF v12.4.2.",
+  "files": {
+    "license.html": "7557cb076b6ef80c0b19a13beabf38a32ff441deea01af49709e8e6422acf484",
+    "license.rst.txt": "6bd81aa03c651c1a88b50ec99dc060d458a4c6439f46bf109afa6a7178538a90",
+    "pdf_engine.exe": "d909f36530e19860a0db3d6cfd1aa02b1ac49c0715bb7d088f5f866af6eee9f2",
+    "bin/concrt140.dll": "54716f0738af891f283d213b5c8d11b25896bb8ee3097d301eae718560cf974e",
+    "bin/fix-qdf.exe": "110741af48048dcdea7d9b14da685b855be71617f5d76aad42036a2304616656",
+    "bin/msvcp140.dll": "7c26614e1d733892c2deac7e245ce115504b1d80592dd0a01b08e3e5a55f89ca",
+    "bin/msvcp140_1.dll": "206c931bf90fdad8816de3b5e2ef80b2bcaa9406c89ecc05fe6fddffe251e982",
+    "bin/msvcp140_2.dll": "d50d7883f20d1dc6191768d3746f52dd9cac89c346ffaed5be1f110c2f34a838",
+    "bin/msvcp140_atomic_wait.dll": "3d0cbfaa1bf3eecf5a3f4491d2960ee803cb994f30292c6adc4a07c498f60e2b",
+    "bin/msvcp140_codecvt_ids.dll": "8a65c7596ef2e6938731f5a1058e7e40145b6d97967cc649231a076b9a608d78",
+    "bin/qpdf.exe": "1bdaf878f37eaffea1ea3c30591214c77636a0f2fc7432427516b6e22e36c0ff",
+    "bin/qpdf30.dll": "8812952678de93e0750308a113aa650e9161af466f9770679ea9673adeb61041",
+    "bin/vcruntime140.dll": "d1f4225df2cd877dbf130d5668a021dce3f94118455ff5ec952061c30afc9ce7",
+    "bin/vcruntime140_1.dll": "a7146c08f89fe5b04541ab507cdb59ff7b44534d4ba3c668a426c6450a03434e",
+    "bin/zlib-flate.exe": "dbe9a8e3ef6f9a2ab4850630c13c18a1e8e29fe15abf0c1c86c98a92ed174ebb"
+  }
+}

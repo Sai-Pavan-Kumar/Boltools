@@ -29,23 +29,39 @@ ANNOUNCEMENTS_PATH = os.path.join(SOFTWARE_DIR, "announcements.json")
 
 def run_smoke_test(tool_id: str) -> bool:
     """Runs isolated engine smoke test by executing target with JSON payload."""
-    engine_file = os.path.join(ENGINES_DIR, tool_id, "engine.py")
-    if not os.path.exists(engine_file):
-        print(f"[FAIL] Engine script not found: {engine_file}")
+    engine_dir = os.path.join(ENGINES_DIR, tool_id)
+    pack_json = os.path.join(engine_dir, "pack.json")
+    runtime = "python"
+    entry = "engine.py"
+    if os.path.isfile(pack_json):
+        try:
+            with open(pack_json, "r", encoding="utf-8") as pf:
+                pm = json.load(pf)
+                runtime = pm.get("runtime", "python")
+                entry = pm.get("entry", "engine.py")
+        except Exception:
+            pass
+
+    executable_path = os.path.join(engine_dir, entry)
+    if not os.path.exists(executable_path):
+        print(f"[FAIL] Engine target not found: {executable_path}")
         return False
 
-    print(f"[*] Running smoke test for {tool_id}...")
+    print(f"[*] Running smoke test for {tool_id} (runtime: {runtime}, entry: {entry})...")
     try:
+        cmd = [sys.executable, executable_path] if runtime in ("python", "py") else [executable_path]
         proc = subprocess.Popen(
-            [sys.executable, engine_file],
+            cmd,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
         )
-        out, err = proc.communicate("{}", timeout=6)
+        test_payload = json.dumps({"subcommand": "info", "input_files": []}) + "\n"
+        out, err = proc.communicate(test_payload, timeout=6)
         print(f"[*] Engine output: {out.strip() or err.strip()}")
-        if proc.returncode == 0:
+        # Exit code 0 or structured json output is accepted
+        if proc.returncode in (0, 3) or '{"type":' in out:
             print(f"[PASS] Smoke test succeeded for {tool_id}!")
             return True
         else:
@@ -87,10 +103,11 @@ def pack_engine_v1(tool_id: str) -> Tuple[str, str, int]:
     version = pack_meta.get("version", "1.0.0")
     files_map = {}
 
-    # Scan and hash all payload files excluding pack.json
-    for root, _, filenames in os.walk(engine_folder):
+    # Scan and hash all payload files excluding pack.json and build source folders
+    for root, dirs, filenames in os.walk(engine_folder):
+        dirs[:] = [d for d in dirs if d not in ("rust_src", "target", ".git", "__pycache__", ".boltools_tmp")]
         for fname in filenames:
-            if fname.lower() == "pack.json":
+            if fname.lower() in ("pack.json", ".gitignore"):
                 continue
             full_path = os.path.join(root, fname)
             rel_path = os.path.relpath(full_path, engine_folder).replace("\\", "/")

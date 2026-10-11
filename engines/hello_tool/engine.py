@@ -22,11 +22,14 @@ import os
 import sys
 import json
 import time
+import threading
 
 EXIT_SUCCESS = 0
 EXIT_RUNTIME_ERROR = 1
 EXIT_CANCELLED = 2
 EXIT_INVALID_ARGS = 3
+
+is_cancelled = False
 
 
 def emit(data: dict):
@@ -35,7 +38,26 @@ def emit(data: dict):
     sys.stdout.flush()
 
 
+def cancel_listener():
+    global is_cancelled
+    try:
+        for line in sys.stdin:
+            line = line.strip()
+            if line:
+                try:
+                    msg = json.loads(line)
+                    if msg.get("cmd") == "cancel":
+                        is_cancelled = True
+                        emit({"type": "error", "code": "CANCELLED", "message": "Operation cancelled by user."})
+                        sys.exit(EXIT_CANCELLED)
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
 def main():
+    global is_cancelled
     try:
         raw_input = sys.stdin.readline()
         if not raw_input:
@@ -47,10 +69,14 @@ def main():
         emit({"type": "error", "code": "ERR_INVALID_JSON", "message": f"Failed to parse input JSON: {str(e)}"})
         sys.exit(EXIT_INVALID_ARGS)
 
+    # Spawn cancel listener thread on remaining stdin lines
+    listener = threading.Thread(target=cancel_listener, daemon=True)
+    listener.start()
+
     options = payload.get("options", {})
     output_dir = payload.get("output_dir", os.getcwd())
     text_content = options.get("text", "Hello from Boltools Native Shell!")
-    seconds = int(options.get("seconds", 2))
+    seconds = int(options.get("seconds") or options.get("duration") or 2)
     force_error = bool(options.get("force_error", False))
 
     emit({"type": "log", "message": f"Starting Hello Tool: duration={seconds}s, force_error={force_error}"})
@@ -70,7 +96,11 @@ def main():
     interval = seconds / steps
 
     for step in range(1, steps + 1):
+        if is_cancelled:
+            sys.exit(EXIT_CANCELLED)
         time.sleep(interval)
+        if is_cancelled:
+            sys.exit(EXIT_CANCELLED)
         pct = 5.0 + (step / steps) * 90.0
         emit({"type": "progress", "percent": round(pct, 1), "message": f"Processing step {step}/{steps}..."})
         if step % 5 == 0:
