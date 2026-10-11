@@ -20,6 +20,9 @@ if not exist "%PYTHON_BIN%" (
     exit /b 1
 )
 
+:: Clear stale manifest cache so newly registered tools reflect immediately
+del /f /q "%USERPROFILE%\.boltools\manifest_cache.json" 2>nul
+
 echo [STEP 1] Generating sample test Ed25519 signing keypair...
 set SMOKE_KEY=%TEMP%\smoke_test_key.pem
 set BOLTOOLS_KEY_PASSPHRASE=BoltoolsSmokePass123!
