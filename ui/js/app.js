@@ -2432,26 +2432,17 @@ function openAnnouncementsModal() {
   const list = document.getElementById('announcements-list');
   if (!modal || !list) return;
 
-  const items = state.announcements && state.announcements.length > 0 ? state.announcements : [
-    {
-      id: "sb_boltools_tool_06_subtitle_animator",
-      date: "2026-10-10",
-      tag: "NEW TOOL",
-      title: "Subtitle Animation Maker (Now Live)",
-      description: "Create viral animated subtitles with word-by-word karaoke highlights, custom fonts, colors, and live 60fps timing preview 100% offline.",
-      cta_text: "Open Tool Hub",
-      cta_url: "https://thesurfboard.in"
-    },
-    {
-      id: "sb_boltools_launch_01",
-      date: "2026-10-05",
-      tag: "READY",
-      title: "Welcome to Boltools Desktop Suite",
-      description: "The 100% offline Swiss Army knife for creators, editors, and power users. Zero subscriptions. Zero data leaks.",
-      cta_text: "Join SurfBoard Community",
-      cta_url: "https://thesurfboard.in"
-    }
-  ];
+  const items = state.announcements || [];
+
+  if (items.length === 0) {
+    list.innerHTML = `
+      <div class="py-10 text-center text-xs text-[var(--text-muted)]">
+        <p>No new notifications or announcements.</p>
+      </div>
+    `;
+    modal.classList.remove('hidden');
+    return;
+  }
 
   list.innerHTML = items.map(a => `
     <div class="p-3.5 rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] space-y-1.5">
