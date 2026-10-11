@@ -681,6 +681,7 @@ function handleHubSearch(val) {
 
 async function handleInstallOrUpdateTool(toolId, isUpdate = false) {
   const btn = document.getElementById(`btn-action-${toolId}`);
+  const originalHtml = btn ? btn.innerHTML : '';
   if (btn) {
     btn.disabled = true;
     btn.style.opacity = '0.7';
@@ -696,7 +697,7 @@ async function handleInstallOrUpdateTool(toolId, isUpdate = false) {
         state.updatesCount = data.updates_count || 0;
         updateBellBadge();
       }
-      showToast(res.message || `${toolId} updated successfully!`, 'success');
+      showToast(res.message || `${toolId} installed successfully!`, 'success');
       const container = document.getElementById('main-content');
       if (container) {
         if (state.currentView === 'tool_hub') renderToolHub(container);
@@ -704,7 +705,8 @@ async function handleInstallOrUpdateTool(toolId, isUpdate = false) {
         else if (state.currentView === 'category_view') renderCategoryView(container, state.activeCategoryId);
       }
     } else {
-      alert((res && res.error) || 'Failed to download tool engine.');
+      const errorMsg = (res && res.error) || 'Failed to download tool package.';
+      showToast(errorMsg, 'error');
       if (btn) {
         btn.disabled = false;
         btn.style.opacity = '1';
@@ -713,6 +715,7 @@ async function handleInstallOrUpdateTool(toolId, isUpdate = false) {
     }
   } catch (err) {
     console.error('Error in handleInstallOrUpdateTool:', err);
+    showToast(`Installation error: ${err.message || err}`, 'error');
     if (btn) {
       btn.disabled = false;
       btn.style.opacity = '1';
@@ -724,6 +727,8 @@ async function handleInstallOrUpdateTool(toolId, isUpdate = false) {
 async function handleInstallTool(toolId) {
   return handleInstallOrUpdateTool(toolId, false);
 }
+
+const installTool = handleInstallTool;
 
 // 3. Favorites View
 function renderFavorites(container) {
