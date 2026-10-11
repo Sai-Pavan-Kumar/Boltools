@@ -701,11 +701,17 @@ async function handleInstallOrUpdateTool(toolId, isUpdate = false) {
   try {
     const res = await callBridge('install_or_update_tool', toolId);
     if (res && res.success) {
-      const data = await callBridge('get_initial_data');
-      if (data) {
-        state.tools = data.tools;
-        state.updatesCount = data.updates_count || 0;
+      const [initData, summaryData] = await Promise.all([
+        callBridge('get_initial_data'),
+        callBridge('get_catalog_summary')
+      ]);
+      if (initData) {
+        if (initData.categories) state.categories = initData.categories;
+        state.updatesCount = initData.updates_count || 0;
         updateBellBadge();
+      }
+      if (Array.isArray(summaryData)) {
+        state.tools = summaryData;
       }
       showToast(res.message || `${toolId} installed successfully!`, 'success');
       const container = document.getElementById('main-content');
