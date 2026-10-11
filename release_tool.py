@@ -16,6 +16,7 @@ SOFTWARE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENGINES_DIR = os.path.join(SOFTWARE_DIR, "engines")
 BUNDLES_DIR = os.path.join(SOFTWARE_DIR, "release_bundles")
 CATALOG_PATH = os.path.join(SOFTWARE_DIR, "catalog.json")
+TOOLS_MANIFEST_PATH = os.path.join(SOFTWARE_DIR, "tools_manifest.json")
 ANNOUNCEMENTS_PATH = os.path.join(SOFTWARE_DIR, "announcements.json")
 
 
@@ -102,6 +103,30 @@ def update_catalog_and_announcements(tool_id: str):
             print("[PASS] Synchronized catalog.json")
         except Exception as e:
             print(f"[WARN] Failed to update catalog.json: {e}")
+
+    # Update tools_manifest.json with computed sha256
+    engine_file = os.path.join(ENGINES_DIR, tool_id, "engine.py")
+    if os.path.exists(TOOLS_MANIFEST_PATH) and os.path.exists(engine_file):
+        try:
+            import hashlib
+            with open(engine_file, "rb") as ef:
+                computed_sha256 = hashlib.sha256(ef.read()).hexdigest().lower()
+
+            with open(TOOLS_MANIFEST_PATH, "r", encoding="utf-8") as f:
+                manifest_data = json.load(f)
+
+            updated = False
+            for t in manifest_data.get("tools", []):
+                if t.get("id") == tool_id or t.get("engine_folder") == tool_id:
+                    t["sha256"] = computed_sha256
+                    updated = True
+
+            if updated:
+                with open(TOOLS_MANIFEST_PATH, "w", encoding="utf-8") as f:
+                    json.dump(manifest_data, f, indent=2)
+                print(f"[PASS] Updated sha256 ({computed_sha256[:12]}...) in tools_manifest.json")
+        except Exception as e:
+            print(f"[WARN] Failed to update tools_manifest.json: {e}")
 
     if os.path.exists(ANNOUNCEMENTS_PATH):
         try:

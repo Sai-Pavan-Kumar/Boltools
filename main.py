@@ -100,6 +100,15 @@ def main():
 
     desktop_bridge.set_window(window)
 
+    # Guarantee native shell flag injection regardless of query string mangling by WebView2
+    def _on_loaded():
+        try:
+            window.evaluate_js("window.__BOLTOOLS_NATIVE_SHELL__ = true;")
+        except Exception:
+            pass
+
+    window.events.loaded += _on_loaded
+
     # Ensure persistent storage directory for Edge WebView2 user data (theme, localStorage, recents)
     storage_dir = os.path.join(os.path.expanduser("~"), ".boltools", "webview2_data")
     os.makedirs(storage_dir, exist_ok=True)

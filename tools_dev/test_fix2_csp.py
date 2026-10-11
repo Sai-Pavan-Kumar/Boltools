@@ -3,7 +3,7 @@ from playwright.sync_api import sync_playwright
 
 def main():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=['--no-sandbox'])
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--allow-file-access-from-files'])
         page = browser.new_page()
 
         csp_errors = []
@@ -16,7 +16,12 @@ def main():
         ))
         page.on("pageerror", lambda exc: page_errors.append(str(exc)))
 
-        index_path = os.path.abspath("software/ui/index.html")
+        candidates = [
+            os.path.abspath("ui/index.html"),
+            os.path.abspath("software/ui/index.html"),
+            os.path.abspath(os.path.join(os.path.dirname(__file__), "../ui/index.html"))
+        ]
+        index_path = next((p for p in candidates if os.path.exists(p)), candidates[0])
         file_url = f"file:///{index_path.replace(os.sep, '/')}?mock=1"
         print(f"Loading {file_url} ...")
 

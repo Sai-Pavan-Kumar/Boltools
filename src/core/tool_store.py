@@ -335,14 +335,28 @@ class ToolStoreService:
         download_success = False
         last_error = ""
 
+        # Refuse installation if sha256 checksum is missing (allowed only when BOLTOOLS_DEV=1)
+        # TODO: Implement Ed25519 manifest signature verification (.sig) together with the new tool pack
+        # format (.zip) prior to the first public downloadable tool release.
+        expected_sha256 = meta.get("sha256")
+        if not expected_sha256 and os.environ.get("BOLTOOLS_DEV") != "1":
+            return {
+                "success": False,
+                "error": f"Refusing to install tool '{tool_id}': Missing sha256 checksum in manifest entry. Set BOLTOOLS_DEV=1 to bypass."
+            }
+
         for url in urls_to_try:
             try:
                 req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"})
                 with urllib.request.urlopen(req, timeout=10.0) as resp:
                     if resp.status == 200:
                         content = resp.read()
+                        # Reject HTML error pages or non-script payloads
+                        if content.lstrip().startswith(b"<"):
+                            last_error = f"Invalid response from {url}: received HTML response instead of Python script"
+                            continue
+
                         if len(content) > 100:  # Valid non-empty file check
-                            expected_sha256 = meta.get("sha256")
                             if expected_sha256:
                                 import hashlib
                                 actual_sha256 = hashlib.sha256(content).hexdigest().lower()
@@ -353,10 +367,8 @@ class ToolStoreService:
                             temp_path = target_engine_file + ".tmp"
                             with open(temp_path, "wb") as f:
                                 f.write(content)
-                            # Atomic replace
-                            if os.path.exists(target_engine_file):
-                                os.remove(target_engine_file)
-                            os.rename(temp_path, target_engine_file)
+                            # Single atomic replace without os.remove/os.rename race
+                            os.replace(temp_path, target_engine_file)
                             download_success = True
                             break
             except Exception as e:

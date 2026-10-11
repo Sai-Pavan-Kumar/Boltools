@@ -48,6 +48,14 @@ def measure_startup_and_network():
         page.wait_for_selector("#main-content", state="attached")
         t_usable = (time.perf_counter() - t0) * 1000
 
+        # Extract precise JSHeapUsedSize via Chrome DevTools Protocol (CDP) session
+        cdp_client = context.new_cdp_session(page)
+        cdp_client.send("Performance.enable")
+        cdp_metrics = cdp_client.send("Performance.getMetrics")
+        metrics_dict = {m["name"]: m["value"] for m in cdp_metrics.get("metrics", [])}
+        js_heap_used_bytes = metrics_dict.get("JSHeapUsedSize", 0)
+        js_heap_mb = js_heap_used_bytes / (1024 * 1024) if js_heap_used_bytes else None
+
         timing = page.evaluate("""() => {
             const paintEntries = performance.getEntriesByType('paint');
             const fcp = paintEntries.find(e => e.name === 'first-contentful-paint');
@@ -55,8 +63,7 @@ def measure_startup_and_network():
             return {
                 fcp: fcp ? Math.round(fcp.startTime) : null,
                 fp: fp ? Math.round(fp.startTime) : null,
-                domNodes: document.getElementsByTagName('*').length,
-                jsHeapMb: performance.memory ? (performance.memory.usedJSHeapSize / (1024 * 1024)) : null
+                domNodes: document.getElementsByTagName('*').length
             };
         }""")
 
@@ -67,7 +74,7 @@ def measure_startup_and_network():
         "first_paint_ms": timing["fp"],
         "first_contentful_paint_ms": timing["fcp"],
         "initial_dom_nodes": timing["domNodes"],
-        "initial_heap_mb": timing["jsHeapMb"],
+        "initial_heap_mb": js_heap_mb,
         "network_requests": requests_log
     }
 
@@ -140,10 +147,17 @@ def measure_tool_hub_scale(count: int):
             const cards = viewport ? viewport.querySelectorAll('.hairline-card').length : 0;
             return {
                 domNodes: document.getElementsByTagName('*').length,
-                renderedCards: cards,
-                heapMb: performance.memory ? (performance.memory.usedJSHeapSize / (1024 * 1024)) : null
+                renderedCards: cards
             };
         }""")
+
+        # Extract precise JSHeapUsedSize via Chrome DevTools Protocol (CDP)
+        cdp_client = context.new_cdp_session(page)
+        cdp_client.send("Performance.enable")
+        cdp_metrics = cdp_client.send("Performance.getMetrics")
+        metrics_dict = {m["name"]: m["value"] for m in cdp_metrics.get("metrics", [])}
+        js_heap_used_bytes = metrics_dict.get("JSHeapUsedSize", 0)
+        js_heap_mb = js_heap_used_bytes / (1024 * 1024) if js_heap_used_bytes else None
 
         # Measure Scroll Frame Timings on the REAL scroll viewport: #virtual-grid-viewport
         scroll_stats = page.evaluate("""async () => {
@@ -208,7 +222,7 @@ def measure_tool_hub_scale(count: int):
         "render_hub_ms": t_render_hub,
         "dom_nodes": dom_stats["domNodes"],
         "rendered_cards": dom_stats["renderedCards"],
-        "heap_mb": dom_stats["heapMb"],
+        "heap_mb": js_heap_mb,
         "max_frame_ms": scroll_stats["maxFrameMs"],
         "approx_fps": scroll_stats["approxFps"],
         "frames_over_50ms": scroll_stats["framesOver50"],
@@ -217,14 +231,48 @@ def measure_tool_hub_scale(count: int):
     }
 
 
+def measure_python_10k_summary():
+    """Measures Python backend performance for get_catalog_summary at 10,000 tools."""
+    from src.core.tool_store import ToolStoreService
+    store = ToolStoreService()
+    # Inject synthetic 10,000 tools into cache
+    synth_tools = generate_tools(10000)
+    store.cached_manifest = {"schema_version": "1.0.0", "tools": synth_tools}
+    store.invalidate_cache()
+
+    t0 = time.perf_counter()
+    summary = store.get_catalog_summary()
+    py_duration_ms = (time.perf_counter() - t0) * 1000
+
+    json_str = json.dumps(summary)
+    json_bytes = len(json_str.encode("utf-8"))
+    json_kb = json_bytes / 1024
+
+    return {
+        "tools_count": len(summary),
+        "duration_ms": py_duration_ms,
+        "json_size_kb": json_kb,
+        "json_size_mb": json_kb / 1024
+    }
+
+
 def main():
     print("==================================================")
     print("BOLTOOLS PERFORMANCE BENCHMARK (VALIDATED SUITE)")
     print("==================================================")
 
+    # 1. Python Backend Measurement
+    print("\n--- 0. Measuring Python Backend: get_catalog_summary at 10,000 Tools ---")
+    py_metrics = measure_python_10k_summary()
+    print(f"  Summary items generated: {py_metrics['tools_count']}")
+    print(f"  Execution time: {py_metrics['duration_ms']:.2f} ms")
+    print(f"  Serialized JSON payload size: {py_metrics['json_size_kb']:.2f} KB ({py_metrics['json_size_mb']:.2f} MB)")
+
     startup = measure_startup_and_network()
+    print(f"\n--- 1. Measuring Startup & Network Requests ---")
     print(f"Startup Time to Usable: {startup['time_to_usable_ms']:.2f} ms")
     print(f"First Paint: {startup['first_paint_ms']} ms")
+    print(f"Initial JS Heap: {startup['initial_heap_mb']:.2f} MB" if startup['initial_heap_mb'] else "Initial JS Heap: N/A")
     print(f"Network Requests on Startup: {len(startup['network_requests'])}")
     for r in startup["network_requests"]:
         print(f"  -> [{r['resource_type']}] {r['url']}")
@@ -235,7 +283,7 @@ def main():
         scale = measure_tool_hub_scale(count)
         results.append(scale)
         print(f"  DOM Nodes: {scale['dom_nodes']} (Visible Cards in DOM: {scale['rendered_cards']})")
-        print(f"  JS Heap: {scale['heap_mb']:.2f} MB" if scale['heap_mb'] else "  JS Heap: N/A")
+        print(f"  JS Heap (CDP JSHeapUsedSize): {scale['heap_mb']:.2f} MB" if scale['heap_mb'] else "  JS Heap: N/A")
         print(f"  Render Hub Time: {scale['render_hub_ms']:.2f} ms")
         print(f"  Max Scroll Frame: {scale['max_frame_ms']:.2f} ms | Approx FPS: {scale['approx_fps']:.1f}")
         print(f"  Frames > 50ms: {scale['frames_over_50ms']}")
@@ -243,6 +291,7 @@ def main():
 
     # Save raw results
     raw_data = {
+        "python_10k": py_metrics,
         "startup": startup,
         "scale": results
     }

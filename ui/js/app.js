@@ -850,16 +850,38 @@ function renderSettings(container) {
         </div>
       </div>
 
-      <!-- About -->
-      <div class="p-5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2">
-        <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">About</span>
-        <h4 class="text-sm font-semibold text-[var(--text-primary)]">Boltools Desktop v1.0</h4>
-        <p class="text-xs text-[var(--text-secondary)] leading-relaxed">Fast, private, 100% offline utilities for creators and power users. Designed and built with obsessed human craftsmanship.</p>
-        <div class="pt-2">
+      <!-- About & Diagnostics -->
+      <div class="p-5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-4">
+        <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">About & Diagnostics</span>
+        <div>
+          <h4 class="text-sm font-semibold text-[var(--text-primary)]">Boltools Desktop v1.0</h4>
+          <p class="text-xs text-[var(--text-secondary)] leading-relaxed mt-0.5">Fast, private, 100% offline utilities for creators and power users. Designed and built with obsessed human craftsmanship.</p>
+        </div>
+        <div>
           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-[var(--surface-inset)] text-[var(--text-muted)]">
             ${getIcon('shield', 'w-3 h-3 text-emerald-500')}
             <span>100% Local PC Engine • Zero Cloud Telemetry</span>
           </span>
+        </div>
+
+        <div class="pt-2 border-t border-[var(--border-subtle)] space-y-2">
+          <span class="text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">Shell Diagnostics</span>
+          <div class="p-2.5 rounded-lg bg-[var(--surface-inset)] font-mono text-[11px] text-[var(--text-secondary)] space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[var(--text-muted)]">window.location.search:</span>
+              <span class="text-[var(--text-primary)] font-semibold">${escapeHtml(window.location.search || '(none)')}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-[var(--text-muted)]">Native Shell Active:</span>
+              <span class="${((new URLSearchParams(window.location.search).get('shell') === 'native') || Boolean(window.__BOLTOOLS_NATIVE_SHELL__)) ? 'text-emerald-500' : 'text-amber-500'} font-semibold">
+                ${((new URLSearchParams(window.location.search).get('shell') === 'native') || Boolean(window.__BOLTOOLS_NATIVE_SHELL__)) ? 'YES (Native WebView2)' : 'NO (Standalone / Mock)'}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-[var(--text-muted)]">Injected Global:</span>
+              <span class="text-[var(--text-primary)]">${Boolean(window.__BOLTOOLS_NATIVE_SHELL__) ? 'true' : 'false'}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2481,22 +2503,22 @@ function openAnnouncementsModal() {
   list.innerHTML = items.map(a => `
     <div class="p-3.5 rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] space-y-1.5">
       <div class="flex items-center justify-between">
-        <span class="px-2 py-0.5 text-[9px] font-bold rounded bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${a.tag || 'UPDATE'}</span>
-        <span class="text-[10px] text-[var(--text-muted)]">${a.date || ''}</span>
+        <span class="px-2 py-0.5 text-[9px] font-bold rounded bg-[var(--surface-pill)] text-[var(--brand-primary)] uppercase tracking-wider">${escapeHtml(a.tag || 'UPDATE')}</span>
+        <span class="text-[10px] text-[var(--text-muted)]">${escapeHtml(a.date || '')}</span>
       </div>
       <h4 class="text-xs font-semibold text-[var(--text-primary)]">${escapeHtml(a.title)}</h4>
       <p class="text-[11px] text-[var(--text-secondary)] leading-relaxed">${escapeHtml(a.description)}</p>
       ${a.cta_action ? `
         <div class="pt-1">
           <button data-action="announcement-cta" data-cta-action="${escapeAttr(a.cta_action)}" data-cta-target="${escapeAttr(a.cta_target || '')}" class="text-[11px] font-medium text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1 cursor-pointer">
-            <span>${a.cta_text || 'Open in App'}</span>
+            <span>${escapeHtml(a.cta_text || 'Open in App')}</span>
             ${getIcon('chevron-right', 'w-3 h-3')}
           </button>
         </div>
       ` : (a.cta_url ? `
         <div class="pt-1">
-          <a href="${a.cta_url}" target="_blank" class="text-[11px] font-medium text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1">
-            <span>${a.cta_text || 'Learn more'}</span>
+          <a href="${escapeAttr(a.cta_url)}" target="_blank" class="text-[11px] font-medium text-[var(--brand-primary)] hover:underline inline-flex items-center gap-1">
+            <span>${escapeHtml(a.cta_text || 'Learn more')}</span>
             ${getIcon('chevron-right', 'w-3 h-3')}
           </a>
         </div>

@@ -3,6 +3,7 @@ import os
 import sys
 
 # Ensure software root is on sys.path
+sys.path.insert(0, os.path.abspath("."))
 sys.path.insert(0, os.path.abspath("software"))
 
 from src.desktop_bridge import desktop_bridge
