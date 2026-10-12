@@ -940,14 +940,32 @@ function renderToolStudio(container, toolId) {
             ${renderToolSpecificOptions(tool.id)}
           </div>
 
-          <!-- Destination Settings Card -->
-          <div class="p-4 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2">
-            <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Output Destination</span>
-            <div class="flex items-center gap-2">
-              <input type="text" id="studio-out-folder" value="${state.customOutputDir || state.defaultDownloads}" data-action="studio-out-folder-input" class="w-full px-3 py-2 text-xs rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] cursor-text" />
-              <button data-action="studio-browse-out-folder" class="px-3.5 py-2 text-xs font-medium rounded-xl bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] shrink-0 transition-colors cursor-pointer">
-                Browse
-              </button>
+          <!-- Output Settings Card: Output Filename & Destination Folder -->
+          <div class="p-4 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-3">
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Output File Name</span>
+                <span class="text-[10px] text-[var(--text-muted)] font-mono">${tool.id === 'pdf_studio' ? '.pdf' : ''}</span>
+              </div>
+              <input 
+                type="text" 
+                id="studio-out-filename" 
+                value="${escapeAttr(state.activeToolOptions.custom_filename || (tool.id === 'pdf_studio' ? ((state.activeToolOptions.mode || 'merge') === 'merge' ? 'merged_document.pdf' : 'split_document') : 'output_result'))}" 
+                data-action="studio-out-filename-input" 
+                placeholder="merged_document.pdf" 
+                class="w-full px-3 py-2 text-xs rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono" 
+              />
+              <span class="text-[10px] text-[var(--text-secondary)] mt-1 block">Specify custom file name before processing. Original file quality is 100% preserved.</span>
+            </div>
+
+            <div class="pt-2 border-t border-[var(--border-subtle)]">
+              <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">Save Location</span>
+              <div class="flex items-center gap-2">
+                <input type="text" id="studio-out-folder" value="${state.customOutputDir || state.defaultDownloads}" data-action="studio-out-folder-input" class="w-full px-3 py-2 text-xs rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] cursor-text" />
+                <button data-action="studio-browse-out-folder" class="px-3.5 py-2 text-xs font-medium rounded-xl bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] shrink-0 transition-colors cursor-pointer">
+                  Browse
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1686,7 +1704,7 @@ function updateStudioFilesUI() {
 
       return `
         <div 
-          class="file-drag-item p-3 rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] hover:border-[var(--border-hover)] flex items-center justify-between text-xs text-[var(--text-primary)] gap-3 transition-colors"
+          class="file-drag-item p-3 rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] hover:border-[var(--border-hover)] flex items-center justify-between text-xs text-[var(--text-primary)] gap-3 transition-all select-none"
           draggable="true"
           data-file-idx="${idx}"
           ondragstart="handlePdfDragStart(event, ${idx})"
@@ -1694,26 +1712,53 @@ function updateStudioFilesUI() {
           ondragleave="handlePdfDragLeave(event)"
           ondrop="handlePdfDrop(event, ${idx})"
         >
-          <div class="flex items-center gap-3 truncate min-w-0">
-            <span class="text-[var(--text-muted)] cursor-grab shrink-0 text-sm select-none">⋮⋮</span>
+          <div class="flex items-center gap-2.5 truncate min-w-0">
+            <span class="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-grab active:cursor-grabbing shrink-0 text-sm font-bold select-none px-0.5" title="Drag to reorder">⋮⋮</span>
+            <span class="w-5 h-5 rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[10px] font-mono font-bold flex items-center justify-center shrink-0 text-[var(--text-secondary)]">${idx + 1}</span>
             <div class="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 border border-red-500/20 font-bold text-[10px]">
               PDF
             </div>
             <div class="truncate">
-              <div class="truncate font-semibold text-[var(--text-primary)]">${escapeHtml(fileName)}</div>
+              <div class="truncate font-semibold text-[var(--text-primary)]" title="${escapeAttr(fileName)}">${escapeHtml(fileName)}</div>
               <div class="text-[11px] text-[var(--text-secondary)] font-mono mt-0.5">${escapeHtml(metaSubtext)}</div>
             </div>
           </div>
-          <div class="flex items-center gap-2.5 shrink-0">
+          <div class="flex items-center gap-1.5 shrink-0">
             ${badgeHtml}
+            
+            <!-- Up / Down Reorder Buttons -->
+            <div class="flex items-center gap-0.5 bg-[var(--surface-card)] p-0.5 rounded-lg border border-[var(--border-subtle)] ml-1">
+              <button 
+                type="button" 
+                data-action="move-studio-file-up"
+                data-file-idx="${idx}"
+                ${idx === 0 ? 'disabled' : ''}
+                class="w-6 h-6 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:bg-[var(--surface-inset)] transition-colors cursor-pointer ${idx === 0 ? 'opacity-20 pointer-events-none' : ''}"
+                title="Move up"
+              >
+                ${getIcon('arrow-up', 'w-3 h-3')}
+              </button>
+              <button 
+                type="button" 
+                data-action="move-studio-file-down"
+                data-file-idx="${idx}"
+                ${idx === state.selectedFiles.length - 1 ? 'disabled' : ''}
+                class="w-6 h-6 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:bg-[var(--surface-inset)] transition-colors cursor-pointer ${idx === state.selectedFiles.length - 1 ? 'opacity-20 pointer-events-none' : ''}"
+                title="Move down"
+              >
+                ${getIcon('arrow-down', 'w-3 h-3')}
+              </button>
+            </div>
+
+            <!-- Remove Button -->
             <button 
               type="button" 
               data-action="remove-studio-file"
               data-file-idx="${idx}"
-              class="w-6 h-6 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+              class="w-6 h-6 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer ml-1"
               title="Remove file"
             >
-              ×
+              ${getIcon('x', 'w-3.5 h-3.5')}
             </button>
           </div>
         </div>
@@ -1734,52 +1779,153 @@ function updateStudioFilesUI() {
               class="w-6 h-6 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
               title="Remove file"
             >
-              ×
+              ${getIcon('x', 'w-3.5 h-3.5')}
             </button>
           </div>
         </div>
       `;
     }).join('');
   }
+
+  attachListDragDelegation();
 }
 
-// HTML5 Drag-to-reorder handlers for PDF list
+function attachListDragDelegation() {
+  const list = document.getElementById('studio-files-list');
+  if (!list || list._dragBound) return;
+  list._dragBound = true;
+
+  list.addEventListener('dragstart', (e) => {
+    const item = e.target.closest('.file-drag-item');
+    if (!item) return;
+    const idx = parseInt(item.dataset.fileIdx, 10);
+    if (!isNaN(idx)) {
+      draggedPdfIndex = idx;
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(idx));
+      }
+      item.classList.add('opacity-50');
+    }
+  });
+
+  list.addEventListener('dragend', (e) => {
+    draggedPdfIndex = null;
+    list.querySelectorAll('.file-drag-item').forEach(el => {
+      el.classList.remove('border-t-2', 'border-b-2', 'border-[var(--brand-primary)]', 'opacity-50');
+    });
+  });
+
+  list.addEventListener('dragover', (e) => {
+    const item = e.target.closest('.file-drag-item');
+    if (!item) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    const rect = item.getBoundingClientRect();
+    const relY = e.clientY - rect.top;
+    if (relY < rect.height / 2) {
+      item.classList.add('border-t-2', 'border-[var(--brand-primary)]');
+      item.classList.remove('border-b-2');
+    } else {
+      item.classList.add('border-b-2', 'border-[var(--brand-primary)]');
+      item.classList.remove('border-t-2');
+    }
+  });
+
+  list.addEventListener('dragleave', (e) => {
+    const item = e.target.closest('.file-drag-item');
+    if (item && !item.contains(e.relatedTarget)) {
+      item.classList.remove('border-t-2', 'border-b-2', 'border-[var(--brand-primary)]');
+    }
+  });
+
+  list.addEventListener('drop', (e) => {
+    const item = e.target.closest('.file-drag-item');
+    if (!item) return;
+    e.preventDefault();
+    item.classList.remove('border-t-2', 'border-b-2', 'border-[var(--brand-primary)]', 'opacity-50');
+    const targetIdx = parseInt(item.dataset.fileIdx, 10);
+    let sourceIdx = draggedPdfIndex;
+    if (sourceIdx === null && e.dataTransfer) {
+      const data = e.dataTransfer.getData('text/plain');
+      if (data !== '') sourceIdx = parseInt(data, 10);
+    }
+    draggedPdfIndex = null;
+    if (sourceIdx !== null && !isNaN(sourceIdx) && !isNaN(targetIdx) && sourceIdx !== targetIdx) {
+      if (sourceIdx >= 0 && sourceIdx < state.selectedFiles.length && targetIdx >= 0 && targetIdx < state.selectedFiles.length) {
+        const moved = state.selectedFiles.splice(sourceIdx, 1)[0];
+        state.selectedFiles.splice(targetIdx, 0, moved);
+        updateStudioFilesUI();
+      }
+    }
+  });
+}
+
+// Reordering logic
 let draggedPdfIndex = null;
+
+function moveStudioFile(idx, delta) {
+  const newIdx = idx + delta;
+  if (newIdx >= 0 && newIdx < state.selectedFiles.length) {
+    const item = state.selectedFiles.splice(idx, 1)[0];
+    state.selectedFiles.splice(newIdx, 0, item);
+    updateStudioFilesUI();
+  }
+}
 
 window.handlePdfDragStart = function(e, idx) {
   draggedPdfIndex = idx;
-  e.dataTransfer.effectAllowed = 'move';
-  e.currentTarget.classList.add('dragging');
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(idx));
+  }
+  const item = e.currentTarget || e.target.closest('.file-drag-item');
+  if (item) item.classList.add('opacity-50');
 };
 
 window.handlePdfDragOver = function(e) {
   e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  const target = e.currentTarget;
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+  const target = e.currentTarget || e.target.closest('.file-drag-item');
+  if (!target) return;
   const rect = target.getBoundingClientRect();
   const relY = e.clientY - rect.top;
   if (relY < rect.height / 2) {
-    target.classList.add('drag-over-top');
-    target.classList.remove('drag-over-bottom');
+    target.classList.add('border-t-2', 'border-[var(--brand-primary)]');
+    target.classList.remove('border-b-2');
   } else {
-    target.classList.add('drag-over-bottom');
-    target.classList.remove('drag-over-top');
+    target.classList.add('border-b-2', 'border-[var(--brand-primary)]');
+    target.classList.remove('border-t-2');
   }
 };
 
 window.handlePdfDragLeave = function(e) {
-  e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
+  const target = e.currentTarget || e.target.closest('.file-drag-item');
+  if (target) {
+    target.classList.remove('border-t-2', 'border-b-2', 'border-[var(--brand-primary)]', 'opacity-50');
+  }
 };
 
 window.handlePdfDrop = function(e, targetIdx) {
   e.preventDefault();
-  e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging');
-  if (draggedPdfIndex === null || draggedPdfIndex === targetIdx) return;
-
-  const item = state.selectedFiles.splice(draggedPdfIndex, 1)[0];
-  state.selectedFiles.splice(targetIdx, 0, item);
+  const target = e.currentTarget || e.target.closest('.file-drag-item');
+  if (target) {
+    target.classList.remove('border-t-2', 'border-b-2', 'border-[var(--brand-primary)]', 'opacity-50');
+  }
+  let sourceIdx = draggedPdfIndex;
+  if (sourceIdx === null && e.dataTransfer) {
+    const data = e.dataTransfer.getData('text/plain');
+    if (data !== '') sourceIdx = parseInt(data, 10);
+  }
   draggedPdfIndex = null;
-  updateStudioFilesUI();
+  if (sourceIdx === null || isNaN(sourceIdx) || isNaN(targetIdx) || sourceIdx === targetIdx) {
+    return;
+  }
+  if (sourceIdx >= 0 && sourceIdx < state.selectedFiles.length && targetIdx >= 0 && targetIdx < state.selectedFiles.length) {
+    const item = state.selectedFiles.splice(sourceIdx, 1)[0];
+    state.selectedFiles.splice(targetIdx, 0, item);
+    updateStudioFilesUI();
+  }
 };
 
 function removeStudioFile(idx) {
@@ -1861,6 +2007,12 @@ async function handleExecuteTool(toolId) {
       <h4 class="text-sm font-semibold text-[var(--text-primary)]">Processing in Progress</h4>
       <p class="text-xs text-[var(--text-secondary)] mt-1">Executing offline tool engine on your PC...</p>
     `;
+  }
+
+  const customFileName = document.getElementById('studio-out-filename')?.value?.trim();
+  if (customFileName) {
+    state.activeToolOptions.custom_filename = customFileName;
+    state.activeToolOptions.output_filename = customFileName;
   }
 
   await callBridge('execute_tool', toolId, state.selectedFiles, state.activeToolOptions, outDir);
@@ -3009,6 +3161,20 @@ async function initApp() {
         break;
       }
 
+      case 'move-studio-file-up': {
+        e.stopPropagation();
+        const fIdx = parseInt(el.dataset.fileIdx, 10);
+        if (!isNaN(fIdx)) moveStudioFile(fIdx, -1);
+        break;
+      }
+
+      case 'move-studio-file-down': {
+        e.stopPropagation();
+        const fIdx = parseInt(el.dataset.fileIdx, 10);
+        if (!isNaN(fIdx)) moveStudioFile(fIdx, 1);
+        break;
+      }
+
       case 'set-pdf-mode': {
         const mode = el.dataset.mode;
         if (mode) {
@@ -3018,6 +3184,12 @@ async function initApp() {
           const execLbl = document.getElementById('studio-btn-exec-label');
           if (execLbl) {
             execLbl.innerText = mode === 'merge' ? 'Merge Documents' : 'Split Document';
+          }
+          const fnameInp = document.getElementById('studio-out-filename');
+          if (fnameInp && (!fnameInp.value || fnameInp.value === 'merged_document.pdf' || fnameInp.value === 'split_document')) {
+            fnameInp.value = mode === 'merge' ? 'merged_document.pdf' : 'split_document';
+            state.activeToolOptions.custom_filename = fnameInp.value;
+            state.activeToolOptions.output_filename = fnameInp.value;
           }
         }
         break;
@@ -3160,6 +3332,11 @@ async function initApp() {
 
       case 'studio-out-folder-input':
         state.customOutputDir = el.value;
+        break;
+
+      case 'studio-out-filename-input':
+        state.activeToolOptions.custom_filename = el.value.trim();
+        state.activeToolOptions.output_filename = el.value.trim();
         break;
 
       case 'webp-qual-input': {

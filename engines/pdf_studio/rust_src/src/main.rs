@@ -460,8 +460,22 @@ fn do_merge(req: JobRequest, qpdf_bin: &Path, cancel_flag: &Arc<AtomicBool>) -> 
     emit_log(&format!("All {} files validated successfully (Total pages: {}).", req.input_files.len(), total_expected_pages), None);
 
     // 2. Reserve destination file
-    let default_name = "merged";
-    let (final_path, final_file_handle) = match reserve_output_file(&out_dir, default_name, "pdf") {
+    let custom_name = req.options.get("custom_filename")
+        .or_else(|| req.options.get("output_filename"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty());
+
+    let (base_name, ext) = if let Some(cname) = custom_name {
+        let p = Path::new(cname);
+        let s = p.file_stem().unwrap_or_default().to_string_lossy().to_string();
+        let e = p.extension().and_then(|ext| ext.to_str()).unwrap_or("pdf");
+        (if s.is_empty() { "merged".to_string() } else { s }, e.to_string())
+    } else {
+        ("merged".to_string(), "pdf".to_string())
+    };
+
+    let (final_path, final_file_handle) = match reserve_output_file(&out_dir, &base_name, &ext) {
         Ok(r) => r,
         Err(e) => {
             emit_error("PERMISSION_DENIED", &format!("Cannot write to destination folder '{:?}': {}", out_dir, e));
@@ -567,8 +581,20 @@ fn do_split(req: JobRequest, qpdf_bin: &Path, cancel_flag: &Arc<AtomicBool>) -> 
         _ => src_path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| PathBuf::from(".")),
     };
 
-    let stem = src_path.file_stem().unwrap_or_default().to_string_lossy();
-    let split_folder_name = format!("{}_split", stem);
+    let custom_name = req.options.get("custom_filename")
+        .or_else(|| req.options.get("output_filename"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty());
+
+    let stem = if let Some(cname) = custom_name {
+        let p = Path::new(cname);
+        let s = p.file_stem().unwrap_or_default().to_string_lossy().to_string();
+        if s.is_empty() { src_path.file_stem().unwrap_or_default().to_string_lossy().to_string() } else { s }
+    } else {
+        src_path.file_stem().unwrap_or_default().to_string_lossy().to_string()
+    };
+    let split_folder_name = if stem.ends_with("_split") { stem } else { format!("{}_split", stem) };
     let split_target_dir = out_base_dir.join(&split_folder_name);
     fs::create_dir_all(&split_target_dir).map_err(|e| {
         emit_error("PERMISSION_DENIED", &format!("Cannot create output folder '{:?}': {}", split_target_dir, e));

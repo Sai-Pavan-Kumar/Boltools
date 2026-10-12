@@ -311,6 +311,37 @@ class TestPdfStudio(unittest.TestCase):
         print(f"    - Chunks Created: {stats_split_each.get('total_chunks')} files")
         print("="*60 + "\n")
 
+    def test_12_custom_output_filename(self):
+        """Verify custom_filename is respected for both merge and split operations."""
+        f1 = os.path.join(self.tmp_dir, "file_a.pdf")
+        f2 = os.path.join(self.tmp_dir, "file_b.pdf")
+        create_test_pdf(f1, num_pages=2)
+        create_test_pdf(f2, num_pages=3)
+
+        # 1. Custom filename merge test
+        rc, events, _ = run_engine_direct({
+            "options": {"mode": "merge", "custom_filename": "final_contract_2026.pdf"},
+            "input_files": [f1, f2],
+            "output_dir": self.tmp_dir
+        })
+        self.assertEqual(rc, 0)
+        done_ev = [e for e in events if e.get("type") == "done"][0]
+        merged_path = done_ev["outputs"][0]
+        self.assertTrue(merged_path.endswith("final_contract_2026.pdf"))
+        self.assertTrue(os.path.isfile(merged_path))
+
+        # 2. Custom filename split test
+        rc_s, events_s, _ = run_engine_direct({
+            "options": {"mode": "split", "split_mode": "each_page", "custom_filename": "contract_split_bundle"},
+            "input_files": [merged_path],
+            "output_dir": self.tmp_dir
+        })
+        self.assertEqual(rc_s, 0)
+        done_split_ev = [e for e in events_s if e.get("type") == "done"][0]
+        split_dir = done_split_ev["stats"]["output_directory"]
+        self.assertTrue(split_dir.endswith("contract_split_bundle_split"))
+        self.assertTrue(os.path.isdir(split_dir))
+
 
 if __name__ == "__main__":
     unittest.main()
