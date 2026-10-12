@@ -1643,15 +1643,35 @@ function updateStudioFilesUI() {
   const wrap = document.getElementById('studio-files-wrap');
   const countLbl = document.getElementById('studio-files-count');
   const list = document.getElementById('studio-files-list');
-  if (!wrap || !list) return;
+  const dropzone = document.getElementById('studio-dropzone');
+  const dropTitle = dropzone ? dropzone.querySelector('h4') : null;
+  const dropHint = dropzone ? dropzone.querySelector('p') : null;
 
   if (state.selectedFiles.length === 0) {
-    wrap.classList.add('hidden');
+    if (wrap) wrap.classList.add('hidden');
+    if (dropTitle) {
+      dropTitle.innerText = 'Click to browse or drop files here';
+    }
+    if (dropHint && state.activeToolId) {
+      dropHint.innerText = getDropzoneHint(state.activeToolId);
+    }
     return;
   }
 
-  wrap.classList.remove('hidden');
-  countLbl.innerText = `${state.selectedFiles.length} file${state.selectedFiles.length > 1 ? 's' : ''} loaded`;
+  // Update dropzone header to clearly indicate selected files
+  if (dropTitle) {
+    dropTitle.innerText = `${state.selectedFiles.length} file${state.selectedFiles.length > 1 ? 's' : ''} selected`;
+  }
+  if (dropHint) {
+    dropHint.innerText = 'Click to add more or drag items below to reorder';
+  }
+
+  if (wrap) wrap.classList.remove('hidden');
+  if (countLbl) {
+    countLbl.innerText = `${state.selectedFiles.length} file${state.selectedFiles.length > 1 ? 's' : ''} loaded`;
+  }
+
+  if (!list) return;
 
   if (state.activeToolId === 'pdf_studio') {
     list.innerHTML = state.selectedFiles.map((f, idx) => {
@@ -1687,8 +1707,9 @@ function updateStudioFilesUI() {
             ${badgeHtml}
             <button 
               type="button" 
-              onclick="removePdfFile(${idx})" 
-              class="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors"
+              data-action="remove-studio-file"
+              data-file-idx="${idx}"
+              class="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
               title="Remove file"
             >
               ×
@@ -1698,10 +1719,21 @@ function updateStudioFilesUI() {
       `;
     }).join('');
   } else {
-    list.innerHTML = state.selectedFiles.map(f => `
+    list.innerHTML = state.selectedFiles.map((f, idx) => `
       <div class="px-2.5 py-1.5 rounded-md bg-[var(--surface-inset)] flex items-center justify-between text-xs text-[var(--text-primary)]">
         <span class="truncate pr-2">${f.split('\\\\').pop().split('/').pop()}</span>
-        <span class="text-[10px] text-[var(--text-muted)] shrink-0">Ready</span>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="text-[10px] text-[var(--text-muted)]">Ready</span>
+          <button 
+            type="button" 
+            data-action="remove-studio-file"
+            data-file-idx="${idx}"
+            class="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+            title="Remove file"
+          >
+            ×
+          </button>
+        </div>
       </div>
     `).join('');
   }
@@ -1746,9 +1778,15 @@ window.handlePdfDrop = function(e, targetIdx) {
   updateStudioFilesUI();
 };
 
+function removeStudioFile(idx) {
+  if (idx >= 0 && idx < state.selectedFiles.length) {
+    state.selectedFiles.splice(idx, 1);
+    updateStudioFilesUI();
+  }
+}
+
 window.removePdfFile = function(idx) {
-  state.selectedFiles.splice(idx, 1);
-  updateStudioFilesUI();
+  removeStudioFile(idx);
 };
 
 function clearStudioFiles() {
@@ -1806,9 +1844,20 @@ async function handleExecuteTool(toolId) {
     btnExec.classList.add('opacity-50');
   }
 
-  // Clear log
+  // Clear log and set stage to active
   const logBox = document.getElementById('studio-log-box');
   if (logBox) logBox.innerHTML = `<div>Starting execution...</div>`;
+
+  const stage = document.getElementById('studio-stage-card');
+  if (stage) {
+    stage.innerHTML = `
+      <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center bg-blue-500/10 text-blue-500 mb-3 animate-pulse">
+        ${getIcon('cpu', 'w-6 h-6')}
+      </div>
+      <h4 class="text-sm font-semibold text-[var(--text-primary)]">Processing in Progress</h4>
+      <p class="text-xs text-[var(--text-secondary)] mt-1">Executing offline tool engine on your PC...</p>
+    `;
+  }
 
   await callBridge('execute_tool', toolId, state.selectedFiles, state.activeToolOptions, outDir);
 }
@@ -1861,11 +1910,9 @@ window.onToolComplete = function(data) {
     btnExec.classList.remove('opacity-50');
   }
 
-  const fill = document.getElementById('studio-progress-fill');
-  if (fill) {
-    fill.classList.remove('progress-indeterminate');
-    fill.style.width = '100%';
-  }
+  // Hide progress wrap on completion to eliminate clutter and redundant Cancel button
+  const progWrap = document.getElementById('studio-progress-wrap');
+  if (progWrap) progWrap.classList.add('hidden');
 
   // Format stats cards if available
   let statsHtml = '';
@@ -2916,6 +2963,13 @@ async function initApp() {
       case 'clear-studio-files':
         clearStudioFiles();
         break;
+
+      case 'remove-studio-file': {
+        e.stopPropagation();
+        const fIdx = parseInt(el.dataset.fileIdx, 10);
+        if (!isNaN(fIdx)) removeStudioFile(fIdx);
+        break;
+      }
 
       case 'studio-browse-out-folder':
         handleStudioBrowseOutFolder();
