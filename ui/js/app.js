@@ -647,8 +647,8 @@ function renderCategoryView(container, categoryId) {
   const toolCardsHtml = catTools.length > 0 ? catTools.map(t => {
     const isInstalled = t.status === 'installed';
     return `
-      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-5 rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden min-h-[180px]">
-        <div>
+      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden">
+        <div class="p-5 pb-3">
           <div class="flex items-center justify-between gap-2 mb-3">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--surface-inset)] group-hover:scale-105 transition-transform shadow-xs" style="color: ${cat.accent};">
               ${getIcon(t.icon, 'w-5 h-5')}
@@ -660,7 +660,7 @@ function renderCategoryView(container, categoryId) {
           <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(t.name)}</h4>
           <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${escapeHtml(t.description)}</p>
         </div>
-        <div class="pt-4 mt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
+        <div class="px-5 py-3.5 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
           <span class="text-xs font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
             <span>Open Tool</span>
             ${getIcon('arrow-right', 'w-3 h-3')}
@@ -730,13 +730,13 @@ function renderToolHubCard(t, index) {
   const remoteVer = t.remote_version || t.version || '1.0.0';
 
   return `
-    <div id="hub-card-${t.id}" class="hairline-card p-4 rounded-xl bg-[var(--surface-card)] border ${isUpdate ? 'border-amber-500/40 shadow-sm' : 'border-[var(--border-subtle)]'} hover:border-[var(--border-hover)] flex flex-col justify-between relative overflow-hidden h-[190px]">
+    <div id="hub-card-${t.id}" class="hairline-card rounded-xl bg-[var(--surface-card)] border ${isUpdate ? 'border-amber-500/40 shadow-sm' : 'border-[var(--border-subtle)]'} hover:border-[var(--border-hover)] flex flex-col justify-between relative overflow-hidden">
       ${isUpdate ? `
-        <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-bl-lg tracking-wider uppercase flex items-center gap-1">
+        <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-bl-lg tracking-wider uppercase flex items-center gap-1 z-10">
           ${getIcon('refresh-cw', 'w-2.5 h-2.5')} Update Available
         </div>
       ` : ''}
-      <div>
+      <div class="p-4 pb-3">
         <div class="flex items-center gap-2.5 mb-2.5">
           <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)]">
             ${getIcon(t.icon, 'w-4 h-4')}
@@ -747,19 +747,19 @@ function renderToolHubCard(t, index) {
         <h4 class="text-sm font-semibold text-[var(--text-primary)] truncate">${window.ToolSearchIndex ? window.ToolSearchIndex.highlight(t.name, state.searchQuery) : escapeHtml(t.name)}</h4>
         <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${window.ToolSearchIndex ? window.ToolSearchIndex.highlight(t.description, state.searchQuery) : escapeHtml(t.description)}</p>
       </div>
-      <div class="mt-3 pt-2.5 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
+      <div class="px-4 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
         ${isUpdate ? `
           <div class="flex items-center gap-2 w-full justify-between">
-            <button id="btn-action-${escapeAttr(t.id)}" data-action="update-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3 py-1 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all flex items-center gap-1.5 cursor-pointer">
+            <button id="btn-action-${escapeAttr(t.id)}" data-action="update-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs">
               ${getIcon('download', 'w-3 h-3')}
               <span>Update v${remoteVer}</span>
             </button>
-            <button data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="px-2 py-1 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-colors cursor-pointer">
+            <button data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="px-2.5 py-1.5 text-xs font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] transition-colors cursor-pointer">
               <span>Launch</span>
             </button>
           </div>
         ` : (isInstalled ? `
-          <button data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3 py-1 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 cursor-pointer">
+          <button data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs">
             <span>Open Tool</span>
             ${getIcon('arrow-right', 'w-3 h-3')}
           </button>
@@ -767,7 +767,7 @@ function renderToolHubCard(t, index) {
             Uninstall
           </button>
         ` : `
-          <button id="btn-action-${escapeAttr(t.id)}" data-action="install-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3 py-1 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 cursor-pointer">
+          <button id="btn-action-${escapeAttr(t.id)}" data-action="install-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs">
             ${getIcon('download', 'w-3 h-3')}
             <span>+ Install</span>
           </button>
