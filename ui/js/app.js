@@ -347,16 +347,27 @@ function renderHome(container) {
       `;
     }).join('') : '';
 
+    const recentFilesHeader = `
+      <div class="flex items-center justify-between mb-4">
+        <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Generated Files</span>
+        <button data-action="clear-recent-files" class="text-xs text-[var(--text-muted)] hover:text-red-500 cursor-pointer">Clear</button>
+      </div>
+    `;
+
+    const recentToolsHeader = `
+      <div class="flex items-center justify-between mb-4">
+        <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Recent Tools</span>
+        <button data-action="clear-recent-tools" class="text-xs text-[var(--text-muted)] hover:text-red-500 cursor-pointer">Clear</button>
+      </div>
+    `;
+
     if (recentFilesMarkup || recentToolsMarkup) {
       rightRailHtml = `
-        <div style="width: 280px; flex-shrink: 0;" class="space-y-5">
+        <div style="width: 280px; flex-shrink: 0;" class="space-y-6">
           ${recentFilesMarkup ? `
             <div>
-              <div class="flex items-center justify-between mb-2.5">
-                <span class="text-[10px] font-bold text-[var(--text-muted)] tracking-wider uppercase">Generated Files</span>
-                <button data-action="clear-recent-files" class="text-[10px] text-[var(--text-muted)] hover:text-red-500 cursor-pointer">Clear</button>
-              </div>
-              <div class="space-y-1.5">
+              ${recentFilesHeader}
+              <div class="space-y-2">
                 ${recentFilesMarkup}
               </div>
             </div>
@@ -364,11 +375,8 @@ function renderHome(container) {
 
           ${recentToolsMarkup ? `
             <div>
-              <div class="flex items-center justify-between mb-2.5">
-                <span class="text-[10px] font-bold text-[var(--text-muted)] tracking-wider uppercase">Recent Tools</span>
-                <button data-action="clear-recent-tools" class="text-[10px] text-[var(--text-muted)] hover:text-red-500 cursor-pointer">Clear</button>
-              </div>
-              <div class="space-y-1.5">
+              ${recentToolsHeader}
+              <div class="space-y-2">
                 ${recentToolsMarkup}
               </div>
             </div>
@@ -406,8 +414,8 @@ function renderHome(container) {
       <!-- 2. Main Content Stage: Utilities on Left + Generous Gap + Recent Activity Rail on Right -->
       <div class="flex items-start gap-8" style="width: 100%;">
         <!-- Left Column: Utilities & Tools Grid -->
-        <div class="flex-1 space-y-4" style="min-width: 0;">
-          <div class="flex items-center justify-between">
+        <div class="flex-1" style="min-width: 0;">
+          <div class="flex items-center justify-between mb-4">
             <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Utilities & Tools</span>
             <button data-action="nav" data-view="tool_hub" class="text-xs font-semibold text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
               <span>View Tool Hub</span>
