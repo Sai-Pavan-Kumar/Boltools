@@ -873,49 +873,49 @@ function renderToolStudio(container, toolId) {
   const isFav = state.favorites.includes(tool.id);
 
   container.innerHTML = `
-    <div class="w-full max-w-6xl mx-auto space-y-5 pb-8 flex flex-col">
+    <div class="w-full space-y-4 pb-4 flex flex-col">
       <!-- Studio Header Bar -->
-      <div class="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)] shrink-0">
+      <div class="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] shrink-0">
         <div class="flex items-center gap-3">
-          <button data-action="navigate-back" class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors cursor-pointer">
+          <button data-action="navigate-back" class="w-8 h-8 rounded-md flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors cursor-pointer">
             ${getIcon('arrow-left', 'w-4 h-4')}
           </button>
-          <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)]">
-            ${getIcon(tool.icon, 'w-5 h-5')}
+          <div class="w-8 h-8 rounded-md flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)]">
+            ${getIcon(tool.icon, 'w-4 h-4')}
           </div>
           <div>
-            <h3 class="text-base font-bold font-display text-[var(--text-primary)]">${escapeHtml(tool.name)}</h3>
-            <p class="text-xs text-[var(--text-secondary)] line-clamp-1">${escapeHtml(tool.description)}</p>
+            <h3 class="text-sm font-bold font-display text-[var(--text-primary)]">${escapeHtml(tool.name)}</h3>
+            <p class="text-[11px] text-[var(--text-secondary)] line-clamp-1">${escapeHtml(tool.description)}</p>
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button data-action="studio-toggle-fav" data-tool-id="${escapeAttr(tool.id)}" class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] transition-colors">
+          <button data-action="studio-toggle-fav" data-tool-id="${escapeAttr(tool.id)}" class="w-8 h-8 rounded-md flex items-center justify-center bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] transition-colors cursor-pointer">
             ${isFav ? getIcon('heartFilled', 'w-4 h-4') : getIcon('heart', 'w-4 h-4')}
           </button>
         </div>
       </div>
 
       <!-- Studio 2-Pane Grid: Left Stage (Files & Dropzone) + Right Panel (Configuration & Actions) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1 items-start min-h-0">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 items-start min-h-0">
         <!-- Left Pane: File Workspace & Dropzone (7 Cols) -->
-        <div class="lg:col-span-7 space-y-4">
+        <div class="lg:col-span-7 space-y-3">
           <!-- Clean Hero Dropzone -->
           <div 
             id="studio-dropzone" 
             data-action="studio-browse-files" data-tool-id="${escapeAttr(tool.id)}"
-            class="p-8 rounded-xl bg-[var(--surface-card)] border-2 border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer text-center transition-all group relative overflow-hidden"
+            class="p-6 rounded-md bg-[var(--surface-card)] border border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer text-center transition-all group relative overflow-hidden"
           >
-            <div class="w-14 h-14 mx-auto rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform mb-3 border border-[var(--border-subtle)]">
-              ${getIcon('upload-cloud', 'w-7 h-7')}
+            <div class="w-10 h-10 mx-auto rounded-md flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform mb-2 border border-[var(--border-subtle)]">
+              ${getIcon('upload-cloud', 'w-5 h-5')}
             </div>
-            <h4 class="text-sm font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
+            <h4 class="text-xs font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
               Drop ${tool.id === 'pdf_studio' ? 'PDF' : ''} files here
             </h4>
-            <p class="text-xs text-[var(--text-secondary)] mt-1">or click to <span class="text-[var(--brand-primary)] font-medium">browse</span></p>
+            <p class="text-[11px] text-[var(--text-secondary)] mt-0.5">or click to <span class="text-[var(--brand-primary)] font-medium">browse</span></p>
           </div>
 
           <!-- Selected Files List Card -->
-          <div id="studio-files-wrap" class="hidden space-y-3 p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)]">
+          <div id="studio-files-wrap" class="hidden space-y-2 p-3 rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)]">
             <div class="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)] text-xs">
               <span id="studio-files-count" class="font-semibold text-[var(--text-primary)]">0 files added</span>
               <div class="flex items-center gap-3">
@@ -929,92 +929,86 @@ function renderToolStudio(container, toolId) {
                 </button>
               </div>
             </div>
-            <div id="studio-files-list" class="space-y-2 max-h-80 overflow-y-auto pr-1"></div>
+            <div id="studio-files-list" class="space-y-1.5 max-h-72 overflow-y-auto pr-1"></div>
           </div>
         </div>
 
         <!-- Right Pane: Mode Options, Settings & Execution CTA (5 Cols) -->
-        <div class="lg:col-span-5 space-y-4 flex flex-col">
-          <!-- Operation Mode & Tool Specific Options -->
-          <div id="studio-options-box" class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-4">
-            ${renderToolSpecificOptions(tool.id)}
-          </div>
-
-          <!-- Output Settings Card: Output Filename & Destination Folder -->
-          <div class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-3">
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Output File Name</span>
-                <span class="text-[10px] text-[var(--text-muted)] font-mono">${tool.id === 'pdf_studio' ? '.pdf' : ''}</span>
-              </div>
-              <input 
-                type="text" 
-                id="studio-out-filename" 
-                value="${escapeAttr(state.activeToolOptions.custom_filename || (tool.id === 'pdf_studio' ? ((state.activeToolOptions.mode || 'merge') === 'merge' ? 'merged_document.pdf' : 'split_document') : 'output_result'))}" 
-                data-action="studio-out-filename-input" 
-                placeholder="merged_document.pdf" 
-                class="w-full px-3 py-2 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono" 
-              />
-              <span class="text-[10px] text-[var(--text-secondary)] mt-1 block">Specify custom file name before processing. Original file quality is 100% preserved.</span>
+        <div class="lg:col-span-5 space-y-3 flex flex-col">
+          <!-- Unified Studio Inspector Card -->
+          <div class="p-3.5 rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-3.5">
+            <!-- Tool Specific Mode Options -->
+            <div id="studio-options-box" class="space-y-3">
+              ${renderToolSpecificOptions(tool.id)}
             </div>
 
-            <div class="pt-2 border-t border-[var(--border-subtle)]">
-              <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider block mb-1.5">Save Location</span>
-              <div class="flex items-center gap-2">
-                <input type="text" id="studio-out-folder" value="${state.customOutputDir || state.defaultDownloads}" data-action="studio-out-folder-input" class="w-full px-3 py-2 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] cursor-text" />
-                <button data-action="studio-browse-out-folder" class="px-3.5 py-2 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] shrink-0 transition-colors cursor-pointer">
-                  Browse
-                </button>
+            <!-- Output Settings: Filename & Destination -->
+            <div class="pt-3 border-t border-[var(--border-subtle)] space-y-2.5">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Output File Name</span>
+                  <span class="text-[10px] text-[var(--text-muted)] font-mono">${tool.id === 'pdf_studio' ? '.pdf' : ''}</span>
+                </div>
+                <input 
+                  type="text" 
+                  id="studio-out-filename" 
+                  value="${escapeAttr(state.activeToolOptions.custom_filename || (tool.id === 'pdf_studio' ? ((state.activeToolOptions.mode || 'merge') === 'merge' ? 'merged_document.pdf' : 'split_document') : 'output_result'))}" 
+                  data-action="studio-out-filename-input" 
+                  placeholder="merged_document.pdf" 
+                  class="w-full px-2.5 py-1.5 text-xs rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono" 
+                />
               </div>
-            </div>
-          </div>
 
-          <!-- Primary Execution CTA Button -->
-          <button 
-            id="studio-btn-execute"
-            data-action="studio-execute" data-tool-id="${escapeAttr(tool.id)}"
-            class="btn-primary w-full py-3 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <span id="studio-btn-exec-label">${tool.id === 'pdf_studio' ? ((state.activeToolOptions.mode || 'merge') === 'merge' ? 'Merge Documents' : 'Split Document') : 'Start Processing'}</span>
-            ${getIcon('arrow-right', 'w-3.5 h-3.5')}
-          </button>
-
-          <!-- Stage / Progress / Result Card -->
-          <div id="studio-stage-card" class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2">
-            <div class="flex items-center justify-between text-xs">
-              <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">File & Engine Summary</span>
-              <span id="studio-summary-badge" class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-600 font-semibold border border-emerald-500/20">Offline Engine</span>
-            </div>
-            <div id="studio-summary-content" class="text-xs text-[var(--text-secondary)] space-y-1.5 pt-1">
-              <div class="flex items-center justify-between">
-                <span>Selected:</span>
-                <span id="studio-summary-count" class="font-medium text-[var(--text-primary)]">0 files</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span>Total Size:</span>
-                <span id="studio-summary-size" class="font-medium text-[var(--text-primary)] font-mono">0 B</span>
+              <div>
+                <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider block mb-1">Save Location</span>
+                <div class="flex items-center gap-1.5">
+                  <input type="text" id="studio-out-folder" value="${state.customOutputDir || state.defaultDownloads}" data-action="studio-out-folder-input" class="w-full px-2.5 py-1.5 text-xs rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] cursor-text" />
+                  <button data-action="studio-browse-out-folder" class="px-3 py-1.5 text-xs font-medium rounded-md bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] shrink-0 transition-colors cursor-pointer">
+                    Browse
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Progress Bar & Cancel Row (Shown during processing) -->
-          <div id="studio-progress-wrap" class="hidden p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2.5">
-            <div class="flex items-center justify-between text-xs">
-              <span id="studio-status-txt" class="font-semibold text-[var(--text-primary)]">Processing...</span>
-              <span id="studio-pct-txt" class="text-xs font-bold text-[var(--brand-primary)] tabular-nums">0%</span>
-            </div>
-            <div class="w-full bg-[var(--surface-inset)] h-2 rounded-full overflow-hidden">
-              <div id="studio-progress-fill" class="bg-[var(--brand-primary)] h-full w-0 transition-all duration-200"></div>
-            </div>
-            <button data-action="cancel-tool" class="w-full py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer">
-              Cancel Operation
+            <!-- Primary Execution CTA Button -->
+            <button 
+              id="studio-btn-execute"
+              data-action="studio-execute" data-tool-id="${escapeAttr(tool.id)}"
+              class="btn-primary w-full py-2.5 text-xs font-semibold rounded-md bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span id="studio-btn-exec-label">${tool.id === 'pdf_studio' ? ((state.activeToolOptions.mode || 'merge') === 'merge' ? 'Merge Documents' : 'Split Document') : 'Start Processing'}</span>
+              ${getIcon('arrow-right', 'w-3.5 h-3.5')}
             </button>
+
+            <!-- Compact Live Summary Strip -->
+            <div id="studio-stage-card" class="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
+              <span class="text-[11px] font-medium text-[var(--text-secondary)]">
+                <span id="studio-summary-count">0 files</span> • <span id="studio-summary-size" class="font-mono">0 B</span>
+              </span>
+              <span id="studio-summary-badge" class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 font-mono">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 100% Offline
+              </span>
+            </div>
+
+            <!-- Progress Bar & Cancel Row (Shown during processing) -->
+            <div id="studio-progress-wrap" class="hidden space-y-2 pt-1">
+              <div class="flex items-center justify-between text-xs">
+                <span id="studio-status-txt" class="font-semibold text-[var(--text-primary)]">Processing...</span>
+                <span id="studio-pct-txt" class="text-xs font-bold text-[var(--brand-primary)] tabular-nums">0%</span>
+              </div>
+              <div class="w-full bg-[var(--surface-inset)] h-1.5 rounded-full overflow-hidden">
+                <div id="studio-progress-fill" class="bg-[var(--brand-primary)] h-full w-0 transition-all duration-200"></div>
+              </div>
+              <button data-action="cancel-tool" class="w-full py-1 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-md transition-colors cursor-pointer">
+                Cancel Operation
+              </button>
+            </div>
           </div>
 
-          <!-- Activity Log Drawer -->
-          <div class="p-3.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-2">
-            <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Engine Log</span>
-            <div id="studio-log-box" class="p-2.5 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] overflow-y-auto max-h-28 leading-relaxed font-mono">
+          <!-- Activity Log Drawer (Compact) -->
+          <div class="p-2.5 rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-1.5">
+            <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Engine Log</span>
+            <div id="studio-log-box" class="p-2 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[10px] text-[var(--text-secondary)] overflow-y-auto max-h-20 leading-relaxed font-mono">
               System ready. Waiting for input...
             </div>
           </div>
@@ -1072,43 +1066,46 @@ function renderToolSpecificOptions(toolId) {
     const ranges = state.activeToolOptions.ranges || '1-';
     const everyN = state.activeToolOptions.every_n || 1;
 
+    const mergeIconSvg = `<svg class="w-4 h-4 text-[var(--brand-primary)] shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/><rect x="8" y="6" width="12" height="14" rx="1.5"/><path d="M12 13h4"/><path d="M14 11v4"/></svg>`;
+    const splitIconSvg = `<svg class="w-4 h-4 text-[var(--brand-primary)] shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>`;
+
     return `
-      <!-- Operation Mode Cards -->
-      <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Operation Mode</span>
-      <div class="grid grid-cols-2 gap-2.5 pt-1">
+      <!-- Operation Mode Tabs -->
+      <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Operation Mode</span>
+      <div class="grid grid-cols-2 gap-2 pt-0.5">
         <button 
           type="button"
           data-action="set-pdf-mode" data-mode="merge"
-          class="p-3 rounded-lg border text-left text-xs transition-all cursor-pointer ${mode === 'merge' ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)] shadow-xs' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
+          class="p-2.5 rounded-md border text-left text-xs transition-all cursor-pointer ${mode === 'merge' ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)] shadow-xs' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
         >
           <div class="font-bold flex items-center gap-1.5">
-            ${getIcon('merge', 'w-4 h-4 text-[var(--brand-primary)]')}
+            ${mergeIconSvg}
             <span>Merge</span>
           </div>
-          <div class="text-[11px] text-[var(--text-secondary)] mt-1 font-normal">Combine files in order</div>
+          <div class="text-[10px] text-[var(--text-secondary)] mt-0.5 font-normal">Combine files in order</div>
         </button>
 
         <button 
           type="button"
           data-action="set-pdf-mode" data-mode="split"
-          class="p-3 rounded-lg border text-left text-xs transition-all cursor-pointer ${mode === 'split' ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)] shadow-xs' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
+          class="p-2.5 rounded-md border text-left text-xs transition-all cursor-pointer ${mode === 'split' ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)] shadow-xs' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
         >
           <div class="font-bold flex items-center gap-1.5">
-            ${getIcon('split', 'w-4 h-4 text-[var(--brand-primary)]')}
+            ${splitIconSvg}
             <span>Split</span>
           </div>
-          <div class="text-[11px] text-[var(--text-secondary)] mt-1 font-normal">Extract or slice pages</div>
+          <div class="text-[10px] text-[var(--text-secondary)] mt-0.5 font-normal">Extract or slice pages</div>
         </button>
       </div>
 
       ${mode === 'merge' ? `
-        <div class="p-3 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] space-y-1">
+        <div class="p-2.5 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] space-y-0.5">
           <div class="font-medium text-[var(--text-primary)]">Merge Sequence</div>
-          <div>Documents merge in the order listed on the left. Drag cards up or down to adjust sequence.</div>
+          <div class="text-[10px]">Files merge in order. Drag items on the left to reorder.</div>
         </div>
       ` : `
-        <div class="space-y-3 pt-2 border-t border-[var(--border-subtle)]">
-          <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Split Method</span>
+        <div class="space-y-2.5 pt-1 border-t border-[var(--border-subtle)]">
+          <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Split Method</span>
           <div class="grid grid-cols-3 gap-1.5">
             ${[
               { id: 'ranges', label: 'Page Ranges' },
@@ -1118,7 +1115,7 @@ function renderToolSpecificOptions(toolId) {
               <button 
                 type="button" 
                 data-action="set-pdf-split-mode" data-split-mode="${escapeAttr(sm.id)}"
-                class="py-2 px-1.5 rounded-md border text-center text-xs transition-all cursor-pointer ${splitMode === sm.id ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-bold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}"
+                class="py-1.5 px-1 rounded-md border text-center text-[11px] transition-all cursor-pointer ${splitMode === sm.id ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-bold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}"
               >
                 ${sm.label}
               </button>
@@ -1126,35 +1123,35 @@ function renderToolSpecificOptions(toolId) {
           </div>
 
           ${splitMode === 'ranges' ? `
-            <div class="space-y-1.5">
-              <label class="text-xs font-medium text-[var(--text-secondary)]">Page Ranges (e.g. 1-3, 5, 8-)</label>
+            <div class="space-y-1">
+              <label class="text-[11px] font-medium text-[var(--text-secondary)]">Page Ranges (e.g. 1-3, 5, 8-)</label>
               <input 
                 type="text" 
                 value="${escapeAttr(ranges)}" 
                 data-action="pdf-ranges-input" 
                 placeholder="1-3, 5, 8-" 
-                class="w-full px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono"
+                class="w-full px-2.5 py-1 text-xs rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono"
               />
-              <span class="text-[10px] text-[var(--text-muted)]">Separate ranges with commas. Use '8-' to include page 8 through end.</span>
+              <span class="text-[10px] text-[var(--text-muted)] block">Separate ranges with commas. Use '8-' for page 8 to end.</span>
             </div>
           ` : ''}
 
           ${splitMode === 'every_n' ? `
-            <div class="space-y-1.5">
-              <label class="text-xs font-medium text-[var(--text-secondary)]">Split Every N Pages</label>
+            <div class="space-y-1">
+              <label class="text-[11px] font-medium text-[var(--text-secondary)]">Split Every N Pages</label>
               <input 
                 type="number" 
                 min="1" 
                 max="500" 
                 value="${everyN}" 
                 data-action="pdf-every-n-input" 
-                class="w-full px-3 py-1.5 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono"
+                class="w-full px-2.5 py-1 text-xs rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono"
               />
             </div>
           ` : ''}
 
           ${splitMode === 'each_page' ? `
-            <div class="p-2.5 rounded-lg bg-[var(--surface-inset)] text-[11px] text-[var(--text-secondary)]">
+            <div class="p-2 rounded-md bg-[var(--surface-inset)] text-[10px] text-[var(--text-secondary)]">
               Extracts each page as an individual zero-padded PDF (<code class="text-[var(--brand-primary)] font-mono">page_001.pdf</code>).
             </div>
           ` : ''}
@@ -1704,7 +1701,7 @@ function updateStudioFilesUI() {
 
       return `
         <div 
-          class="file-drag-item p-3 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] hover:border-[var(--border-hover)] flex items-center justify-between text-xs text-[var(--text-primary)] gap-3 transition-all select-none"
+          class="file-drag-item p-2.5 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] hover:border-[var(--border-hover)] flex items-center justify-between text-xs text-[var(--text-primary)] gap-2.5 transition-all select-none"
           draggable="true"
           data-file-idx="${idx}"
           ondragstart="handlePdfDragStart(event, ${idx})"
@@ -1712,18 +1709,18 @@ function updateStudioFilesUI() {
           ondragleave="handlePdfDragLeave(event)"
           ondrop="handlePdfDrop(event, ${idx})"
         >
-          <div class="flex items-center gap-2.5 truncate min-w-0">
-            <span class="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-grab active:cursor-grabbing shrink-0 text-sm font-bold select-none px-0.5" title="Drag to reorder">⋮⋮</span>
-            <span class="w-5 h-5 rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[10px] font-mono font-bold flex items-center justify-center shrink-0 text-[var(--text-secondary)]">${idx + 1}</span>
-            <div class="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 border border-red-500/20 font-bold text-[10px]">
+          <div class="flex items-center gap-2 truncate min-w-0">
+            <span class="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-grab active:cursor-grabbing shrink-0 text-xs font-bold select-none px-0.5" title="Drag to reorder">⋮⋮</span>
+            <span class="w-5 h-5 rounded bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[10px] font-mono font-bold flex items-center justify-center shrink-0 text-[var(--text-secondary)]">${idx + 1}</span>
+            <div class="w-7 h-7 rounded-md bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 border border-red-500/20 font-bold text-[9px]">
               PDF
             </div>
             <div class="truncate">
               <div class="truncate font-semibold text-[var(--text-primary)]" title="${escapeAttr(fileName)}">${escapeHtml(fileName)}</div>
-              <div class="text-[11px] text-[var(--text-secondary)] font-mono mt-0.5">${escapeHtml(metaSubtext)}</div>
+              <div class="text-[10px] text-[var(--text-secondary)] font-mono mt-0.5">${escapeHtml(metaSubtext)}</div>
             </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex items-center gap-1.5 shrink-0">
             ${badgeHtml}
             <button 
               type="button" 
@@ -1742,15 +1739,15 @@ function updateStudioFilesUI() {
     list.innerHTML = state.selectedFiles.map((f, idx) => {
       const fileName = f.split('\\').pop().split('/').pop();
       return `
-        <div class="p-3 rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-primary)] gap-3">
+        <div class="p-2.5 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-primary)] gap-2.5">
           <div class="truncate font-medium">${escapeHtml(fileName)}</div>
-          <div class="flex items-center gap-2 shrink-0">
+          <div class="flex items-center gap-1.5 shrink-0">
             <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-mono">Ready</span>
             <button 
               type="button" 
               data-action="remove-studio-file"
               data-file-idx="${idx}"
-              class="w-6 h-6 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+              class="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
               title="Remove file"
             >
               ${getIcon('x', 'w-3.5 h-3.5')}
