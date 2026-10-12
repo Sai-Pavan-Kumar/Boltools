@@ -24,6 +24,7 @@ const state = (window.boltoolsStore && window.boltoolsStore.state) ? window.bolt
   tools: DEFAULT_TOOLS,
   favorites: [],
   recentTools: JSON.parse(localStorage.getItem('boltools-recent-tools') || '[]'),
+  recentFiles: JSON.parse(localStorage.getItem('boltools-recent-files') || '[]'),
   lastOutputFile: null,
   customOutputDir: '',
   announcements: [],
@@ -48,6 +49,17 @@ function recordRecentTool(toolId) {
   state.recentTools = list;
   try {
     localStorage.setItem('boltools-recent-tools', JSON.stringify(list));
+  } catch (e) {}
+}
+
+function recordRecentFile(fileInfo) {
+  if (!fileInfo || !fileInfo.path) return;
+  let list = (state.recentFiles || []).filter(f => f.path !== fileInfo.path);
+  list.unshift(fileInfo);
+  list = list.slice(0, 10);
+  state.recentFiles = list;
+  try {
+    localStorage.setItem('boltools-recent-files', JSON.stringify(list));
   } catch (e) {}
 }
 
@@ -147,6 +159,12 @@ function navigateTo(viewName, toolId = null, pushHistory = true) {
   } else if (viewName === 'tool_hub') {
     renderToolHub(container);
     updateBreadcrumb(['Home', 'Tool Hub']);
+  } else if (viewName === 'my_tools') {
+    renderMyTools(container);
+    updateBreadcrumb(['Home', 'My Tools']);
+  } else if (viewName === 'history') {
+    renderHistory(container);
+    updateBreadcrumb(['Home', 'History']);
   } else if (viewName === 'favorites') {
     renderFavorites(container);
     updateBreadcrumb(['Home', 'Favorites']);
@@ -208,24 +226,11 @@ function updateBreadcrumb(crumbs) {
       html += `<span class="text-xs font-semibold text-[var(--text-primary)]">${crumb}</span>`;
     } else {
       // Find navigation target for breadcrumb item
-      let onclickStr = "navigateTo('home')";
-      if (crumb === 'Home') {
-        onclickStr = "navigateTo('home')";
-      } else if (crumb === 'Tool Hub') {
-        onclickStr = "navigateTo('tool_hub')";
-      } else if (crumb === 'Favorites') {
-        onclickStr = "navigateTo('favorites')";
-      } else if (crumb === 'Settings') {
-        onclickStr = "navigateTo('settings')";
-      } else {
-        const cat = state.categories.find(c => c.name.toLowerCase() === crumb.toLowerCase());
-        if (cat) {
-          onclickStr = `navigateToCategory('${cat.id}')`;
-        }
-      }
       let actionAttr = '';
       if (crumb === 'Home') actionAttr = 'data-action="nav" data-view="home"';
       else if (crumb === 'Tool Hub') actionAttr = 'data-action="nav" data-view="tool_hub"';
+      else if (crumb === 'My Tools') actionAttr = 'data-action="nav" data-view="my_tools"';
+      else if (crumb === 'History') actionAttr = 'data-action="nav" data-view="history"';
       else if (crumb === 'Favorites') actionAttr = 'data-action="nav" data-view="favorites"';
       else if (crumb === 'Settings') actionAttr = 'data-action="nav" data-view="settings"';
       else {
@@ -241,141 +246,427 @@ function updateBreadcrumb(crumbs) {
 
 // ── View Renderers ───────────────────────────────────────────────────────────
 
-// 1. Home Dashboard View
+// 1. Home Dashboard View (File-First Intelligent Workspace)
 function renderHome(container) {
-  const allReadyTools = state.tools.filter(t => t.status === 'installed' || t.status === 'update_available' || t.update_available);
-  const readyTools = allReadyTools.slice(0, 12); // Spec rule: at most 12 items on Home
-  const updatesCount = state.updatesCount || state.tools.filter(t => t.update_available || t.status === 'update_available').length;
+  const allInstalledTools = state.tools.filter(t => t.status === 'installed' || t.status === 'update_available' || t.update_available);
+  const installedTools = allInstalledTools.length > 0 ? allInstalledTools : state.tools.filter(t => t.id === 'pdf_studio');
 
-  // Compute Last Used 3 Utilities
-  let recentList = (state.recentTools || [])
-    .map(id => state.tools.find(t => t.id === id && (t.status === 'installed' || t.status === 'update_available')))
-    .filter(Boolean);
+  // Compute Recent Files & Recent Tools
+  const recentFilesList = (state.recentFiles || []).slice(0, 5);
+  const recentToolsList = (state.recentTools || [])
+    .map(id => state.tools.find(t => t.id === id))
+    .filter(Boolean)
+    .slice(0, 4);
 
-  if (recentList.length === 0) {
-    // Default to first 3 installed tools if none recorded yet
-    recentList = readyTools.slice(0, 3);
-  } else {
-    recentList = recentList.slice(0, 3);
-  }
+  // CRITICAL USER RULE: Only render right rail if recent files or recent tools exist!
+  const hasRecentActivity = recentFilesList.length > 0 || recentToolsList.length > 0;
 
-  const recentRows = recentList.length > 0 ? recentList.map(t => {
-    const isUpdate = t.update_available || t.status === 'update_available';
+  // Popular Tools Categories
+  const popularCategories = [
+    { id: 'pdf', name: 'PDF Tools', desc: 'Merge, split, compress & edit', icon: 'file-text', count: '1 Tool Ready', toolId: 'pdf_studio', accent: 'text-red-500', bg: 'bg-red-500/10' },
+    { id: 'image', name: 'Image Tools', desc: 'WebP convert, resize & enhance', icon: 'image', count: 'Coming Soon', toolId: null, accent: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { id: 'video', name: 'Video Tools', desc: 'Compress, trim & format convert', icon: 'video', count: 'Coming Soon', toolId: null, accent: 'text-purple-500', bg: 'bg-purple-500/10' },
+    { id: 'audio', name: 'Audio Tools', desc: 'Extract audio, normalize & cut', icon: 'music', count: 'Coming Soon', toolId: null, accent: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { id: 'document', name: 'Document Tools', desc: 'Batch renamer & text utilities', icon: 'file', count: 'Coming Soon', toolId: null, accent: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { id: 'developer', name: 'Developer Tools', desc: 'JSON formatter, hashes & diffs', icon: 'terminal', count: 'Coming Soon', toolId: null, accent: 'text-purple-600', bg: 'bg-purple-500/10' },
+    { id: 'windows', name: 'Windows Tools', desc: 'Shortcut & system tweaks', icon: 'grid', count: 'Coming Soon', toolId: null, accent: 'text-sky-500', bg: 'bg-sky-500/10' },
+    { id: 'system', name: 'Utilities', desc: 'Local PC cache & diagnostics', icon: 'sliders', count: 'System Ready', toolId: null, accent: 'text-amber-600', bg: 'bg-amber-500/10' }
+  ];
+
+  const popularGridHtml = popularCategories.map(cat => {
+    const isReady = Boolean(cat.toolId);
+    const clickAction = isReady ? `data-action="open-tool" data-tool-id="${escapeAttr(cat.toolId)}"` : `data-action="nav-category" data-cat="${escapeAttr(cat.id)}"`;
     return `
-      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-3 px-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border ${isUpdate ? 'border-amber-500/30' : 'border-[var(--border-subtle)]'} hover:border-[var(--brand-primary)] cursor-pointer transition-all flex items-center justify-between gap-3">
+      <div ${clickAction} class="group p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md">
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center ${cat.bg} ${cat.accent} group-hover:scale-105 transition-transform">
+              ${getIcon(cat.icon, 'w-4 h-4')}
+            </div>
+            <span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${isReady ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-[var(--surface-pill)] text-[var(--text-muted)]'}">
+              ${cat.count}
+            </span>
+          </div>
+          <h4 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(cat.name)}</h4>
+          <p class="text-[11px] text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${escapeHtml(cat.desc)}</p>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] font-medium text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform">
+          <span>${isReady ? 'Open Tool' : 'Explore'}</span>
+          ${getIcon('arrow-right', 'w-3 h-3')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const myToolsGridHtml = installedTools.map(t => {
+    return `
+      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex items-center justify-between gap-3 shadow-xs hover:shadow-md">
         <div class="flex items-center gap-3 min-w-0">
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] shrink-0 group-hover:scale-105 transition-transform">
-            ${getIcon(t.icon, 'w-4 h-4')}
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform shrink-0 border border-[var(--border-subtle)]">
+            ${getIcon(t.icon, 'w-5 h-5')}
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate">${escapeHtml(t.name)}</span>
-              <span class="px-2 py-0.5 text-[9px] font-medium rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${escapeHtml(t.category_name)}</span>
-              ${isUpdate ? `<span class="px-1.5 py-0.2 text-[8px] font-bold rounded bg-amber-500/10 text-amber-500">UPDATE</span>` : ''}
+              <h4 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate">${escapeHtml(t.name)}</h4>
+              <span class="px-1.5 py-0.5 text-[9px] font-semibold rounded bg-emerald-500/10 text-emerald-600 uppercase tracking-wider">v${escapeHtml(t.version || '0.1.0')}</span>
             </div>
             <p class="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">${escapeHtml(t.description)}</p>
           </div>
         </div>
-        <button class="shrink-0 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--brand-primary)] hover:text-white border border-[var(--border-subtle)] text-[var(--text-primary)] transition-all flex items-center gap-1.5 shadow-xs">
+        <button class="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1 shadow-xs cursor-pointer">
           <span>Launch</span>
           ${getIcon('arrow-right', 'w-3 h-3')}
         </button>
       </div>
     `;
-  }).join('') : `
-    <div class="p-4 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center text-xs text-[var(--text-muted)]">
-      No recently used utilities yet. Launch any tool below to see it here!
+  }).join('');
+
+  // Right Rail: Recent Files & Recent Tools
+  let rightRailHtml = '';
+  if (hasRecentActivity) {
+    const recentFilesMarkup = recentFilesList.length > 0 ? recentFilesList.map(f => {
+      const fileName = f.name || (f.path ? f.path.split('\\').pop().split('/').pop() : 'Document');
+      const timeStr = f.time || 'Recently';
+      return `
+        <div class="p-2.5 rounded-lg bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] flex items-center justify-between gap-2 transition-all">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-7 h-7 rounded-md bg-red-500/10 text-red-500 flex items-center justify-center text-[9px] font-bold shrink-0 border border-red-500/20 font-mono">
+              ${escapeHtml((f.ext || 'PDF').toUpperCase())}
+            </div>
+            <div class="min-w-0 truncate">
+              <div class="text-xs font-semibold text-[var(--text-primary)] truncate" title="${escapeAttr(fileName)}">${escapeHtml(fileName)}</div>
+              <div class="text-[10px] text-[var(--text-muted)] font-mono">${escapeHtml(timeStr)}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button data-action="open-file" data-file-path="${escapeAttr(f.path)}" class="p-1 rounded text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:bg-[var(--surface-inset)] cursor-pointer" title="Open file">
+              ${getIcon('external-link', 'w-3.5 h-3.5')}
+            </button>
+            <button data-action="reveal-file" data-file-path="${escapeAttr(f.path)}" class="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] cursor-pointer" title="Show in folder">
+              ${getIcon('folder', 'w-3.5 h-3.5')}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('') : `<div class="p-3 text-center text-[11px] text-[var(--text-muted)] rounded-lg bg-[var(--surface-card)] border border-[var(--border-subtle)]">No recent files generated yet.</div>`;
+
+    const recentToolsMarkup = recentToolsList.length > 0 ? recentToolsList.map(t => {
+      return `
+        <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="p-2.5 rounded-lg bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] flex items-center justify-between gap-2.5 cursor-pointer transition-all">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-7 h-7 rounded-md bg-[var(--surface-inset)] text-[var(--brand-primary)] flex items-center justify-center shrink-0">
+              ${getIcon(t.icon, 'w-3.5 h-3.5')}
+            </div>
+            <div class="min-w-0 truncate">
+              <span class="text-xs font-semibold text-[var(--text-primary)] truncate block">${escapeHtml(t.name)}</span>
+              <span class="text-[10px] text-[var(--text-muted)]">${escapeHtml(t.category_name)}</span>
+            </div>
+          </div>
+          ${getIcon('arrow-right', 'w-3.5 h-3.5 text-[var(--text-muted)]')}
+        </div>
+      `;
+    }).join('') : '';
+
+    rightRailHtml = `
+      <div class="lg:col-span-4 space-y-5">
+        <!-- Recent Files Box -->
+        <div>
+          <div class="flex items-center justify-between mb-2.5">
+            <span class="text-[10px] font-bold text-[var(--text-muted)] tracking-wider uppercase">Generated Files</span>
+            <button data-action="clear-recent-files" class="text-[10px] text-[var(--text-muted)] hover:text-red-500 cursor-pointer">Clear</button>
+          </div>
+          <div class="space-y-1.5">
+            ${recentFilesMarkup}
+          </div>
+        </div>
+
+        <!-- Recent Tools Box -->
+        ${recentToolsList.length > 0 ? `
+          <div>
+            <div class="flex items-center justify-between mb-2.5">
+              <span class="text-[10px] font-bold text-[var(--text-muted)] tracking-wider uppercase">Recent Tools</span>
+              <button data-action="clear-recent-tools" class="text-[10px] text-[var(--text-muted)] hover:text-red-500 cursor-pointer">Clear</button>
+            </div>
+            <div class="space-y-1.5">
+              ${recentToolsMarkup}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div class="${hasRecentActivity ? 'max-w-7xl' : 'max-w-5xl'} mx-auto pb-10 space-y-8 animate-in fade-in duration-150">
+      <!-- Hero Section with Global Dropzone -->
+      <div class="space-y-4">
+        <div>
+          <h1 class="text-2xl font-bold font-display text-[var(--text-primary)] tracking-tight">What do you want to build or process?</h1>
+          <p class="text-xs text-[var(--text-secondary)] mt-1">Select or drop any file directly. Boltools automatically recognizes the format and suggests instant actions.</p>
+        </div>
+
+        <!-- Interactive Global Dropzone -->
+        <div 
+          id="home-global-dropzone" 
+          data-action="home-browse-files"
+          class="p-8 rounded-xl bg-[var(--surface-card)] border-2 border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer text-center transition-all group relative overflow-hidden shadow-xs hover:shadow-sm"
+        >
+          <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform mb-3 border border-[var(--border-subtle)]">
+            ${getIcon('upload-cloud', 'w-6 h-6')}
+          </div>
+          <h3 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
+            Drop any file here to get started
+          </h3>
+          <p class="text-xs text-[var(--text-secondary)] mt-1">or click to <span class="text-[var(--brand-primary)] font-medium">browse local files</span></p>
+          <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold bg-[var(--surface-inset)] text-[var(--text-muted)]">
+            ${getIcon('shield', 'w-3 h-3 text-emerald-500')}
+            <span>100% Offline • Private • Processed entirely on this machine</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Layout Grid (Conditionally 2-column or full width) -->
+      <div class="grid grid-cols-1 ${hasRecentActivity ? 'lg:grid-cols-12' : ''} gap-7 items-start">
+        <!-- Left / Main Column (8 Cols when rail active, 12 when inactive) -->
+        <div class="${hasRecentActivity ? 'lg:col-span-8' : 'w-full'} space-y-7">
+          <!-- Popular Tools Section -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Popular Tool Suites</span>
+              <button data-action="nav" data-view="tool_hub" class="text-xs font-semibold text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
+                <span>View All Tools</span>
+                ${getIcon('chevron-right', 'w-3 h-3')}
+              </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              ${popularGridHtml}
+            </div>
+          </div>
+
+          <!-- My Tools Section -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Installed Tools</span>
+                <span class="px-2 py-0.2 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600">${installedTools.length}</span>
+              </div>
+              <button data-action="nav" data-view="tool_hub" class="text-xs font-semibold text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
+                <span>Tool Hub</span>
+                ${getIcon('chevron-right', 'w-3 h-3')}
+              </button>
+            </div>
+            <div class="grid grid-cols-1 gap-2.5">
+              ${myToolsGridHtml}
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Right Column (Rendered only when recent activity exists) -->
+        ${rightRailHtml}
+      </div>
     </div>
   `;
 
-  // Bento Box Squared Cards for Available Utilities
-  const bentoGrid = readyTools.length > 0 ? readyTools.map(t => {
-    const isUpdate = t.update_available || t.status === 'update_available';
-    return `
-      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-5 rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border ${isUpdate ? 'border-amber-500/40' : 'border-[var(--border-subtle)]'} hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden min-h-[180px]">
-        ${isUpdate ? `
-          <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-bl-lg tracking-wider uppercase flex items-center gap-1">
-            ${getIcon('refresh-cw', 'w-2.5 h-2.5')} Update v${t.remote_version || t.version}
-          </div>
-        ` : ''}
-        <div>
-          <div class="flex items-center justify-between gap-2 mb-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform shadow-xs">
-              ${getIcon(t.icon, 'w-5 h-5')}
+  attachHomeDropzoneEvents();
+}
+
+function attachHomeDropzoneEvents() {
+  const dz = document.getElementById('home-global-dropzone');
+  if (!dz || dz._bound) return;
+  dz._bound = true;
+
+  dz.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dz.classList.add('border-[var(--brand-primary)]', 'bg-[var(--brand-light)]');
+  });
+
+  dz.addEventListener('dragleave', (e) => {
+    dz.classList.remove('border-[var(--brand-primary)]', 'bg-[var(--brand-light)]');
+  });
+
+  dz.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dz.classList.remove('border-[var(--brand-primary)]', 'bg-[var(--brand-light)]');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const paths = Array.from(e.dataTransfer.files).map(f => f.path || f.name).filter(Boolean);
+      if (paths.length > 0) {
+        handleGlobalFileInput(paths);
+      }
+    }
+  });
+}
+
+async function handleHomeBrowseFiles() {
+  const files = await callBridge('browse_files', ['All Supported Files (*.pdf;*.png;*.jpg;*.mp4;*.mkv;*.mp3;*.wav)', 'All Files (*.*)']);
+  if (files && files.length > 0) {
+    handleGlobalFileInput(files);
+  }
+}
+
+// Global File Input Smart Router
+let pendingGlobalFiles = [];
+
+function handleGlobalFileInput(files) {
+  if (!files || files.length === 0) return;
+  pendingGlobalFiles = files;
+
+  const firstFile = files[0];
+  const ext = firstFile.split('.').pop().toLowerCase();
+  const fileName = firstFile.split('\\').pop().split('/').pop();
+
+  if (ext === 'pdf') {
+    const modal = document.getElementById('modal-file-action');
+    const title = document.getElementById('file-action-title');
+    const sub = document.getElementById('file-action-subtitle');
+    const icon = document.getElementById('file-action-icon');
+    const opts = document.getElementById('file-action-options');
+
+    if (modal && opts) {
+      if (title) title.innerText = files.length > 1 ? `${files.length} PDF Documents Detected` : `PDF Document Detected`;
+      if (sub) sub.innerText = files.length > 1 ? `${fileName} + ${files.length - 1} more` : fileName;
+      if (icon) {
+        icon.className = 'w-8 h-8 rounded-md bg-red-500/10 text-red-500 flex items-center justify-center font-bold text-[10px] border border-red-500/20 shrink-0';
+        icon.innerText = 'PDF';
+      }
+
+      opts.innerHTML = `
+        <button data-action="smart-action-merge" class="w-full p-3 rounded-lg border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] text-left flex items-center justify-between group transition-all cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-[var(--brand-primary)] text-white flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/><rect x="8" y="6" width="12" height="14" rx="1.5"/><path d="M12 13h4"/><path d="M14 11v4"/></svg>
             </div>
-            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--text-secondary)] uppercase tracking-wider">${escapeHtml(t.category_name)}</span>
+            <div>
+              <div class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">Merge PDFs into One File</div>
+              <div class="text-[11px] text-[var(--text-secondary)]">Combine ${files.length} document${files.length > 1 ? 's' : ''} in your chosen order</div>
+            </div>
           </div>
-          <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(t.name)}</h4>
-          <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${escapeHtml(t.description)}</p>
+          ${getIcon('arrow-right', 'w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--brand-primary)]')}
+        </button>
+
+        <button data-action="smart-action-split" class="w-full p-3 rounded-lg border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] text-left flex items-center justify-between group transition-all cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[var(--brand-primary)] flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+            </div>
+            <div>
+              <div class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">Split or Extract Pages</div>
+              <div class="text-[11px] text-[var(--text-secondary)]">Extract page ranges or separate individual sheets</div>
+            </div>
+          </div>
+          ${getIcon('arrow-right', 'w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--brand-primary)]')}
+        </button>
+      `;
+
+      modal.classList.remove('hidden');
+      return;
+    }
+  }
+
+  // Fallback direct open for PDF studio
+  openPdfStudioWithFiles(files, 'merge');
+}
+
+function openPdfStudioWithFiles(files, mode = 'merge') {
+  const modal = document.getElementById('modal-file-action');
+  if (modal) modal.classList.add('hidden');
+
+  navigateTo('tool_studio', 'pdf_studio');
+  state.selectedFiles = files.slice();
+  state.activeToolOptions.mode = mode;
+  updateStudioFilesUI();
+  inspectSelectedPdfFiles(state.selectedFiles);
+}
+
+// 1b. My Tools View (Sidebar Navigation)
+function renderMyTools(container) {
+  const installedTools = state.tools.filter(t => t.status === 'installed' || t.status === 'update_available' || t.update_available);
+  const toolsToDisplay = installedTools.length > 0 ? installedTools : state.tools.filter(t => t.id === 'pdf_studio');
+
+  const toolsHtml = toolsToDisplay.map(t => `
+    <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] flex items-center justify-between gap-3 cursor-pointer transition-all">
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-lg bg-[var(--surface-inset)] text-[var(--brand-primary)] flex items-center justify-center shrink-0 border border-[var(--border-subtle)]">
+          ${getIcon(t.icon, 'w-5 h-5')}
         </div>
-        <div class="pt-4 mt-3 border-t border-[var(--border-subtle)] flex items-center justify-between">
-          <span class="text-xs font-semibold ${isUpdate ? 'text-amber-500' : 'text-[var(--brand-primary)]'} group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
-            <span>${isUpdate ? 'Update or Open' : 'Open Tool'}</span>
-            ${getIcon('arrow-right', 'w-3 h-3')}
-          </span>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h4 class="text-xs font-bold text-[var(--text-primary)] truncate">${escapeHtml(t.name)}</h4>
+            <span class="px-1.5 py-0.5 text-[9px] font-semibold rounded bg-emerald-500/10 text-emerald-600">v${escapeHtml(t.version || '0.1.0')}</span>
+          </div>
+          <p class="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">${escapeHtml(t.description)}</p>
+        </div>
+      </div>
+      <button class="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white flex items-center gap-1 cursor-pointer">
+        <span>Launch</span>
+        ${getIcon('arrow-right', 'w-3 h-3')}
+      </button>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="max-w-5xl mx-auto space-y-6 pb-10">
+      <div>
+        <h2 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">My Tools</h2>
+        <p class="text-xs text-[var(--text-secondary)] mt-1">Installed offline utilities currently active on your local drive.</p>
+      </div>
+      <div class="grid grid-cols-1 gap-3">
+        ${toolsHtml}
+      </div>
+    </div>
+  `;
+}
+
+// 1c. History View (Sidebar Navigation)
+function renderHistory(container) {
+  const recentFiles = state.recentFiles || [];
+  const filesHtml = recentFiles.length > 0 ? recentFiles.map(f => {
+    const fileName = f.name || (f.path ? f.path.split('\\').pop().split('/').pop() : 'Document');
+    return `
+      <div class="p-3 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] flex items-center justify-between gap-3 transition-all">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono border border-red-500/20">
+            ${escapeHtml((f.ext || 'PDF').toUpperCase())}
+          </div>
+          <div class="min-w-0">
+            <h4 class="text-xs font-semibold text-[var(--text-primary)] truncate">${escapeHtml(fileName)}</h4>
+            <p class="text-[10px] text-[var(--text-muted)] font-mono mt-0.5">${escapeHtml(f.time || 'Recently')} • ${escapeHtml(f.toolName || 'Boltools')}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button data-action="open-file" data-file-path="${escapeAttr(f.path)}" class="px-2.5 py-1 text-xs font-medium rounded-md bg-[var(--surface-inset)] hover:bg-[var(--brand-primary)] hover:text-white border border-[var(--border-subtle)] text-[var(--text-primary)] transition-all cursor-pointer">
+            Open File
+          </button>
+          <button data-action="reveal-file" data-file-path="${escapeAttr(f.path)}" class="px-2.5 py-1 text-xs font-medium rounded-md bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] transition-all cursor-pointer">
+            Folder
+          </button>
         </div>
       </div>
     `;
   }).join('') : `
-    <div class="col-span-full p-8 rounded-2xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center">
-      <p class="text-xs text-[var(--text-secondary)] mb-2">No utilities currently installed on this PC.</p>
-      <button data-action="nav" data-view="tool_hub" class="btn-primary px-3.5 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white inline-flex items-center gap-1.5 cursor-pointer">
-        <span>Browse Tool Hub</span>
-        ${getIcon('arrow-right', 'w-3 h-3')}
-      </button>
+    <div class="p-10 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] text-center space-y-2">
+      <div class="w-10 h-10 mx-auto rounded-lg bg-[var(--surface-inset)] text-[var(--text-muted)] flex items-center justify-center">
+        ${getIcon('history', 'w-5 h-5')}
+      </div>
+      <h3 class="text-xs font-semibold text-[var(--text-primary)]">No Processed Files Yet</h3>
+      <p class="text-[11px] text-[var(--text-secondary)] max-w-xs mx-auto">Files and documents generated by tools will show up here for fast access and review.</p>
     </div>
   `;
 
-  const updateBanner = (updatesCount > 0) ? `
-    <div class="p-3.5 px-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 shadow-xs">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
-          ${getIcon('refresh-cw', 'w-4 h-4')}
-        </div>
-        <div>
-          <span class="text-xs font-bold text-amber-700 dark:text-amber-400">Updates Available for ${updatesCount} Tool${updatesCount > 1 ? 's' : ''}</span>
-          <p class="text-[11px] text-[var(--text-secondary)] mt-0.5">Engine enhancements and bug fixes are ready. Update in 1 click without re-downloading software.</p>
-        </div>
-      </div>
-      <button data-action="open-updates-hub" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition-all shrink-0 cursor-pointer shadow-sm">
-        Review & Update
-      </button>
-    </div>
-  ` : '';
-
   container.innerHTML = `
-    <div class="max-w-5xl mx-auto space-y-7 pb-10">
-      <!-- Hero -->
-      <div>
-        <h2 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">Utility Suite</h2>
-        <p class="text-xs text-[var(--text-secondary)] mt-1">High-speed, 100% private tools for creator workflows and local power operations.</p>
-      </div>
-
-      ${updateBanner}
-
-      <!-- Recent Utilities -->
-      <div>
-        <div class="flex items-center justify-between mb-2.5">
-          <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">Recent Utilities</span>
-          <button data-action="nav" data-view="tool_hub" class="text-xs font-medium text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
-            <span>Browse All</span>
-            ${getIcon('chevron-right', 'w-3 h-3')}
+    <div class="max-w-5xl mx-auto space-y-6 pb-10">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">Processing History</h2>
+          <p class="text-xs text-[var(--text-secondary)] mt-1">Audit trail of documents and assets processed on this PC.</p>
+        </div>
+        ${recentFiles.length > 0 ? `
+          <button data-action="clear-recent-files" class="px-3 py-1.5 text-xs font-medium rounded-lg text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer">
+            Clear History
           </button>
-        </div>
-        <div class="space-y-2">
-          ${recentRows}
-        </div>
+        ` : ''}
       </div>
-
-      <!-- Available Utilities Bento Grid -->
-      <div>
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">Available Utilities</span>
-          <span class="text-xs text-[var(--text-muted)]">${readyTools.length} Utilities</span>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          ${bentoGrid}
-        </div>
+      <div class="space-y-2">
+        ${filesHtml}
       </div>
     </div>
   `;
@@ -2031,6 +2322,21 @@ window.onToolComplete = function(data) {
   state.lastOutputFile = data.output_file || '';
   const stats = data.stats || null;
 
+  if (state.lastOutputFile) {
+    const fullPath = state.lastOutputFile;
+    const fileName = fullPath.split('\\').pop().split('/').pop();
+    const fileExt = fileName.split('.').pop() || 'file';
+    const activeTool = state.tools.find(t => t.id === state.activeToolId);
+    recordRecentFile({
+      path: fullPath,
+      name: fileName,
+      ext: fileExt,
+      toolId: state.activeToolId,
+      toolName: activeTool ? activeTool.name : 'Boltools',
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
+  }
+
   const btnExec = document.getElementById('studio-btn-execute');
   if (btnExec) {
     btnExec.disabled = false;
@@ -3278,6 +3584,58 @@ async function initApp() {
       case 'confirm-uninstall': {
         const purge = el.dataset.purge === 'true';
         confirmUninstall(purge);
+        break;
+      }
+
+      case 'home-browse-files':
+        handleHomeBrowseFiles();
+        break;
+
+      case 'smart-action-merge':
+        openPdfStudioWithFiles(pendingGlobalFiles, 'merge');
+        break;
+
+      case 'smart-action-split':
+        openPdfStudioWithFiles(pendingGlobalFiles, 'split');
+        break;
+
+      case 'close-file-action':
+      case 'close-file-action-backdrop': {
+        const modal = document.getElementById('modal-file-action');
+        if (modal) modal.classList.add('hidden');
+        break;
+      }
+
+      case 'open-file': {
+        e.stopPropagation();
+        const p = el.dataset.filePath;
+        if (p) callBridge('open_file', p);
+        break;
+      }
+
+      case 'reveal-file': {
+        e.stopPropagation();
+        const p = el.dataset.filePath;
+        if (p) callBridge('reveal_file', p);
+        break;
+      }
+
+      case 'clear-recent-files': {
+        e.stopPropagation();
+        state.recentFiles = [];
+        localStorage.removeItem('boltools-recent-files');
+        const c = document.getElementById('main-content');
+        if (state.currentView === 'home' && c) renderHome(c);
+        else if (state.currentView === 'history' && c) renderHistory(c);
+        break;
+      }
+
+      case 'clear-recent-tools': {
+        e.stopPropagation();
+        state.recentTools = [];
+        localStorage.removeItem('boltools-recent-tools');
+        const c = document.getElementById('main-content');
+        if (state.currentView === 'home' && c) renderHome(c);
         break;
       }
 

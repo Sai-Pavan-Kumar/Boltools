@@ -15,6 +15,7 @@ class Store {
       tools: [],
       favorites: [],
       recentTools: JSON.parse(localStorage.getItem('boltools-recent-tools') || '[]'),
+      recentFiles: JSON.parse(localStorage.getItem('boltools-recent-files') || '[]'),
       lastOutputFile: null,
       customOutputDir: '',
       announcements: [],
