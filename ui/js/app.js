@@ -274,8 +274,8 @@ function renderHome(container) {
     }
 
     return `
-      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md" style="min-height: 148px;">
-        <div>
+      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md overflow-hidden">
+        <div class="p-4 pb-3">
           <div class="flex items-center justify-between mb-2.5">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform">
               ${getIcon(t.icon, 'w-4 h-4')}
@@ -293,7 +293,7 @@ function renderHome(container) {
           <h4 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(t.name)}</h4>
           <p class="text-[11px] text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed" title="${escapeAttr(t.description)}">${escapeHtml(desc)}</p>
         </div>
-        <div class="mt-4 pt-3.5 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform">
+        <div class="px-4 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform">
           <span>Open Tool</span>
           ${getIcon('arrow-right', 'w-3 h-3')}
         </div>
