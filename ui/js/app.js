@@ -246,77 +246,43 @@ function updateBreadcrumb(crumbs) {
 
 // ── View Renderers ───────────────────────────────────────────────────────────
 
-// 1. Home Dashboard View (File-First Intelligent Workspace)
+/// 1. Home Dashboard View (File-First Intelligent Workspace)
 function renderHome(container) {
-  const allInstalledTools = state.tools.filter(t => t.status === 'installed' || t.status === 'update_available' || t.update_available);
-  const installedTools = allInstalledTools.length > 0 ? allInstalledTools : state.tools.filter(t => t.id === 'pdf_studio');
+  const readyTools = state.tools.filter(t => t.status === 'installed' || t.status === 'update_available' || t.update_available);
+  const installedTools = readyTools.length > 0 ? readyTools : state.tools.filter(t => t.id === 'pdf_studio');
 
-  // Compute Recent Files & Recent Tools
+  // Compute Recent Files & Real User Recent Tools (do not inject default fake tools)
   const recentFilesList = (state.recentFiles || []).slice(0, 5);
   const recentToolsList = (state.recentTools || [])
     .map(id => state.tools.find(t => t.id === id))
     .filter(Boolean)
     .slice(0, 4);
 
-  // CRITICAL USER RULE: Only render right rail if recent files or recent tools exist!
+  // CRITICAL USER RULE: Only render right rail if genuine recent files or used tools exist!
   const hasRecentActivity = recentFilesList.length > 0 || recentToolsList.length > 0;
 
-  // Popular Tools Categories
-  const popularCategories = [
-    { id: 'pdf', name: 'PDF Tools', desc: 'Merge, split, compress & edit', icon: 'file-text', count: '1 Tool Ready', toolId: 'pdf_studio', accent: 'text-red-500', bg: 'bg-red-500/10' },
-    { id: 'image', name: 'Image Tools', desc: 'WebP convert, resize & enhance', icon: 'image', count: 'Coming Soon', toolId: null, accent: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { id: 'video', name: 'Video Tools', desc: 'Compress, trim & format convert', icon: 'video', count: 'Coming Soon', toolId: null, accent: 'text-purple-500', bg: 'bg-purple-500/10' },
-    { id: 'audio', name: 'Audio Tools', desc: 'Extract audio, normalize & cut', icon: 'music', count: 'Coming Soon', toolId: null, accent: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { id: 'document', name: 'Document Tools', desc: 'Batch renamer & text utilities', icon: 'file', count: 'Coming Soon', toolId: null, accent: 'text-amber-500', bg: 'bg-amber-500/10' },
-    { id: 'developer', name: 'Developer Tools', desc: 'JSON formatter, hashes & diffs', icon: 'terminal', count: 'Coming Soon', toolId: null, accent: 'text-purple-600', bg: 'bg-purple-500/10' },
-    { id: 'windows', name: 'Windows Tools', desc: 'Shortcut & system tweaks', icon: 'grid', count: 'Coming Soon', toolId: null, accent: 'text-sky-500', bg: 'bg-sky-500/10' },
-    { id: 'system', name: 'Utilities', desc: 'Local PC cache & diagnostics', icon: 'sliders', count: 'System Ready', toolId: null, accent: 'text-amber-600', bg: 'bg-amber-500/10' }
-  ];
-
-  const popularGridHtml = popularCategories.map(cat => {
-    const isReady = Boolean(cat.toolId);
-    const clickAction = isReady ? `data-action="open-tool" data-tool-id="${escapeAttr(cat.toolId)}"` : `data-action="nav-category" data-cat="${escapeAttr(cat.id)}"`;
+  // Real Tools Cards Grid (Using authentic tools from state.tools)
+  const displayTools = state.tools.slice(0, 8);
+  const toolsGridHtml = displayTools.map(t => {
+    const isInstalled = t.status === 'installed' || t.status === 'update_available';
     return `
-      <div ${clickAction} class="group p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md">
+      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md" style="min-height: 140px;">
         <div>
           <div class="flex items-center justify-between mb-3">
-            <div class="w-9 h-9 rounded-lg flex items-center justify-center ${cat.bg} ${cat.accent} group-hover:scale-105 transition-transform">
-              ${getIcon(cat.icon, 'w-4 h-4')}
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform">
+              ${getIcon(t.icon, 'w-4 h-4')}
             </div>
-            <span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${isReady ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-[var(--surface-pill)] text-[var(--text-muted)]'}">
-              ${cat.count}
+            <span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${isInstalled ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-[var(--surface-pill)] text-[var(--text-muted)]'}">
+              ${isInstalled ? 'Ready' : escapeHtml(t.category_name || 'Utility')}
             </span>
           </div>
-          <h4 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(cat.name)}</h4>
-          <p class="text-[11px] text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${escapeHtml(cat.desc)}</p>
+          <h4 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(t.name)}</h4>
+          <p class="text-[11px] text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${escapeHtml(t.description)}</p>
         </div>
         <div class="mt-3 pt-2.5 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] font-medium text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform">
-          <span>${isReady ? 'Open Tool' : 'Explore'}</span>
+          <span>Open Tool</span>
           ${getIcon('arrow-right', 'w-3 h-3')}
         </div>
-      </div>
-    `;
-  }).join('');
-
-  const myToolsGridHtml = installedTools.map(t => {
-    return `
-      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex items-center justify-between gap-3 shadow-xs hover:shadow-md">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform shrink-0 border border-[var(--border-subtle)]">
-            ${getIcon(t.icon, 'w-5 h-5')}
-          </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <h4 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors truncate">${escapeHtml(t.name)}</h4>
-              <span class="px-1.5 py-0.5 text-[9px] font-semibold rounded bg-emerald-500/10 text-emerald-600 uppercase tracking-wider">v${escapeHtml(t.version || '0.1.0')}</span>
-            </div>
-            <p class="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">${escapeHtml(t.description)}</p>
-          </div>
-        </div>
-        <button class="shrink-0 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1 shadow-xs cursor-pointer">
-          <span>Launch</span>
-          ${getIcon('arrow-right', 'w-3 h-3')}
-        </button>
       </div>
     `;
   }).join('');
@@ -342,13 +308,13 @@ function renderHome(container) {
             <button data-action="open-file" data-file-path="${escapeAttr(f.path)}" class="p-1 rounded text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:bg-[var(--surface-inset)] cursor-pointer" title="Open file">
               ${getIcon('external-link', 'w-3.5 h-3.5')}
             </button>
-            <button data-action="reveal-file" data-file-path="${escapeAttr(f.path)}" class="p-1 rounded text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-inset)] cursor-pointer" title="Show in folder">
+            <button data-action="reveal-file" data-file-path="${escapeAttr(f.path)}" class="p-1 rounded text-[var(--text-muted)] hover:text-[var(--brand-primary)] hover:bg-[var(--surface-inset)] cursor-pointer" title="Show in folder">
               ${getIcon('folder', 'w-3.5 h-3.5')}
             </button>
           </div>
         </div>
       `;
-    }).join('') : `<div class="p-3 text-center text-[11px] text-[var(--text-muted)] rounded-lg bg-[var(--surface-card)] border border-[var(--border-subtle)]">No recent files generated yet.</div>`;
+    }).join('') : '';
 
     const recentToolsMarkup = recentToolsList.length > 0 ? recentToolsList.map(t => {
       return `
@@ -367,41 +333,43 @@ function renderHome(container) {
       `;
     }).join('') : '';
 
-    rightRailHtml = `
-      <div class="lg:col-span-4 space-y-5">
-        <!-- Recent Files Box -->
-        <div>
-          <div class="flex items-center justify-between mb-2.5">
-            <span class="text-[10px] font-bold text-[var(--text-muted)] tracking-wider uppercase">Generated Files</span>
-            <button data-action="clear-recent-files" class="text-[10px] text-[var(--text-muted)] hover:text-red-500 cursor-pointer">Clear</button>
-          </div>
-          <div class="space-y-1.5">
-            ${recentFilesMarkup}
-          </div>
-        </div>
+    if (recentFilesMarkup || recentToolsMarkup) {
+      rightRailHtml = `
+        <div style="width: 280px; flex-shrink: 0;" class="space-y-5">
+          ${recentFilesMarkup ? `
+            <div>
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="text-[10px] font-bold text-[var(--text-muted)] tracking-wider uppercase">Generated Files</span>
+                <button data-action="clear-recent-files" class="text-[10px] text-[var(--text-muted)] hover:text-red-500 cursor-pointer">Clear</button>
+              </div>
+              <div class="space-y-1.5">
+                ${recentFilesMarkup}
+              </div>
+            </div>
+          ` : ''}
 
-        <!-- Recent Tools Box -->
-        ${recentToolsList.length > 0 ? `
-          <div>
-            <div class="flex items-center justify-between mb-2.5">
-              <span class="text-[10px] font-bold text-[var(--text-muted)] tracking-wider uppercase">Recent Tools</span>
-              <button data-action="clear-recent-tools" class="text-[10px] text-[var(--text-muted)] hover:text-red-500 cursor-pointer">Clear</button>
+          ${recentToolsMarkup ? `
+            <div>
+              <div class="flex items-center justify-between mb-2.5">
+                <span class="text-[10px] font-bold text-[var(--text-muted)] tracking-wider uppercase">Recent Tools</span>
+                <button data-action="clear-recent-tools" class="text-[10px] text-[var(--text-muted)] hover:text-red-500 cursor-pointer">Clear</button>
+              </div>
+              <div class="space-y-1.5">
+                ${recentToolsMarkup}
+              </div>
             </div>
-            <div class="space-y-1.5">
-              ${recentToolsMarkup}
-            </div>
-          </div>
-        ` : ''}
-      </div>
-    `;
+          ` : ''}
+        </div>
+      `;
+    }
   }
 
   container.innerHTML = `
-    <div class="${hasRecentActivity ? 'max-w-7xl' : 'max-w-5xl'} mx-auto pb-10 space-y-8 animate-in fade-in duration-150">
+    <div class="max-w-6xl mx-auto pb-10 space-y-7 animate-in fade-in duration-150">
       <!-- Hero Section with Global Dropzone -->
       <div class="space-y-4">
         <div>
-          <h1 class="text-2xl font-bold font-display text-[var(--text-primary)] tracking-tight">What do you want to build or process?</h1>
+          <h1 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">What do you want to build or process?</h1>
           <p class="text-xs text-[var(--text-secondary)] mt-1">Select or drop any file directly. Boltools automatically recognizes the format and suggests instant actions.</p>
         </div>
 
@@ -425,43 +393,26 @@ function renderHome(container) {
         </div>
       </div>
 
-      <!-- Main Layout Grid (Conditionally 2-column or full width) -->
-      <div class="grid grid-cols-1 ${hasRecentActivity ? 'lg:grid-cols-12' : ''} gap-7 items-start">
-        <!-- Left / Main Column (8 Cols when rail active, 12 when inactive) -->
-        <div class="${hasRecentActivity ? 'lg:col-span-8' : 'w-full'} space-y-7">
+      <!-- Main Layout Flex: Tools Stage on Left + Conditional Right Rail -->
+      <div class="flex items-start gap-6" style="width: 100%;">
+        <!-- Left Main Tools Stage -->
+        <div class="flex-1 space-y-6" style="min-width: 0;">
           <!-- Popular Tools Section -->
           <div>
             <div class="flex items-center justify-between mb-3">
-              <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Popular Tool Suites</span>
+              <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Utilities & Tools</span>
               <button data-action="nav" data-view="tool_hub" class="text-xs font-semibold text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
-                <span>View All Tools</span>
+                <span>View Tool Hub</span>
                 ${getIcon('chevron-right', 'w-3 h-3')}
               </button>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              ${popularGridHtml}
-            </div>
-          </div>
-
-          <!-- My Tools Section -->
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Installed Tools</span>
-                <span class="px-2 py-0.2 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600">${installedTools.length}</span>
-              </div>
-              <button data-action="nav" data-view="tool_hub" class="text-xs font-semibold text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
-                <span>Tool Hub</span>
-                ${getIcon('chevron-right', 'w-3 h-3')}
-              </button>
-            </div>
-            <div class="grid grid-cols-1 gap-2.5">
-              ${myToolsGridHtml}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+              ${toolsGridHtml}
             </div>
           </div>
         </div>
 
-        <!-- Dynamic Right Column (Rendered only when recent activity exists) -->
+        <!-- Dynamic Right Column (Rendered ONLY when real activity exists) -->
         ${rightRailHtml}
       </div>
     </div>
