@@ -264,22 +264,36 @@ function renderHome(container) {
   // Real Tools Cards Grid (Using authentic tools from state.tools)
   const displayTools = state.tools.slice(0, 8);
   const toolsGridHtml = displayTools.map(t => {
-    const isInstalled = t.status === 'installed' || t.status === 'update_available';
+    const isFav = (state.favorites || []).includes(t.id);
+    // Concise 2-line description mapping for ultra-clean UI
+    let desc = t.description;
+    if (t.id === 'pdf_studio') {
+      desc = 'Merge and split PDF documents offline with zero quality loss.';
+    } else if (desc && desc.length > 70) {
+      desc = desc.substring(0, 68).trim() + '...';
+    }
+
     return `
-      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md" style="min-height: 140px;">
+      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md" style="min-height: 148px;">
         <div>
-          <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center justify-between mb-2.5">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform">
               ${getIcon(t.icon, 'w-4 h-4')}
             </div>
-            <span class="text-[10px] font-medium px-2 py-0.5 rounded-full ${isInstalled ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-[var(--surface-pill)] text-[var(--text-muted)]'}">
-              ${isInstalled ? 'Ready' : escapeHtml(t.category_name || 'Utility')}
-            </span>
+            <button 
+              type="button" 
+              data-action="toggle-fav" 
+              data-tool-id="${escapeAttr(t.id)}" 
+              title="${isFav ? 'Remove from Favorites' : 'Add to Favorites'}"
+              class="w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer ${isFav ? 'text-red-500 bg-red-500/10' : 'text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10'}"
+            >
+              ${getIcon(isFav ? 'heartFilled' : 'heart', 'w-4 h-4 transition-transform active:scale-125')}
+            </button>
           </div>
           <h4 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(t.name)}</h4>
-          <p class="text-[11px] text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${escapeHtml(t.description)}</p>
+          <p class="text-[11px] text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed" title="${escapeAttr(t.description)}">${escapeHtml(desc)}</p>
         </div>
-        <div class="mt-3 pt-2.5 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] font-medium text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform">
+        <div class="mt-3.5 pt-2.5 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform">
           <span>Open Tool</span>
           ${getIcon('arrow-right', 'w-3 h-3')}
         </div>
@@ -386,10 +400,6 @@ function renderHome(container) {
             Drop any file here to get started
           </h3>
           <p class="text-xs text-[var(--text-secondary)] mt-1">or click to <span class="text-[var(--brand-primary)] font-medium">browse local files</span></p>
-          <div class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold bg-[var(--surface-inset)] text-[var(--text-muted)]">
-            ${getIcon('shield', 'w-3 h-3 text-emerald-500')}
-            <span>100% Offline • Private • Processed entirely on this machine</span>
-          </div>
         </div>
       </div>
 
@@ -978,9 +988,22 @@ function renderFavorites(container) {
   `;
 }
 
-async function handleToggleFavorite(toolId) {
+async function handleToggleFavorite(toolId, clickedBtn = null) {
   const updated = await callBridge('toggle_favorite', toolId);
   if (updated) state.favorites = updated;
+  const isFav = (state.favorites || []).includes(toolId);
+
+  // If clicked button element was passed or found in DOM, apply pop animation immediately
+  const btn = clickedBtn || document.querySelector(`button[data-action="toggle-fav"][data-tool-id="${toolId}"]`);
+  if (btn) {
+    btn.innerHTML = getIcon(isFav ? 'heartFilled' : 'heart', 'w-4 h-4 transition-transform');
+    btn.className = `w-7 h-7 rounded-lg flex items-center justify-center transition-colors cursor-pointer heart-btn-animate ${isFav ? 'text-red-500 bg-red-500/10' : 'text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10'}`;
+    btn.title = isFav ? 'Remove from Favorites' : 'Add to Favorites';
+    setTimeout(() => {
+      btn.classList.remove('heart-btn-animate');
+    }, 400);
+  }
+
   const container = document.getElementById('main-content');
   if (state.currentView === 'favorites' && container) {
     renderFavorites(container);
@@ -3306,7 +3329,7 @@ async function initApp() {
       case 'toggle-fav': {
         e.stopPropagation();
         const tid = el.dataset.toolId;
-        if (tid) handleToggleFavorite(tid);
+        if (tid) handleToggleFavorite(tid, el);
         break;
       }
 
