@@ -412,7 +412,7 @@ function renderHome(container) {
       </div>
 
       <!-- 2. Main Content Stage: Utilities on Left + Generous Gap + Recent Activity Rail on Right -->
-      <div class="flex items-start gap-8" style="width: 100%;">
+      <div class="flex items-start gap-8 mt-8" style="width: 100%;">
         <!-- Left Column: Utilities & Tools Grid -->
         <div class="flex-1" style="min-width: 0;">
           <div class="flex items-center justify-between mb-4">
