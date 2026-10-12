@@ -379,50 +379,47 @@ function renderHome(container) {
   }
 
   container.innerHTML = `
-    <div class="max-w-6xl mx-auto pb-10 space-y-7 animate-in fade-in duration-150">
-      <!-- Main Layout Flex: Hero Dropzone & Tools on Left + Recent Activity Rail on Right -->
-      <div class="flex items-start gap-6" style="width: 100%;">
-        <!-- Left Main Content Column -->
-        <div class="flex-1 space-y-6" style="min-width: 0;">
-          <!-- Hero Section with Focused Compact Dropzone -->
-          <div class="space-y-3">
-            <div>
-              <h1 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">What do you want to build or process?</h1>
-              <p class="text-xs text-[var(--text-secondary)] mt-1">Select or drop any file directly. Boltools automatically recognizes the format and suggests instant actions.</p>
-            </div>
+    <div class="max-w-6xl mx-auto pb-10 space-y-8 animate-in fade-in duration-150">
+      <!-- 1. Hero Dropzone Section (Full Top Banner with Clean Proportions) -->
+      <div class="space-y-4">
+        <div>
+          <h1 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">What do you want to build or process?</h1>
+          <p class="text-xs text-[var(--text-secondary)] mt-1">Select or drop any file directly. Boltools automatically recognizes the format and suggests instant actions.</p>
+        </div>
 
-            <!-- Interactive Global Dropzone (Balanced Size, Zero Bloat) -->
-            <div 
-              id="home-global-dropzone" 
-              data-action="home-browse-files"
-              class="p-7 rounded-xl bg-[var(--surface-card)] border-2 border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer text-center transition-all group relative overflow-hidden shadow-xs hover:shadow-sm"
-            >
-              <div class="w-11 h-11 mx-auto rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform mb-2.5 border border-[var(--border-subtle)]">
-                ${getIcon('upload-cloud', 'w-5 h-5')}
-              </div>
-              <h3 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
-                Drop any file here to get started
-              </h3>
-              <p class="text-[11px] text-[var(--text-secondary)] mt-1">or click to <span class="text-[var(--brand-primary)] font-medium">browse local files</span></p>
-            </div>
+        <!-- Interactive Global Dropzone -->
+        <div 
+          id="home-global-dropzone" 
+          data-action="home-browse-files"
+          class="p-8 rounded-xl bg-[var(--surface-card)] border-2 border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer text-center transition-all group relative overflow-hidden shadow-xs hover:shadow-sm"
+        >
+          <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform mb-3 border border-[var(--border-subtle)]">
+            ${getIcon('upload-cloud', 'w-6 h-6')}
           </div>
+          <h3 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
+            Drop any file here to get started
+          </h3>
+          <p class="text-xs text-[var(--text-secondary)] mt-1">or click to <span class="text-[var(--brand-primary)] font-medium">browse local files</span></p>
+        </div>
+      </div>
 
-          <!-- Utilities & Tools Section -->
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Utilities & Tools</span>
-              <button data-action="nav" data-view="tool_hub" class="text-xs font-semibold text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
-                <span>View Tool Hub</span>
-                ${getIcon('chevron-right', 'w-3 h-3')}
-              </button>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
-              ${toolsGridHtml}
-            </div>
+      <!-- 2. Main Content Stage: Utilities on Left + Generous Gap + Recent Activity Rail on Right -->
+      <div class="flex items-start gap-8" style="width: 100%;">
+        <!-- Left Column: Utilities & Tools Grid -->
+        <div class="flex-1 space-y-4" style="min-width: 0;">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Utilities & Tools</span>
+            <button data-action="nav" data-view="tool_hub" class="text-xs font-semibold text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
+              <span>View Tool Hub</span>
+              ${getIcon('chevron-right', 'w-3 h-3')}
+            </button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;">
+            ${toolsGridHtml}
           </div>
         </div>
 
-        <!-- Dynamic Right Column: Recent Tools & Generated Files (Balanced Side Rail) -->
+        <!-- Right Column: Recent Tools & Generated Files (Isolated Rail with Independent Width & Padding) -->
         ${rightRailHtml}
       </div>
     </div>
