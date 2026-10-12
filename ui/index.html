@@ -39,7 +39,17 @@
       background: var(--text-muted);
     }
 
-    /* Sidebar Active Items */
+    /* Sidebar Active & Hover States */
+    .sidebar-nav-btn,
+    .sidebar-cat-btn {
+      color: var(--text-secondary);
+      transition: all 0.15s ease;
+    }
+    .sidebar-nav-btn:hover,
+    .sidebar-cat-btn:hover {
+      background-color: var(--surface-card-hover) !important;
+      color: var(--text-primary) !important;
+    }
     .sidebar-nav-btn.active,
     .sidebar-cat-btn.active {
       background-color: var(--surface-card) !important;

@@ -617,7 +617,7 @@ html.theme-transitioning *::after {
 
 .sidebar-nav-btn:hover {
   background-color: var(--surface-card-hover);
-  color: #FFFFFF;
+  color: var(--text-primary);
 }
 
 .sidebar-nav-btn.active {

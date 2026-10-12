@@ -293,7 +293,7 @@ function renderHome(container) {
           <h4 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(t.name)}</h4>
           <p class="text-[11px] text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed" title="${escapeAttr(t.description)}">${escapeHtml(desc)}</p>
         </div>
-        <div class="mt-3.5 pt-2.5 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform">
+        <div class="mt-4 pt-3.5 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform">
           <span>Open Tool</span>
           ${getIcon('arrow-right', 'w-3 h-3')}
         </div>
@@ -380,34 +380,34 @@ function renderHome(container) {
 
   container.innerHTML = `
     <div class="max-w-6xl mx-auto pb-10 space-y-7 animate-in fade-in duration-150">
-      <!-- Hero Section with Global Dropzone -->
-      <div class="space-y-4">
-        <div>
-          <h1 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">What do you want to build or process?</h1>
-          <p class="text-xs text-[var(--text-secondary)] mt-1">Select or drop any file directly. Boltools automatically recognizes the format and suggests instant actions.</p>
-        </div>
-
-        <!-- Interactive Global Dropzone -->
-        <div 
-          id="home-global-dropzone" 
-          data-action="home-browse-files"
-          class="p-8 rounded-xl bg-[var(--surface-card)] border-2 border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer text-center transition-all group relative overflow-hidden shadow-xs hover:shadow-sm"
-        >
-          <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform mb-3 border border-[var(--border-subtle)]">
-            ${getIcon('upload-cloud', 'w-6 h-6')}
-          </div>
-          <h3 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
-            Drop any file here to get started
-          </h3>
-          <p class="text-xs text-[var(--text-secondary)] mt-1">or click to <span class="text-[var(--brand-primary)] font-medium">browse local files</span></p>
-        </div>
-      </div>
-
-      <!-- Main Layout Flex: Tools Stage on Left + Conditional Right Rail -->
+      <!-- Main Layout Flex: Hero Dropzone & Tools on Left + Recent Activity Rail on Right -->
       <div class="flex items-start gap-6" style="width: 100%;">
-        <!-- Left Main Tools Stage -->
+        <!-- Left Main Content Column -->
         <div class="flex-1 space-y-6" style="min-width: 0;">
-          <!-- Popular Tools Section -->
+          <!-- Hero Section with Focused Compact Dropzone -->
+          <div class="space-y-3">
+            <div>
+              <h1 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">What do you want to build or process?</h1>
+              <p class="text-xs text-[var(--text-secondary)] mt-1">Select or drop any file directly. Boltools automatically recognizes the format and suggests instant actions.</p>
+            </div>
+
+            <!-- Interactive Global Dropzone (Balanced Size, Zero Bloat) -->
+            <div 
+              id="home-global-dropzone" 
+              data-action="home-browse-files"
+              class="p-7 rounded-xl bg-[var(--surface-card)] border-2 border-dashed border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer text-center transition-all group relative overflow-hidden shadow-xs hover:shadow-sm"
+            >
+              <div class="w-11 h-11 mx-auto rounded-xl flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform mb-2.5 border border-[var(--border-subtle)]">
+                ${getIcon('upload-cloud', 'w-5 h-5')}
+              </div>
+              <h3 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
+                Drop any file here to get started
+              </h3>
+              <p class="text-[11px] text-[var(--text-secondary)] mt-1">or click to <span class="text-[var(--brand-primary)] font-medium">browse local files</span></p>
+            </div>
+          </div>
+
+          <!-- Utilities & Tools Section -->
           <div>
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Utilities & Tools</span>
@@ -422,7 +422,7 @@ function renderHome(container) {
           </div>
         </div>
 
-        <!-- Dynamic Right Column (Rendered ONLY when real activity exists) -->
+        <!-- Dynamic Right Column: Recent Tools & Generated Files (Balanced Side Rail) -->
         ${rightRailHtml}
       </div>
     </div>
