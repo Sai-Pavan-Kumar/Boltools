@@ -665,7 +665,9 @@ class ToolStoreService:
 
     def _perform_install_or_update(self, tool_id: str, meta: Dict[str, Any]) -> Dict[str, Any]:
         expected_sha256 = meta.get("sha256")
-        if not expected_sha256 and os.environ.get("BOLTOOLS_DEV") != "1":
+        # Same rule as the signature check: the dev bypass never applies to a release build
+        dev_bypass = (not IS_RELEASE) and os.environ.get("BOLTOOLS_DEV") == "1"
+        if not expected_sha256 and not dev_bypass:
             return {
                 "success": False,
                 "error": f"Refusing to install tool '{tool_id}': Missing sha256 checksum in manifest entry. Set BOLTOOLS_DEV=1 to bypass."

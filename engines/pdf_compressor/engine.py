@@ -20,7 +20,8 @@ def send(data):
 
 def main():
     try:
-        raw_input = sys.stdin.read()
+        # readline, not read(): the runner keeps stdin open to deliver cancel commands
+        raw_input = sys.stdin.readline()
         payload = json.loads(raw_input)
     except Exception as e:
         send({"type": "error", "message": f"Invalid payload: {e}"})
@@ -51,6 +52,7 @@ def main():
     try:
         for idx, pdf_path in enumerate(input_files):
             if not os.path.isfile(pdf_path):
+                send({"type": "log", "message": f"Skipped (not found): {os.path.basename(pdf_path)}"})
                 continue
 
             orig_sz = os.path.getsize(pdf_path)
@@ -113,6 +115,11 @@ def main():
 
             pct = 10.0 + ((idx + 1) / len(input_files)) * 85.0
             send({"type": "progress", "percent": round(pct, 1), "status": f"Completed file {idx + 1}/{len(input_files)}"})
+
+        # A run that produced nothing must not be reported as a success
+        if not output_files:
+            send({"type": "error", "message": "None of the selected files could be found or read."})
+            sys.exit(1)
 
         total_saved_pct = round((max(0, total_orig_bytes - total_new_bytes) / max(1, total_orig_bytes)) * 100, 1) if total_orig_bytes > 0 else 0
         send({"type": "progress", "percent": 100.0, "status": "Compression complete!"})

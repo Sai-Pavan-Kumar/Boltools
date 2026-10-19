@@ -16,7 +16,8 @@
       "engine_url": "https://boltools.thesurfboard.in/engines/audio_extractor/engine.py",
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/audio_extractor/engine.py",
       "release_notes": "Initial release with multi-format audio extraction.",
-      "is_implemented": true
+      "is_implemented": true,
+      "sha256": "905519fe01ec2b9552440d88741a6ad34c0fe8c3d9b4d480dcc22382d90ba419"
     },
     {
       "id": "video_compressor",
@@ -31,7 +32,8 @@
       "engine_url": "https://boltools.thesurfboard.in/engines/video_compressor/engine.py",
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/video_compressor/engine.py",
       "release_notes": "Fast offline H.264 video compression.",
-      "is_implemented": true
+      "is_implemented": true,
+      "sha256": "b6ff48d5bfe5c67a7123ecfa99e388f8276bda315dd0a786a5c9a9ab7f85b65c"
     },
     {
       "id": "pdf_merge",
@@ -83,7 +85,8 @@
       "release_notes": "High-efficiency offline PDF compression with multiple DPI presets.",
       "is_implemented": true,
       "size_bytes": 1024000,
-      "size_mb": 1
+      "size_mb": 1,
+      "sha256": "72582504af291cbcbe6f520571a14b247200985e1cf52f131ef48f76974e20a4"
     },
     {
       "id": "pdf_converter",
@@ -99,7 +102,7 @@
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/pdf_converter/engine.py",
       "release_notes": "Offline PDF and image conversions.",
       "is_implemented": true,
-      "sha256": "12437525319e5abdc571feb771ba63d92b78283aace466a76a81cf1c3042cb71"
+      "sha256": "be615fdeaf64bf3fea38daafb2cb6deeea0a7df6e9cba91fcff66aac6cfbe8f9"
     },
     {
       "id": "image_webp_compress",
@@ -115,7 +118,7 @@
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/webp_compressor/engine.py",
       "release_notes": "Batch WebP image optimization.",
       "is_implemented": true,
-      "sha256": "c5aff0e75e5caa24f794493ba476dee6ba82a80b5d2e68a15e46593127947c9d"
+      "sha256": "aafdb190c4984ef94841b252024e593da94be1d1f61a233564e5458cd8e708a8"
     },
     {
       "id": "system_batch_rename",
@@ -131,7 +134,7 @@
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/batch_renamer/engine.py",
       "release_notes": "High-speed batch file renaming.",
       "is_implemented": true,
-      "sha256": "2f89d0dd2174e0b524456c286cb218f8f30a4ce8a284133f4e98bccde99d4b21"
+      "sha256": "8f65bc906d7f2019afd45ffc5e9ee025d008f9b05cb085b06c7b95f097c57ba1"
     },
     {
       "id": "subtitle_animator",
@@ -147,7 +150,7 @@
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/subtitle_animator/engine.py",
       "release_notes": "v1.0.1: Word-by-word karaoke highlight engine, ASS/SSA rendering & custom font embedding.",
       "is_implemented": true,
-      "sha256": "2a236fed885fcffbf5ceab89c8e4eaed12dc2ba9bfcfacdb28c7b24bdae21821"
+      "sha256": "cbe0cf63b341b3f8b720a2dad0c5a08a516a479982707e93450d5ff36d9669e1"
     }
   ]
 }

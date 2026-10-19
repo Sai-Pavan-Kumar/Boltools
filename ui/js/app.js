@@ -2237,10 +2237,6 @@ function updateStudioFilesUI() {
           class="file-drag-item p-2.5 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] hover:border-[var(--border-hover)] flex items-center justify-between text-xs text-[var(--text-primary)] gap-2.5 transition-all select-none"
           draggable="true"
           data-file-idx="${idx}"
-          ondragstart="handlePdfDragStart(event, ${idx})"
-          ondragover="handlePdfDragOver(event)"
-          ondragleave="handlePdfDragLeave(event)"
-          ondrop="handlePdfDrop(event, ${idx})"
         >
           <div class="flex items-center gap-2 truncate min-w-0">
             <span class="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-grab active:cursor-grabbing shrink-0 text-xs font-bold select-none px-0.5" title="Drag to reorder">⋮⋮</span>
@@ -2560,7 +2556,10 @@ window.onToolProgress = function(data) {
 window.onToolLog = function(msg) {
   const logBox = document.getElementById('studio-log-box');
   if (logBox) {
-    logBox.innerHTML += `<div>${msg}</div>`;
+    // Engine output carries user file names, so it is inserted as text, never as markup
+    const line = document.createElement('div');
+    line.textContent = msg;
+    logBox.appendChild(line);
     logBox.scrollTop = logBox.scrollHeight;
   }
 };
@@ -2602,7 +2601,8 @@ window.onToolComplete = function(data) {
     const timeStr = timeMs !== null ? (timeMs < 1000 ? `${timeMs}ms` : `${(timeMs / 1000).toFixed(2)}s`) : '';
     const bytesStr = stats.total_bytes ? formatBytes(stats.total_bytes) : '';
     const chunks = stats.total_chunks !== undefined ? stats.total_chunks : null;
-    const pages = stats.output_pages !== undefined ? stats.output_pages : null;
+    // The PDF engine reports total_pages; output_pages is the older field name
+    const pages = stats.total_pages ?? stats.output_pages ?? null;
 
     statsHtml = `
       <div class="grid grid-cols-2 gap-2 my-4 p-3 rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-left">
@@ -3389,8 +3389,9 @@ async function confirmUninstall(purgeData) {
 
   await callBridge('uninstall_tool', toolId, purgeData);
   closeUninstallModal();
-  const data = await callBridge('get_initial_data');
-  if (data) state.tools = data.tools;
+  // get_initial_data deliberately carries no tool list; the catalog comes only from get_catalog_summary
+  const summaryData = await callBridge('get_catalog_summary');
+  if (Array.isArray(summaryData)) state.tools = summaryData;
   const container = document.getElementById('main-content');
   if (state.currentView === 'tool_hub' && container) {
     renderToolHub(container);
@@ -3493,7 +3494,7 @@ function showToast(message, type = 'info') {
   toast.className = `${bg} px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium flex items-center gap-2 pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
   toast.innerHTML = `
     <span>${getIcon(type === 'success' ? 'check' : 'info', 'w-4 h-4')}</span>
-    <span>${message}</span>
+    <span>${escapeHtml(message)}</span>
   `;
   toastContainer.appendChild(toast);
   requestAnimationFrame(() => {

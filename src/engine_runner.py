@@ -208,6 +208,22 @@ class EngineRunner:
                     self.current_job_id = tool_id
                     self.current_win_job = win_job
 
+                # Drain stderr in parallel: an engine (or FFmpeg behind it) that fills the
+                # stderr pipe while we only read stdout would block forever. Keep the tail for errors.
+                stderr_tail: List[str] = []
+
+                def _drain_stderr():
+                    try:
+                        for err_line in proc.stderr:
+                            stderr_tail.append(err_line)
+                            if len(stderr_tail) > 200:
+                                del stderr_tail[:100]
+                    except Exception:
+                        pass
+
+                stderr_thread = threading.Thread(target=_drain_stderr, daemon=True)
+                stderr_thread.start()
+
                 # Send single JSON-line request to stdin (keep stdin open for cancel commands)
                 proc.stdin.write(payload_json + "\n")
                 proc.stdin.flush()
@@ -256,7 +272,8 @@ class EngineRunner:
 
                 # Check process exit code
                 if proc.returncode != EXIT_SUCCESS and not structured_error:
-                    err_lines = proc.stderr.read().strip()
+                    stderr_thread.join(timeout=2.0)
+                    err_lines = "".join(stderr_tail[-20:]).strip()
                     structured_error = {
                         "code": f"EXIT_{proc.returncode}",
                         "message": err_lines or f"Engine exited with status code {proc.returncode}"

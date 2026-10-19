@@ -381,9 +381,6 @@ class DesktopBridge:
         """Returns complete tool definition."""
         validate_identifier(tool_id, "tool_id")
         return tool_store_service.get_tool_meta(tool_id)
-        """Returns complete tool definition."""
-        validate_identifier(tool_id, "tool_id")
-        return tool_store_service.get_tool_meta(tool_id)
 
     # ── Helper for Frontend Dispatch ─────────────────────────────────────────
     def _notify_frontend(self, handler_name: str, payload: Any):

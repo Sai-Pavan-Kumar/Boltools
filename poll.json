@@ -7,27 +7,27 @@
     {
       "id": "opt_audio_whisper",
       "label": "Local Whisper AI Speech-to-Text Transcriber (90+ Languages)",
-      "votes": 342
+      "votes": 0
     },
     {
       "id": "opt_video_trimmer",
       "label": "Instant Lossless Video Trimmer (Cut clips in <1 sec)",
-      "votes": 289
+      "votes": 0
     },
     {
       "id": "opt_audio_stems",
       "label": "AI Vocal & Instrumental Stem Separator (Karaoke Maker)",
-      "votes": 412
+      "votes": 0
     },
     {
       "id": "opt_design_qr",
       "label": "Offline Vector QR Code Studio (WiFi, Links, Custom Colors)",
-      "votes": 195
+      "votes": 0
     },
     {
       "id": "opt_system_dup",
       "label": "Deep Duplicate File Hunter (Free up disk space)",
-      "votes": 220
+      "votes": 0
     }
   ]
 }

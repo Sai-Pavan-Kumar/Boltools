@@ -6,7 +6,12 @@ datas = [
     ('assets', 'assets'),
     ('catalog.json', '.'),
     ('poll.json', '.'),
-    ('announcements.json', '.')
+    ('announcements.json', '.'),
+    # Offline first run: the bundled manifest feeds the Tool Hub before any network sync,
+    # and the signed .bolpack files let tools install with no internet at all.
+    ('tools_manifest.json', '.'),
+    ('tools_manifest.sig', '.'),
+    ('release_bundles', 'release_bundles')
 ]
 binaries = []
 hiddenimports = [

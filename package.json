@@ -5,7 +5,7 @@
   "main": "ui/js/app.js",
   "scripts": {
     "build:css": "npx tailwindcss -i ./ui/css/input.css -o ./ui/css/tailwind.min.css --minify",
-    "test": "python -m unittest discover -s tests",
+    "test": "python -m unittest discover -s tools_dev -p \"test_*.py\"",
     "benchmark": "python tools_dev/run_baseline_benchmark.py"
   },
   "repository": {
