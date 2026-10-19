@@ -1,0 +1,5 @@
+# Release hashes in the manifest are computed over LF bytes; a CRLF
+# checkout on Windows would make every signed engine fail verification.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
