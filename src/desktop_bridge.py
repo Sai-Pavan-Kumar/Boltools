@@ -24,6 +24,7 @@ from src.core.favorites import favorites_service
 from src.core.community import community_service
 from src.core.announcements import announcement_service
 from src.core.tool_store import tool_store_service
+from src.core.ui_dispatcher import ui_dispatcher
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -49,6 +50,7 @@ class DesktopBridge:
 
     def set_window(self, window: webview.Window):
         self._window = window
+        ui_dispatcher.attach(window)
 
     # ── Initial State Dispatcher ─────────────────────────────────────────────
     def get_initial_data(self) -> Dict[str, Any]:
@@ -386,9 +388,7 @@ class DesktopBridge:
     def _notify_frontend(self, handler_name: str, payload: Any):
         if not self._window:
             return
-        payload_json = json.dumps(payload)
-        js_code = f"if (window.{handler_name}) {{ window.{handler_name}({payload_json}); }}"
-        self._window.evaluate_js(js_code)
+        ui_dispatcher.send(handler_name, payload)
 
 
 desktop_bridge = DesktopBridge()

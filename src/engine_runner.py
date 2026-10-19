@@ -128,6 +128,9 @@ class EngineRunner:
         self.current_job_id: Optional[str] = None
         self.current_win_job = None
         self.is_cancelled = False
+        # True between accepting a run and having its Popen handle, so a Cancel
+        # pressed during engine startup is not silently lost.
+        self.is_starting = False
         self.lock = threading.Lock()
 
     def run_engine(
@@ -146,10 +149,15 @@ class EngineRunner:
         """Dispatches an engine process asynchronously with real-time JSON-lines output monitoring."""
         def _worker():
             with self.lock:
-                if self.current_process is not None:
+                # A process that already exited is a leftover from a worker that never
+                # reached its cleanup; it must not block every run after it.
+                if self.current_process is not None and self.current_process.poll() is not None:
+                    self.current_process = None
+                if self.current_process is not None or self.is_starting:
                     on_error({"code": "BUSY", "message": "Another tool operation is already running."})
                     return
                 self.is_cancelled = False
+                self.is_starting = True
 
             job_payload = {
                 "tool_id": tool_id,
@@ -170,10 +178,13 @@ class EngineRunner:
             elif engine_type == "command":
                 cmd = executable_target.split()
             else:
+                with self.lock:
+                    self.is_starting = False
                 on_error({"code": "UNSUPPORTED_ENGINE", "message": f"Unsupported engine type: {engine_type}"})
                 return
 
             payload_json = json.dumps(job_payload)
+            proc = None
 
             try:
                 on_log(f"Starting engine for {tool_id}...")
@@ -207,6 +218,10 @@ class EngineRunner:
                     self.current_process = proc
                     self.current_job_id = tool_id
                     self.current_win_job = win_job
+                    self.is_starting = False
+                    cancelled_during_start = self.is_cancelled
+                if cancelled_during_start:
+                    self.cancel_active()
 
                 # Drain stderr in parallel: an engine (or FFmpeg behind it) that fills the
                 # stderr pipe while we only read stdout would block forever. Keep the tail for errors.
@@ -295,6 +310,11 @@ class EngineRunner:
                         return
                 on_error({"code": "PROCESS_FAILED", "message": f"Engine execution failed: {str(e)}"})
             finally:
+                if proc is None:
+                    with self.lock:
+                        self.is_starting = False
+                        self.is_cancelled = False
+                    return
                 try:
                     if proc.stdin and not proc.stdin.closed:
                         proc.stdin.close()
@@ -308,6 +328,10 @@ class EngineRunner:
                 except Exception:
                     pass
                 with self.lock:
+                    # The busy check may already have handed the slot to a newer run;
+                    # only tear down state that still belongs to this worker.
+                    if self.current_process is not proc:
+                        return
                     if self.current_win_job and sys.platform == "win32" and _HAS_WIN32_JOB:
                         try:
                             _kernel32.CloseHandle(self.current_win_job)
@@ -324,9 +348,16 @@ class EngineRunner:
         """Sends {"cmd":"cancel"} on stdin, waits up to 3s, then forcefully terminates process tree."""
         with self.lock:
             if self.current_process is None:
+                if self.is_starting:
+                    self.is_cancelled = True
+                    return True
                 return False
-            self.is_cancelled = True
             proc = self.current_process
+            if proc.poll() is not None:
+                # Engine is gone already; free the slot so the user can run again.
+                self.current_process = None
+                return True
+            self.is_cancelled = True
 
         # 1. Graceful cancel via stdin
         try:
