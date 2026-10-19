@@ -44,6 +44,7 @@ if root_dir not in sys.path:
 
 import webview
 from src.desktop_bridge import desktop_bridge
+from src._build import IS_RELEASE
 
 
 def _get_icon_path():
@@ -116,6 +117,10 @@ def main():
 
     # Ensure persistent storage directory for Edge WebView2 user data (theme, localStorage, recents)
     storage_dir = os.path.join(os.path.expanduser("~"), ".boltools", "webview2_data")
+    # Dev-only: a second instance (automated UI checks) needs its own WebView2 profile,
+    # otherwise it fails to start while the founder's window is open.
+    if not IS_RELEASE and os.environ.get("BOLTOOLS_DEV") == "1" and os.environ.get("BOLTOOLS_WEBVIEW_DATA"):
+        storage_dir = os.environ["BOLTOOLS_WEBVIEW_DATA"]
     os.makedirs(storage_dir, exist_ok=True)
 
     # Launch Edge Chromium (WebView2) with custom window icon and persistent session

@@ -25,6 +25,7 @@ from src.core.community import community_service
 from src.core.announcements import announcement_service
 from src.core.tool_store import tool_store_service
 from src.core.ui_dispatcher import ui_dispatcher
+from src.core.output_stats import with_file_sizes
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -117,6 +118,7 @@ class DesktopBridge:
                 stats = outputs.get("stats")
                 outputs = outputs.get("outputs")
             primary = outputs[0] if isinstance(outputs, list) and outputs else outputs
+            stats = with_file_sizes(stats, input_files, outputs)
             self._notify_frontend("onToolComplete", {"output_file": primary, "outputs": outputs, "stats": stats})
 
         def _on_error(err: Any):

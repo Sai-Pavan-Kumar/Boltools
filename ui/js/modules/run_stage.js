@@ -18,10 +18,24 @@
     pdf_split: 'split',
     pdf_compress: 'compress',
     image_webp_compress: 'compress',
-    video_compressor: 'compress'
+    video_compressor: 'compress',
+    media_audio_extractor: 'extract',
+    pdf_converter: 'convert',
+    system_batch_rename: 'rename',
+    subtitle_animator: 'subtitle'
   };
 
-  const VERB_BY_MODE = { merge: 'Merging', split: 'Splitting', compress: 'Compressing', transform: 'Converting' };
+  const VERB_BY_MODE = {
+    merge: 'Merging', split: 'Splitting', compress: 'Compressing', extract: 'Pulling audio from',
+    convert: 'Converting', rename: 'Renaming', subtitle: 'Captioning', transform: 'Processing'
+  };
+
+  // Each tool acts out its own job; this is the extra scenery that sells it.
+  const FX_BY_MODE = {
+    compress: '<i class="th-clamp th-clamp-top"></i><i class="th-clamp th-clamp-bottom"></i>',
+    extract: `<div class="th-wave">${'<i></i>'.repeat(9)}</div>`,
+    subtitle: '<div class="th-caption"><i>Your</i><i>words,</i><i>on</i><i>screen</i></div>'
+  };
 
   let root = null;
   let pane = null;
@@ -34,6 +48,7 @@
   let elapsedTimer = null;
   let stackTimer = null;
   let startedAt = 0;
+  let inputFiles = [];
 
   const $ = (sel) => (root ? root.querySelector(sel) : null);
   const fileNameOf = (path) => String(path || '').split(/[\\/]/).pop();
@@ -43,6 +58,7 @@
     return `
       <div class="th-scene" aria-hidden="true">
         <div class="th-halo"></div>
+        <div class="th-fx"></div>
         <div class="th-cards"></div>
         <div class="th-results"></div>
       </div>
@@ -169,6 +185,8 @@
     $('.th-log-box').replaceChildren();
     $('.th-results').replaceChildren();
     $('.th-stats').replaceChildren();
+    $('.th-fx').innerHTML = FX_BY_MODE[mode] || '';
+    inputFiles = files.slice();
     renderActions([{ action: 'cancel-tool', label: 'Cancel', tone: 'quiet' }]);
     buildCards(files);
     const count = files.length;
@@ -210,19 +228,31 @@
         class="th-btn th-btn-${tone}">${label}</button>`).join('');
   }
 
-  // Only numbers the engine actually reported are shown.
-  function buildStats(stats, elapsedMs) {
-    const items = [['Time', formatDuration(stats && stats.total_time_ms !== undefined ? stats.total_time_ms : elapsedMs)]];
-    if (!stats) return items;
-    if (stats.orig_size && stats.new_size) {
-      items.push(['Size', `${formatBytes(stats.orig_size)} → ${formatBytes(stats.new_size)}`]);
-      const saved = stats.orig_size - stats.new_size;
-      if (saved > 0) items.push(['Saved', `${Math.round((saved / stats.orig_size) * 100)}%`]);
-    } else if (stats.total_bytes) {
-      items.push(['Size', formatBytes(stats.total_bytes)]);
+  const extOf = (path) => (fileNameOf(path).split('.').pop() || '').toUpperCase();
+
+  function formatChange(outputs) {
+    const from = extOf(inputFiles[0]);
+    const to = extOf(outputs[0]);
+    return from && to && from !== to ? `${from} → ${to}` : '';
+  }
+
+  // Numbers come from the engine or from the files on disk (bridge output_stats); never guessed.
+  function buildStats(stats, outputs, elapsedMs) {
+    const s = stats || {};
+    const items = [];
+    const before = s.orig_size || s.input_bytes;
+    const after = s.new_size || s.output_bytes || s.total_bytes;
+    const showsChange = before && after && mode === 'compress';
+    if (after) items.push([showsChange ? 'Size' : 'Output', showsChange ? `${formatBytes(before)} → ${formatBytes(after)}` : formatBytes(after)]);
+    if (mode === 'compress' && before && after) {
+      items.push(['Saved', after < before ? `${Math.round((1 - after / before) * 100)}%` : 'Already small']);
     }
-    const pages = stats.total_pages ?? stats.output_pages;
+    const format = formatChange(outputs);
+    if (format) items.push(['Format', format]);
+    const pages = s.total_pages ?? s.output_pages;
     if (pages) items.push(['Pages', String(pages)]);
+    if (outputs.length > 1) items.push(['Files', String(outputs.length)]);
+    items.push(['Time', formatDuration(s.total_time_ms !== undefined ? s.total_time_ms : elapsedMs)]);
     return items;
   }
 
@@ -266,7 +296,7 @@
     $('.th-elapsed').textContent = files.length > 1
       ? `Saved in ${folder || 'your output folder'}`
       : `${fileNameOf(files[0])}${folder ? ` · in ${folder}` : ''}`;
-    renderStats(buildStats(stats, elapsedMs));
+    renderStats(buildStats(stats, files, elapsedMs));
     renderActions([
       { action: 'open-output-file', label: files.length > 1 ? 'Open first file' : 'Open file', tone: 'primary' },
       { action: 'reveal-output-folder', label: 'Show in folder', tone: 'quiet' },

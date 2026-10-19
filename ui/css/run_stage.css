@@ -13,7 +13,8 @@
   --th-accent: var(--brand-primary);
   display: grid;
   justify-items: center;
-  gap: 8px;
+  align-content: center;
+  gap: 12px;
   min-height: 440px;
   padding: 24px 24px 16px;
   border-radius: var(--radius-card);
@@ -27,7 +28,8 @@
 .th-mono, .rs-mono { font-family: "DM Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
 
 /* Scene */
-.th-scene { position: relative; width: 100%; height: 250px; }
+.th-scene { position: relative; width: 100%; height: 250px; transition: height 420ms var(--th-ease); }
+.th:not([data-state="running"]) .th-scene { height: 170px; }
 .th-cards, .th-results { position: absolute; inset: 0; }
 .th-halo {
   position: absolute; left: 50%; top: 50%; width: 220px; height: 220px; margin: -110px 0 0 -110px;
@@ -60,7 +62,7 @@
 .th-lines i { height: 4px; border-radius: 2px; background: var(--surface-pill); }
 .th-lines i:nth-child(2) { width: 80%; }
 .th-lines i:nth-child(3) { width: 55%; }
-.th-name { font-size: 10px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.th-name { font-size: 10px; font-weight: 600; text-align: center; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .th-tone-pdf .th-kind { background: rgba(239, 68, 68, 0.12); color: #DC2626; }
 .th-tone-img .th-kind { background: rgba(16, 185, 129, 0.12); color: #059669; }
 .th-tone-vid .th-kind { background: rgba(0, 90, 224, 0.12); color: var(--brand-primary); }
@@ -68,17 +70,50 @@
 .th-tone-doc .th-kind { background: var(--surface-pill); color: var(--text-secondary); }
 .th-more { position: absolute; right: 6px; bottom: 22px; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 700; background: var(--brand-primary); color: var(--text-on-brand); }
 
-/* Scanning light while the engine works: says "your file is being read" without a bar. */
-.th[data-state="running"] .th-cards .th-card::after {
-  content: ""; position: absolute; left: 0; right: 0; top: -40%; height: 40%;
-  background: linear-gradient(to bottom, transparent, var(--brand-glow), rgba(0, 90, 224, 0.35), transparent);
-  animation: th-scan 1.6s var(--th-ease) var(--d) infinite;
+/* ── Per-tool motion: each tool acts out its own job ─────────────────────── */
+.th-fx { position: absolute; inset: 0; pointer-events: none; }
+
+/* Merge: pages stack, then the top page keeps collating into the pile. */
+.th[data-mode="merge"][data-state="running"] .th-cards .th-card:last-child {
+  box-shadow: 0 0 0 2px var(--th-accent), 0 14px 30px var(--brand-glow);
+  animation: th-card-in 460ms var(--th-spring) var(--d) both, th-collate 1.4s var(--th-ease) 1.2s infinite;
 }
 
-/* Per-tool motion */
+/* Split: ghost pages peel off both sides of the document. */
+.th[data-mode="split"][data-state="running"] .th-cards .th-card::before,
+.th[data-mode="split"][data-state="running"] .th-cards .th-card::after {
+  content: ""; position: absolute; inset: 12px 10px 30px; border-radius: 6px;
+  background: var(--brand-light); border: 1px dashed var(--brand-primary); opacity: 0;
+  animation: th-peel-left 1.6s var(--th-ease) infinite;
+}
+.th[data-mode="split"][data-state="running"] .th-cards .th-card::after { animation-name: th-peel-right; animation-delay: 0.8s; }
+
+/* Compress: two clamps press the file while it squeezes. */
 .th[data-mode="compress"][data-state="running"] .th-cards .th-card { animation: th-card-in 460ms var(--th-spring) var(--d) both, th-squeeze 1.3s ease-in-out calc(var(--d) + 500ms) infinite; }
-.th[data-mode="merge"][data-state="running"] .th-cards .th-card:last-child { box-shadow: 0 0 0 2px var(--th-accent), 0 14px 30px var(--brand-glow); }
-.th[data-mode="transform"][data-state="running"] .th-cards .th-kind { animation: th-flicker 1.8s steps(2) infinite; }
+.th-clamp { position: absolute; left: 50%; width: 180px; height: 6px; margin-left: -90px; border-radius: 3px; background: var(--th-accent); opacity: 0.85; box-shadow: 0 0 12px var(--brand-glow); }
+.th-clamp-top { top: 38px; animation: th-press-down 1.3s ease-in-out 500ms infinite; }
+.th-clamp-bottom { bottom: 38px; animation: th-press-up 1.3s ease-in-out 500ms infinite; }
+.th:not([data-state="running"]) .th-fx { opacity: 0; transition: opacity 200ms; }
+
+/* Extract: sound rises out of the video as an equalizer. */
+.th-wave { position: absolute; left: 50%; top: 50%; display: flex; align-items: flex-end; gap: 4px; height: 56px; translate: 72px -28px; }
+.th-wave i { width: 5px; height: 100%; border-radius: 3px; background: #8B5CF6; transform-origin: bottom; animation: th-eq 900ms ease-in-out infinite; }
+.th-wave i:nth-child(odd) { animation-duration: 700ms; }
+.th-wave i:nth-child(3n) { animation-duration: 1100ms; background: var(--brand-primary); }
+.th-wave i:nth-child(2) { animation-delay: -200ms; } .th-wave i:nth-child(4) { animation-delay: -450ms; }
+.th-wave i:nth-child(6) { animation-delay: -300ms; } .th-wave i:nth-child(8) { animation-delay: -600ms; }
+.th[data-mode="extract"][data-state="running"] .th-cards .th-card { translate: calc(-50% + var(--x) - 36px) calc(-50% + var(--y)); }
+
+/* Convert: the page turns over and over like it is being re-printed. */
+.th[data-mode="convert"][data-state="running"] .th-cards .th-card { animation: th-card-in 460ms var(--th-spring) var(--d) both, th-turn 1.8s var(--th-ease) calc(var(--d) + 500ms) infinite; }
+
+/* Rename: the file name is retyped behind a blinking caret. */
+.th[data-mode="rename"][data-state="running"] .th-cards .th-name { width: 0; animation: th-type 1.6s steps(14) calc(var(--d) + 400ms) infinite alternate; border-right: 2px solid var(--th-accent); justify-self: center; }
+
+/* Subtitles: words light up one by one under the clip. */
+.th-caption { position: absolute; left: 50%; bottom: 14px; translate: -50% 0; display: flex; gap: 6px; padding: 6px 12px; border-radius: 8px; background: rgba(15, 23, 42, 0.86); font-size: 13px; font-weight: 800; color: rgba(255, 255, 255, 0.35); }
+.th-caption i { font-style: normal; animation: th-word 2.4s steps(1) infinite; }
+.th-caption i:nth-child(2) { animation-delay: 0.6s; } .th-caption i:nth-child(3) { animation-delay: 1.2s; } .th-caption i:nth-child(4) { animation-delay: 1.8s; }
 
 /* Endings: source cards fold into the center, results land on top. */
 .th:not([data-state="running"]) .th-cards .th-card { translate: -50% -50%; rotate: 0deg; scale: 0.5; opacity: 0; transition-delay: 0ms; }
@@ -119,7 +154,7 @@
 .th-btn-quiet:hover { background: var(--surface-card-hover); }
 .th[data-state="running"] .th-btn-quiet { color: var(--text-secondary); }
 
-.th-log { justify-self: stretch; margin-top: 4px; }
+.th-log { justify-self: stretch; margin-top: 8px; }
 .th-log summary { cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text-muted); width: max-content; list-style: none; }
 .th-log summary::before { content: "▸"; display: inline-block; margin-right: 6px; transition: rotate 200ms; }
 .th-log[open] summary::before { rotate: 90deg; }
@@ -129,7 +164,15 @@
 @keyframes th-card-in { from { opacity: 0; scale: 0.7; } }
 @keyframes th-land { 0% { opacity: 0; scale: 0.4; } 70% { opacity: 1; scale: 1.06; } 100% { scale: 1; } }
 @keyframes th-pop { from { scale: 0; } }
-@keyframes th-scan { 0% { top: -40%; } 100% { top: 110%; } }
+@keyframes th-collate { 0%, 100% { translate: calc(-50% + var(--x)) calc(-50% + var(--y)); } 40% { translate: calc(-50% + var(--x)) calc(-50% + var(--y) - 22px); rotate: -6deg; } 70% { translate: calc(-50% + var(--x)) calc(-50% + var(--y) + 2px); } }
+@keyframes th-peel-left { 0% { opacity: 0; translate: 0 0; rotate: 0deg; } 30% { opacity: 1; } 100% { opacity: 0; translate: -70px 10px; rotate: -14deg; } }
+@keyframes th-peel-right { 0% { opacity: 0; translate: 0 0; rotate: 0deg; } 30% { opacity: 1; } 100% { opacity: 0; translate: 70px 10px; rotate: 14deg; } }
+@keyframes th-press-down { 0%, 100% { translate: 0 0; } 50% { translate: 0 12px; } }
+@keyframes th-press-up { 0%, 100% { translate: 0 0; } 50% { translate: 0 -12px; } }
+@keyframes th-eq { 0%, 100% { transform: scaleY(0.2); } 50% { transform: scaleY(1); } }
+@keyframes th-turn { 0%, 20% { scale: 1 1; } 45% { scale: 0.02 1; } 70%, 100% { scale: 1 1; } }
+@keyframes th-type { from { width: 0; } to { width: 100%; } }
+@keyframes th-word { 0% { color: #fff; } 25%, 100% { color: rgba(255, 255, 255, 0.35); } }
 @keyframes th-squeeze { 0%, 100% { scale: 1; } 50% { scale: 0.9 0.84; } }
 @keyframes th-flicker { 50% { opacity: 0.35; } }
 @keyframes th-breathe { 0%, 100% { opacity: 0.12; scale: 0.92; } 50% { opacity: 0.24; scale: 1.08; } }
