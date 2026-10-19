@@ -1409,42 +1409,14 @@ function renderToolStudio(container, toolId) {
               ${getIcon('arrow-right', 'w-3.5 h-3.5')}
             </button>
 
-            <!-- Compact Live Summary Strip -->
-            <div id="studio-stage-card" class="flex items-center justify-between text-xs px-2.5 py-1.5 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)]">
-              <span class="text-[11px] font-medium text-[var(--text-secondary)]">
-                <span id="studio-summary-count">0 files</span> • <span id="studio-summary-size" class="font-mono">0 B</span>
-              </span>
-              <span id="studio-summary-badge" class="text-[10px] text-emerald-600 font-semibold flex items-center gap-1 font-mono">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 100% Offline
-              </span>
-            </div>
-
-            <!-- Progress Bar & Cancel Row (Shown during processing) -->
-            <div id="studio-progress-wrap" class="hidden space-y-2 pt-1">
-              <div class="flex items-center justify-between text-xs">
-                <span id="studio-status-txt" class="font-semibold text-[var(--text-primary)]">Processing...</span>
-                <span id="studio-pct-txt" class="text-xs font-bold text-[var(--brand-primary)] tabular-nums">0%</span>
-              </div>
-              <div class="w-full bg-[var(--surface-inset)] h-1.5 rounded-full overflow-hidden">
-                <div id="studio-progress-fill" class="bg-[var(--brand-primary)] h-full w-0 transition-all duration-200"></div>
-              </div>
-              <button data-action="cancel-tool" class="w-full py-1 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-md transition-colors cursor-pointer">
-                Cancel Operation
-              </button>
-            </div>
-          </div>
-
-          <!-- Activity Log Drawer (Compact) -->
-          <div class="p-2.5 rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-1.5">
-            <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Engine Log</span>
-            <div id="studio-log-box" class="p-2 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[10px] text-[var(--text-secondary)] overflow-y-auto max-h-20 leading-relaxed font-mono">
-              System ready. Waiting for input...
-            </div>
+            <div id="run-stage-host"></div>
           </div>
         </div>
       </div>
     </div>
   `;
+
+  RunStage.mount(document.getElementById('run-stage-host'), tool.id, document.getElementById('studio-btn-execute'));
 
   if (tool.id === 'subtitle_animator') {
     setTimeout(() => {
@@ -2485,29 +2457,12 @@ async function handleExecuteTool(toolId) {
   const outDir = document.getElementById('studio-out-folder')?.value || state.defaultDownloads;
   state.isToolRunning = true;
 
-  // Show Progress UI
-  const progWrap = document.getElementById('studio-progress-wrap');
   const btnExec = document.getElementById('studio-btn-execute');
-  if (progWrap) progWrap.classList.remove('hidden');
   if (btnExec) {
     btnExec.disabled = true;
     btnExec.classList.add('opacity-50');
   }
-
-  // Clear log and set stage to active
-  const logBox = document.getElementById('studio-log-box');
-  if (logBox) logBox.innerHTML = `<div>Starting execution...</div>`;
-
-  const stage = document.getElementById('studio-stage-card');
-  if (stage) {
-    stage.innerHTML = `
-      <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center bg-blue-500/10 text-blue-500 mb-3 animate-pulse">
-        ${getIcon('cpu', 'w-6 h-6')}
-      </div>
-      <h4 class="text-sm font-semibold text-[var(--text-primary)]">Processing in Progress</h4>
-      <p class="text-xs text-[var(--text-secondary)] mt-1">Executing offline tool engine on your PC...</p>
-    `;
-  }
+  RunStage.start(state.selectedFiles.length);
 
   if (toolId === 'pdf_merge') {
     state.activeToolOptions.mode = 'merge';
@@ -2532,38 +2487,12 @@ async function handleCancelTool() {
 
 // Bridge Event Handlers (Called by Python evaluate_js)
 window.onToolProgress = function(data) {
-  const pct = data.percent !== undefined ? data.percent : 0;
-  const status = data.status || 'Processing...';
-  const isIndeterminate = data.indeterminate || pct < 0;
-
-  const fill = document.getElementById('studio-progress-fill');
-  const pctTxt = document.getElementById('studio-pct-txt');
-  const statusTxt = document.getElementById('studio-status-txt');
-
-  if (fill) {
-    if (isIndeterminate) {
-      fill.classList.add('progress-indeterminate');
-    } else {
-      fill.classList.remove('progress-indeterminate');
-      fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
-    }
-  }
-
-  if (pctTxt) {
-    pctTxt.innerText = isIndeterminate ? '...' : `${Math.round(pct)}%`;
-  }
-  if (statusTxt) statusTxt.innerText = status;
+  const pct = data.indeterminate ? -1 : data.percent;
+  RunStage.progress(pct, data.status);
 };
 
 window.onToolLog = function(msg) {
-  const logBox = document.getElementById('studio-log-box');
-  if (logBox) {
-    // Engine output carries user file names, so it is inserted as text, never as markup
-    const line = document.createElement('div');
-    line.textContent = msg;
-    logBox.appendChild(line);
-    logBox.scrollTop = logBox.scrollHeight;
-  }
+  RunStage.log(msg);
 };
 
 window.onToolComplete = function(data) {
@@ -2592,70 +2521,7 @@ window.onToolComplete = function(data) {
     btnExec.classList.remove('opacity-50');
   }
 
-  // Hide progress wrap on completion to eliminate clutter and redundant Cancel button
-  const progWrap = document.getElementById('studio-progress-wrap');
-  if (progWrap) progWrap.classList.add('hidden');
-
-  // Format stats cards if available
-  let statsHtml = '';
-  if (stats) {
-    const timeMs = stats.total_time_ms !== undefined ? stats.total_time_ms : null;
-    const timeStr = timeMs !== null ? (timeMs < 1000 ? `${timeMs}ms` : `${(timeMs / 1000).toFixed(2)}s`) : '';
-    const bytesStr = stats.total_bytes ? formatBytes(stats.total_bytes) : '';
-    const chunks = stats.total_chunks !== undefined ? stats.total_chunks : null;
-    // The PDF engine reports total_pages; output_pages is the older field name
-    const pages = stats.total_pages ?? stats.output_pages ?? null;
-
-    statsHtml = `
-      <div class="grid grid-cols-2 gap-2 my-4 p-3 rounded-xl bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-left">
-        ${timeStr ? `
-          <div>
-            <div class="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Duration</div>
-            <div class="text-xs font-bold text-[var(--text-primary)] font-mono">${timeStr}</div>
-          </div>
-        ` : ''}
-        ${bytesStr ? `
-          <div>
-            <div class="text-[10px] text-[var(--text-muted)] font-medium uppercase tracking-wider">Output Size</div>
-            <div class="text-xs font-bold text-[var(--brand-primary)] font-mono">${bytesStr}</div>
-          </div>
-        ` : ''}
-        ${pages ? `
-          <div class="col-span-2 pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
-            <span>Verified Page Count:</span>
-            <span class="font-bold text-[var(--text-primary)] font-mono">${pages} pages</span>
-          </div>
-        ` : ''}
-        ${chunks ? `
-          <div class="col-span-2 pt-1 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
-            <span>Generated Files:</span>
-            <span class="font-bold text-[var(--text-primary)] font-mono">${chunks} files</span>
-          </div>
-        ` : ''}
-      </div>
-    `;
-  }
-
-  const stage = document.getElementById('studio-stage-card');
-  if (stage) {
-    stage.innerHTML = `
-      <div class="w-12 h-12 mx-auto rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-500 mb-3">
-        ${getIcon('check', 'w-6 h-6')}
-      </div>
-      <h4 class="text-sm font-semibold text-[var(--text-primary)]">Processing Complete!</h4>
-      <p class="text-xs text-[var(--text-secondary)] mt-1">Your documents have been processed offline with zero quality loss.</p>
-      ${statsHtml}
-      <div class="space-y-2 mt-2">
-        <button data-action="open-output-file" class="btn-primary w-full py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-          <span>Open Output File</span>
-          ${getIcon('arrow-right', 'w-3.5 h-3.5')}
-        </button>
-        <button data-action="reveal-output-folder" class="w-full py-2 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors cursor-pointer">
-          Reveal in Folder
-        </button>
-      </div>
-    `;
-  }
+  RunStage.complete({ outputs: data.outputs || data.output_file, stats });
 };
 
 window.onToolError = function(errMsg) {
@@ -2665,9 +2531,7 @@ window.onToolError = function(errMsg) {
     btnExec.disabled = false;
     btnExec.classList.remove('opacity-50');
   }
-
-  const statusTxt = document.getElementById('studio-status-txt');
-  if (statusTxt) statusTxt.innerText = `Error: ${errMsg}`;
+  RunStage.fail(errMsg);
 };
 
 // ── Subtitle Animation Maker Studio Suite ─────────────────────────────────────
@@ -3678,6 +3542,10 @@ async function initApp() {
 
       case 'cancel-tool':
         handleCancelTool();
+        break;
+
+      case 'run-stage-reset':
+        RunStage.reset();
         break;
 
       case 'open-output-file':
