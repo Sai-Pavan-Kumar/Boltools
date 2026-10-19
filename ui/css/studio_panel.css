@@ -74,9 +74,9 @@
 .opt-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
 .opt-hint { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
 .opt-segmented { display: grid; grid-template-columns: repeat(var(--opt-count), minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 10px; background: var(--surface-inset); }
-.opt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
 .opt-choice {
-  display: grid; gap: 1px; justify-items: center; min-height: 44px; padding: 6px 10px;
+  display: grid; gap: 1px; justify-items: center; align-content: center; text-align: center; min-height: 44px; padding: 6px 10px;
   border-radius: 8px; border: 1px solid transparent; background: transparent; cursor: pointer;
   color: var(--text-secondary); font-family: var(--font-brand);
   transition: background 180ms, color 180ms, box-shadow 180ms, transform 160ms cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -89,3 +89,10 @@
 .opt-segmented .opt-choice.is-selected { background: var(--surface-card); color: var(--text-primary); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12); }
 .opt-chips .opt-choice { min-height: 44px; padding: 0 14px; border-color: var(--border-subtle); background: var(--surface-card); }
 .opt-chips .opt-choice.is-selected { border-color: var(--brand-primary); background: var(--brand-light); color: var(--brand-primary); }
+.opt-more { border-top: 1px solid var(--border-subtle); padding-top: 4px; }
+.opt-more-toggle { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 44px; padding: 0 2px; border: 0; background: transparent; cursor: pointer; font-family: var(--font-brand); font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.opt-more-toggle::after { content: "›"; margin-left: 8px; font-size: 18px; color: var(--text-muted); transition: transform 200ms; }
+.opt-more.is-open .opt-more-toggle::after { transform: rotate(90deg); }
+.opt-more-summary { margin-left: auto; font-weight: 500; color: var(--text-secondary); }
+.opt-more-body { display: flex; flex-direction: column; gap: 16px; padding-top: 8px; animation: sp-in 280ms cubic-bezier(0.22, 1, 0.36, 1); }
+.opt-more-toggle:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; border-radius: 6px; }

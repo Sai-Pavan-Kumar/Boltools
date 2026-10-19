@@ -56,6 +56,9 @@
       button.classList.toggle('sp-blocked', Boolean(blocked));
     }
     if (reason) reason.textContent = blocked;
+    const nameField = document.getElementById('studio-out-filename')?.parentElement;
+    const naming = ToolUX.get(toolId).namesOutput;
+    if (nameField) nameField.hidden = naming === false || (naming === 'single' && fileCount !== 1);
   }
 
   // onOpen(toolId, files) moves the user into the suggested tool with the files loaded.

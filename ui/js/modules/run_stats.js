@@ -40,11 +40,12 @@
 
   // The engine picks "name (1).pdf" when the name is taken; say so instead of letting it surprise.
   function renameNote(requestedName, actualPath) {
-    const wanted = String(requestedName || '').trim().toLowerCase();
-    const got = fileNameOf(actualPath).toLowerCase();
-    if (!wanted || !got || got === wanted || got === `${wanted}.pdf`) return '';
-    const stem = wanted.replace(/\.[a-z0-9]+$/, '');
-    return got.startsWith(stem) ? `A file named ${requestedName} already existed, so this one got a number.` : '';
+    const stemOf = (name) => name.replace(/\.[a-z0-9]+$/, '');
+    const wanted = stemOf(String(requestedName || '').trim().toLowerCase());
+    const got = stemOf(fileNameOf(actualPath).toLowerCase());
+    // Only "name (1)" style results mean the engine had to avoid an existing file.
+    if (!wanted || !got.startsWith(`${wanted} (`)) return '';
+    return `A file named ${requestedName} already existed, so this one got a number.`;
   }
 
   // RULES.md section 2: library names never reach the UI, whatever an engine prints.

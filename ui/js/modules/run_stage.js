@@ -291,7 +291,9 @@
         : `${fileNameOf(files[0])}${folder ? ` · in ${folder}` : ''}`;
     }
     $('.th-stats').replaceChildren(...RunStats.statCells(RunStats.build({ stats, outputs: files, inputs: inputFiles, mode, elapsedMs })));
-    const note = files.length === 1 ? RunStats.renameNote(requestedName, files[0]) : '';
+    const warnings = stats && Array.isArray(stats.warnings) ? stats.warnings : [];
+    const note = (files.length === 1 ? RunStats.renameNote(requestedName, files[0]) : '')
+      || (warnings.length ? RunStats.brand(warnings[0]) + (warnings.length > 1 ? ` (+${warnings.length - 1} more)` : '') : '');
     if (note) {
       const chip = document.createElement('div');
       chip.className = 'th-note';

@@ -1,8 +1,8 @@
 /**
  * Tool UX copy: the one place that says how each tool talks to people.
  * Start-button verbs, what files are accepted, and which tool makes sense
- * next for a given output. namesOutput: false hides the file-name field for tools
- * that keep each file's own name. Adding a tool = adding an entry here.
+ * next for a given output. namesOutput: false hides the file-name field (each file
+ * keeps its own name); 'single' shows it only when exactly one file is added. Adding a tool = adding an entry here.
  */
 (function () {
   const TOOLS = {
@@ -10,9 +10,9 @@
     pdf_split: { verb: 'Split', noun: 'PDF', minFiles: 1, limits: 'One PDF at a time', before: 'One PDF becomes several' },
     pdf_compress: { verb: 'Compress', noun: 'PDF', minFiles: 1, limits: 'PDF only · many files at once', before: 'Big PDFs become small ones' },
     pdf_converter: { namesOutput: false, verb: 'Convert', noun: 'file', minFiles: 1, limits: 'PDF, PNG or JPG', before: 'PDF pages become images' },
-    image_webp_compress: { namesOutput: false, verb: 'Compress', noun: 'image', minFiles: 1, limits: 'PNG, JPG, BMP or WEBP · many at once', before: 'Big photos become small ones' },
-    video_compressor: { namesOutput: false, verb: 'Compress', noun: 'video', minFiles: 1, limits: 'MP4, MOV, MKV, WEBM and more', before: 'Big videos become small ones' },
-    media_audio_extractor: { namesOutput: false, verb: 'Extract audio from', noun: 'file', minFiles: 1, limits: 'Any video or audio file', before: 'Video becomes MP3, WAV, AAC or FLAC' },
+    image_webp_compress: { namesOutput: 'single', verb: 'Compress', noun: 'image', minFiles: 1, limits: 'PNG, JPG, BMP or WEBP · many at once', before: 'Big photos become small ones' },
+    video_compressor: { namesOutput: 'single', verb: 'Compress', noun: 'video', minFiles: 1, maxFiles: 1, maxReason: 'One video at a time for now.', limits: 'MP4, MOV, MKV, WEBM and more', before: 'Big videos become small ones' },
+    media_audio_extractor: { namesOutput: 'single', verb: 'Extract audio from', noun: 'file', minFiles: 1, limits: 'Any video or audio file', before: 'Video or audio becomes MP3, WAV, AAC or FLAC' },
     system_batch_rename: { namesOutput: false, verb: 'Rename', noun: 'file', minFiles: 1, limits: 'Any file type · many at once', before: 'Messy names become tidy' },
     subtitle_animator: { namesOutput: false, verb: 'Add captions to', noun: 'video', minFiles: 1, limits: 'A video plus an SRT or VTT file', before: 'Plain video gets animated captions' }
   };
@@ -54,6 +54,7 @@
 
   function blockedReason(toolId, fileCount) {
     const tool = get(toolId);
+    if (tool.maxFiles && fileCount > tool.maxFiles) return tool.maxReason || '';
     return fileCount > 0 && fileCount < tool.minFiles ? tool.minReason || '' : '';
   }
 

@@ -1503,37 +1503,22 @@ function renderToolSpecificOptions(toolId) {
         })}
 
         ${splitMode === 'ranges' ? `
-          <div class="space-y-1">
-            <label class="text-[11px] font-medium text-[var(--text-secondary)]">Page Ranges (e.g. 1-3, 5, 8-)</label>
-            <input 
-              type="text" 
-              value="${escapeAttr(ranges)}" 
-              data-action="pdf-ranges-input" 
-              placeholder="1-3, 5, 8-" 
-              class="w-full px-2.5 py-1 text-xs rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono"
-            />
-            <span class="text-[10px] text-[var(--text-muted)] block">Separate ranges with commas. Use '8-' for page 8 to end.</span>
-          </div>
+          <label class="opt-field">
+            <span class="opt-label">Pages</span>
+            <input type="text" value="${escapeAttr(ranges)}" data-action="pdf-ranges-input" placeholder="1-3, 5, 8-" />
+            <span class="opt-hint">Commas between ranges. "8-" means page 8 to the end.</span>
+          </label>
         ` : ''}
 
         ${splitMode === 'every_n' ? `
-          <div class="space-y-1">
-            <label class="text-[11px] font-medium text-[var(--text-secondary)]">Split Every N Pages</label>
-            <input 
-              type="number" 
-              min="1" 
-              max="500" 
-              value="${everyN}" 
-              data-action="pdf-every-n-input" 
-              class="w-full px-2.5 py-1 text-xs rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono"
-            />
-          </div>
+          <label class="opt-field">
+            <span class="opt-label">Pages per file</span>
+            <input type="number" min="1" max="500" value="${everyN}" data-action="pdf-every-n-input" />
+          </label>
         ` : ''}
 
         ${splitMode === 'each_page' ? `
-          <div class="p-2 rounded-md bg-[var(--surface-inset)] text-[10px] text-[var(--text-secondary)]">
-            Extracts each page as an individual zero-padded PDF (<code class="text-[var(--brand-primary)] font-mono">page_001.pdf</code>).
-          </div>
+          <p class="opt-hint">Each page becomes its own PDF.</p>
         ` : ''}
       </div>
     `;
@@ -2368,8 +2353,19 @@ function syncStudioPanelToRun(runState) {
 
 function syncStudioPanelToFiles() {
   refreshStudioPreview();
+  prefillSingleFileName();
   const stageBusy = document.getElementById('studio-stage-left')?.classList.contains('th-on');
   if (!stageBusy) StudioPanel.setPhase(state.selectedFiles.length ? 'ready' : 'empty');
+}
+
+// One file in: offer its own name, so the output field never says "output_result".
+function prefillSingleFileName() {
+  const field = document.getElementById('studio-out-filename');
+  if (!field || state.selectedFiles.length !== 1 || ToolUX.get(state.activeToolId).namesOutput !== 'single') return;
+  if (field.value && field.value !== 'output_result' && field.dataset.autofilled !== 'true') return;
+  const base = state.selectedFiles[0].split(/[\\/]/).pop();
+  field.value = base.replace(/\.[^.]+$/, '');
+  field.dataset.autofilled = 'true';
 }
 
 // Re-run after any setting that changes the outcome (split ranges, rename rule).
@@ -3511,7 +3507,7 @@ async function initApp() {
       case 'set-tool-option': {
         const { key, value } = el.dataset;
         if (key) {
-          state.activeToolOptions[key] = OptionsUI.parseValue(key, value);
+          OptionsUI.apply(state.activeToolOptions, key, value);
           const optBox = document.getElementById('studio-options-box');
           if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
           refreshStudioPreview();

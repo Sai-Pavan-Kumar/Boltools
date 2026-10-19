@@ -37,17 +37,38 @@
   }
 
   const SIZE_LIMITS = [
-    { value: 0, label: 'No limit' },
-    { value: 100, label: 'Under 100 KB' },
-    { value: 200, label: 'Under 200 KB' },
-    { value: 500, label: 'Under 500 KB' },
-    { value: 1024, label: 'Under 1 MB' }
+    { value: '0', label: 'No limit' },
+    { value: '100', label: 'Under 100 KB' },
+    { value: '200', label: 'Under 200 KB' },
+    { value: '500', label: 'Under 500 KB' },
+    { value: '1024', label: 'Under 1 MB' }
   ];
+
+  // Exam and government upload forms ask for a window, not just a maximum.
+  const PORTAL_WINDOWS = [
+    { value: '20-50', label: '20–50 KB' },
+    { value: '10-20', label: '10–20 KB' }
+  ];
+
+  const SHAPES = [
+    { value: 'original', label: 'Original' },
+    { value: 'square', label: 'Square' },
+    { value: 'passport', label: 'Passport' },
+    { value: '4:3', label: '4:3' },
+    { value: '16:9', label: '16:9' }
+  ];
+
+  function sizeWindowOf(options) {
+    const max = Number(options.target_kb || 0);
+    const min = Number(options.min_kb || 0);
+    return min ? `${min}-${max}` : String(max);
+  }
 
   // Same control for PDFs and images: one mental model for "make it smaller".
   function compressGoal(options, kind) {
     const preset = options.preset || 'balanced';
     const target = Number(options.target_kb || 0);
+    const limits = kind === 'image' ? SIZE_LIMITS.concat(PORTAL_WINDOWS) : SIZE_LIMITS;
     const presets = [
       { value: 'smallest', label: 'Smallest', hint: 'Tiny files' },
       { value: 'balanced', label: 'Balanced', hint: 'Recommended' },
@@ -55,15 +76,42 @@
     ];
     const limitHint = kind === 'pdf'
       ? 'For upload portals with a size limit. Text always stays sharp.'
-      : 'Boltools finds the best quality that fits.';
-    return (target ? '' : segmented({ key: 'preset', label: 'Goal', current: preset, options: presets }))
-      + chips({ key: 'target_kb', label: 'Size limit', current: target, options: SIZE_LIMITS, hint: limitHint });
+      : 'Boltools finds the best quality that fits. 20–50 KB and 10–20 KB match most exam photo and signature uploads.';
+    const goal = target ? '' : segmented({ key: 'preset', label: 'Goal', current: preset, options: presets });
+    const size = chips({ key: 'size_window', label: 'Size limit', current: sizeWindowOf(options), options: limits, hint: limitHint });
+    if (kind !== 'image') return goal + size;
+    const format = segmented({
+      key: 'format', label: 'Format', current: options.format || 'webp',
+      options: [{ value: 'webp', label: 'WebP', hint: 'Smallest' }, { value: 'jpg', label: 'JPG', hint: 'Works on every portal' }]
+    });
+    const shape = chips({ key: 'shape', label: 'Shape', current: options.shape || 'original', options: SHAPES, hint: 'Crops from the centre. Passport is 3.5 × 4.5.' });
+    return goal + size + moreOptions(options, format + shape);
   }
 
-  // Values arrive from data attributes as strings; numbers are stored as numbers.
-  function parseValue(key, raw) {
-    return key === 'target_kb' ? Number(raw) || 0 : raw;
+  // Rarely needed settings stay folded (Hick's law); the summary shows what is chosen.
+  function moreOptions(options, body) {
+    const formatLabel = (options.format || 'webp') === 'jpg' ? 'JPG' : 'WebP';
+    const shapeLabel = (SHAPES.find(s => s.value === (options.shape || 'original')) || SHAPES[0]).label;
+    return `
+      <div class="opt-more${options._more ? ' is-open' : ''}">
+        <button type="button" class="opt-more-toggle" aria-expanded="${Boolean(options._more)}"
+          data-action="set-tool-option" data-key="_more" data-value="${options._more ? '' : '1'}">
+          <span>More options</span><span class="opt-more-summary">${escapeHtml(formatLabel)} · ${escapeHtml(shapeLabel)}</span>
+        </button>
+        ${options._more ? `<div class="opt-more-body">${body}</div>` : ''}
+      </div>`;
   }
 
-  window.OptionsUI = { segmented, chips, compressGoal, parseValue };
+  // Values arrive from data attributes as strings. "20-50" sets a min and max together.
+  function apply(options, key, raw) {
+    if (key === 'size_window') {
+      const [first, second] = String(raw).split('-').map(Number);
+      options.min_kb = second ? first : 0;
+      options.target_kb = second || first || 0;
+      return;
+    }
+    options[key] = raw;
+  }
+
+  window.OptionsUI = { segmented, chips, compressGoal, apply };
 })();
