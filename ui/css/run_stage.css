@@ -25,7 +25,8 @@
 .th[data-state="idle"] { display: none; }
 .th[data-state="done"] { --th-accent: var(--status-success); }
 .th[data-state="failed"] { --th-accent: var(--status-error); }
-.th-mono, .rs-mono { font-family: "DM Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+/* Numbers use the brand font with fixed-width digits; Geist Mono is only for log text. */
+.th-mono, .rs-mono { font-variant-numeric: tabular-nums; }
 
 /* Scene */
 .th-scene { position: relative; width: 100%; height: 250px; transition: height 420ms var(--th-ease); }
@@ -141,12 +142,13 @@
 .th-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .th-stats:empty { display: none; }
 .th-stat { display: grid; gap: 2px; min-width: 76px; padding: 8px 12px; text-align: center; border-radius: var(--radius-card); background: var(--surface-inset); animation: th-rise 420ms var(--th-ease) both; }
-.th-stat strong { font-size: 13px; color: var(--text-primary); font-family: "DM Mono", ui-monospace, monospace; }
+.th-stat strong { font-size: 14px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .th-stat span { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
 
 .th-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
 .th-btn { min-height: 44px; padding: 0 20px; border-radius: var(--radius-button); font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: background 160ms, transform 160ms var(--th-spring); }
 .th-btn:active { transform: scale(0.97); }
+.th-btn:disabled { cursor: default; opacity: 0.6; transform: none; }
 .th-btn:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 2px; }
 .th-btn-primary { background: var(--brand-primary); color: var(--text-on-brand); box-shadow: 0 6px 16px var(--brand-glow); }
 .th-btn-primary:hover { background: var(--brand-hover); }
@@ -158,7 +160,7 @@
 .th-log summary { cursor: pointer; font-size: 11px; font-weight: 600; color: var(--text-muted); width: max-content; list-style: none; }
 .th-log summary::before { content: "▸"; display: inline-block; margin-right: 6px; transition: rotate 200ms; }
 .th-log[open] summary::before { rotate: 90deg; }
-.th-log-box { margin-top: 6px; max-height: 110px; overflow-y: auto; padding: 8px; border-radius: var(--radius-input); background: var(--surface-inset); font-size: 10px; line-height: 1.6; color: var(--text-secondary); }
+.th-log-box { font-family: var(--font-code); margin-top: 6px; max-height: 110px; overflow-y: auto; padding: 8px; border-radius: var(--radius-input); background: var(--surface-inset); font-size: 10px; line-height: 1.6; color: var(--text-secondary); }
 
 @keyframes th-fade { from { opacity: 0; } }
 @keyframes th-card-in { from { opacity: 0; scale: 0.7; } }

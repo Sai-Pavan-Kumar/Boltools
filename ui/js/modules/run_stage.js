@@ -200,7 +200,7 @@
   }
 
   function progress(percent, status) {
-    if (!root || root.dataset.state !== 'running') return;
+    if (!root || root.dataset.state !== 'running' || root.classList.contains('th-stopping')) return;
     const indeterminate = percent === undefined || percent < 0;
     root.classList.toggle('th-indeterminate', indeterminate);
     if (!indeterminate) {
@@ -219,7 +219,19 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  window.RunStage = { mount, start, progress, log, complete, fail, reset };
+  // Immediate feedback: the engine may need a moment to die, the user must not wonder if the click landed.
+  function stopping() {
+    if (!root || root.dataset.state !== 'running') return;
+    root.classList.add('th-indeterminate', 'th-stopping');
+    setTitle('Stopping…');
+    const button = $('[data-action="cancel-tool"]');
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Stopping…';
+    }
+  }
+
+  window.RunStage = { mount, start, progress, log, complete, fail, reset, stopping };
 
   // ── Endings ────────────────────────────────────────────────────────────────
   function renderActions(buttons) {
@@ -280,7 +292,7 @@
 
   function finish(state) {
     stopTimers();
-    root.classList.remove('th-indeterminate');
+    root.classList.remove('th-indeterminate', 'th-stopping');
     setState(state);
   }
 

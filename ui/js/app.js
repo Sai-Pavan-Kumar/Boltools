@@ -2329,6 +2329,7 @@ async function handleExecuteTool(toolId) {
 }
 
 async function handleCancelTool() {
+  RunStage.stopping();
   const hadActiveJob = await callBridge('cancel_tool');
   // No engine left to stop means no CANCELLED event will arrive; reset the screen ourselves.
   if (!hadActiveJob) window.onToolError('Operation cancelled.');

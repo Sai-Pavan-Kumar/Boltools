@@ -8,9 +8,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Instrument Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Nirmala UI"', 'Gautami', 'Mangal', 'sans-serif'],
-        display: ['"Instrument Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Nirmala UI"', 'Gautami', 'Mangal', 'sans-serif'],
-        mono: ['"DM Mono"', 'Consolas', 'Courier New', 'monospace']
+        sans: ['"Overused Grotesk"', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'Arial', 'sans-serif'],
+        display: ['"Overused Grotesk"', 'system-ui', '-apple-system', '"Segoe UI"', 'Roboto', 'Arial', 'sans-serif'],
+        mono: ['"Geist Mono"', 'ui-monospace', '"Cascadia Mono"', 'Consolas', '"Courier New"', 'monospace']
       }
     }
   },

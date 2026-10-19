@@ -30,6 +30,10 @@ EXIT_RUNTIME_ERROR = 1
 EXIT_CANCELLED = 2
 EXIT_INVALID_ARGS = 3
 
+# Only the PDF engine honours {"cmd":"cancel"}; Python engines ignore it. A long grace
+# period made every Cancel feel broken, so we wait briefly and then kill the tree.
+CANCEL_GRACE_SECONDS = 0.25
+
 # Optional Windows Job Object setup for leak-free child process management
 _HAS_WIN32_JOB = False
 if sys.platform == "win32":
@@ -345,7 +349,7 @@ class EngineRunner:
         threading.Thread(target=_worker, daemon=True).start()
 
     def cancel_active(self) -> bool:
-        """Sends {"cmd":"cancel"} on stdin, waits up to 3s, then forcefully terminates process tree."""
+        """Sends {"cmd":"cancel"} on stdin, waits briefly, then forcefully terminates the process tree."""
         with self.lock:
             if self.current_process is None:
                 if self.is_starting:
@@ -367,16 +371,21 @@ class EngineRunner:
         except Exception:
             pass
 
-        # 2. Wait up to 3.0s for engine to cleanly exit
+        # 2. Give the engine a moment to exit cleanly, then kill it and its children (FFmpeg)
         def _wait_and_kill():
             try:
-                proc.wait(timeout=3.0)
+                proc.wait(timeout=CANCEL_GRACE_SECONDS)
             except Exception:
-                # Force kill if not exited after 3 seconds
+                # Still running after the grace period: kill the whole tree. Terminating the
+                # Job Object is instant and takes FFmpeg with it; taskkill is the slow fallback.
+                with self.lock:
+                    job = self.current_win_job if self.current_process is proc else None
+                    if job and _kernel32.TerminateJobObject(job, EXIT_CANCELLED):
+                        return
                 try:
                     pid = proc.pid
                     if sys.platform == "win32":
-                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True)
+                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True, creationflags=0x08000000)
                     else:
                         proc.kill()
                 except Exception:

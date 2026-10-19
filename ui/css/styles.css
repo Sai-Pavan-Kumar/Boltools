@@ -1,32 +1,37 @@
 /* ==========================================================================
    BOLTOOLS DESIGN SYSTEM STYLESHEET
    100% Visually Synchronized with software/src/core/theme.py
-   Option 3 Typography Standard: Instrument Sans + DM Mono (Local WOFF2)
+   Typography: Overused Grotesk + Geist Mono (SurfBoard Typography Guide v1.0)
    Zero Remote Requests • 100% Offline Resilience
    ========================================================================== */
 
+/* SurfBoard Typography Guide v1.0: Overused Grotesk for all UI text, Geist Mono only for
+   code-like text (engine logs, file paths). Self-hosted, so CSP needs only font-src 'self'. */
 @font-face {
-  font-family: 'Instrument Sans';
-  src: url('../assets/fonts/InstrumentSans-Variable.woff2') format('woff2');
-  font-weight: 400 700;
+  font-family: 'Overused Grotesk';
+  src: url('../assets/fonts/OverusedGrotesk-VF.woff2') format('woff2');
+  font-weight: 300 900;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'DM Mono';
-  src: url('../assets/fonts/DMMono-Regular.woff2') format('woff2');
-  font-weight: 400;
+  font-family: 'Geist Mono';
+  src: url('../assets/fonts/GeistMono-VF.woff2') format('woff2');
+  font-weight: 100 900;
   font-style: normal;
   font-display: swap;
 }
 
-@font-face {
-  font-family: 'DM Mono';
-  src: url('../assets/fonts/DMMono-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
+:root {
+  --font-brand: "Overused Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-code: "Geist Mono", ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+
+/* Italics are unfinished upstream; never let the browser fake bold or italic. */
+html {
+  font-family: var(--font-brand);
+  font-synthesis: none;
 }
 
 /* ==========================================================================
@@ -168,7 +173,7 @@ html {
 body {
   background-color: var(--surface-base);
   color: var(--text-primary);
-  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-brand);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -435,16 +440,16 @@ html.theme-transitioning *::after {
 
 /* Typography Helpers - Option 3 Mapping */
 .font-display {
-  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-brand);
   letter-spacing: -0.025em;
 }
 
 .font-body {
-  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-brand);
 }
 
 .font-mono {
-  font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-brand);
   letter-spacing: -0.01em;
 }
 
@@ -456,7 +461,7 @@ html.theme-transitioning *::after {
   gap: 0.5rem;
   background-color: var(--brand-primary);
   color: var(--text-on-brand);
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: var(--font-brand);
   font-weight: 500;
   border-radius: var(--radius-button);
   padding: 0.55rem 1.15rem;
@@ -484,7 +489,7 @@ html.theme-transitioning *::after {
   gap: 0.5rem;
   background-color: var(--surface-card);
   color: var(--text-primary);
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: var(--font-brand);
   font-weight: 500;
   border-radius: var(--radius-button);
   padding: 0.55rem 1.15rem;
@@ -505,7 +510,7 @@ html.theme-transitioning *::after {
   background-color: var(--surface-pill);
   color: var(--brand-accent);
   border: 1px solid var(--border-subtle);
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: var(--font-brand);
   font-size: 0.6875rem;
   font-weight: 500;
   padding: 0.2rem 0.65rem;
@@ -520,7 +525,7 @@ html.theme-transitioning *::after {
   background-color: rgba(16, 185, 129, 0.1);
   color: #34D399;
   border: 1px solid rgba(16, 185, 129, 0.2);
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: var(--font-brand);
   font-size: 0.6875rem;
   font-weight: 500;
   padding: 0.15rem 0.5rem;
@@ -534,7 +539,7 @@ html.theme-transitioning *::after {
   background-color: rgba(56, 189, 248, 0.08);
   color: #38BDF8;
   border: 1px solid rgba(56, 189, 248, 0.2);
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: var(--font-brand);
   font-size: 0.6875rem;
   font-weight: 500;
   padding: 0.15rem 0.5rem;
@@ -590,7 +595,7 @@ html.theme-transitioning *::after {
 
 .sidebar-section-header {
   font-size: 0.625rem;
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: var(--font-brand);
   font-weight: 600;
   color: var(--text-muted);
   letter-spacing: 0.08em;
@@ -605,7 +610,7 @@ html.theme-transitioning *::after {
   padding: 0.45rem 0.65rem;
   border-radius: var(--radius-button);
   font-size: 0.75rem;
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: var(--font-brand);
   font-weight: 500;
   color: var(--text-secondary);
   background: transparent;
@@ -630,7 +635,7 @@ html.theme-transitioning *::after {
   background-color: var(--surface-inset);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-input);
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: var(--font-brand);
   font-size: 0.75rem;
   color: #94A3B8;
   line-height: 1.5;
@@ -781,7 +786,7 @@ html.theme-transitioning *::after {
   gap: 0.5rem;
   padding: 0.55rem 0.85rem;
   font-size: 0.75rem;
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: var(--font-brand);
   font-weight: 500;
   border-radius: var(--radius-input);
   background-color: var(--surface-inset);
@@ -851,7 +856,7 @@ html.theme-transitioning *::after {
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   font-size: 0.75rem;
-  font-family: 'Instrument Sans', sans-serif;
+  font-family: var(--font-brand);
   color: var(--text-primary);
   cursor: pointer;
   transition: background-color 0.12s ease, color 0.12s ease;
