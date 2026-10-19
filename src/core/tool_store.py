@@ -394,6 +394,14 @@ class ToolStoreService:
         folder = validate_id((meta.get("engine_folder") or tool_id) if meta else tool_id, "engine_folder")
         entry_file = meta.get("entry", "engine.py") if meta else "engine.py"
 
+        # 0. Dev builds run engines straight from the website repo, so an engine fix can be
+        #    tested with run.bat before it is deployed and re-downloaded. Never active in release.
+        if not IS_RELEASE and os.environ.get("BOLTOOLS_DEV") == "1":
+            repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+            dev_engine = os.path.join(repo_root, "website", "engines", folder, entry_file)
+            if os.path.isfile(dev_engine):
+                return dev_engine
+
         # 1. Versioned current.json resolution (check tool_id first, then folder)
         for check_id in [tool_id, folder]:
             pointer = self.get_active_pointer(check_id)
