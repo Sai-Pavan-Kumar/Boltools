@@ -21,8 +21,11 @@ hiddenimports = [
     'src.engine_runner'
 ]
 
-tmp_ret = collect_all('webview')
-datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+# The fixed library set every Python tool may rely on (RULES: a tool needing anything
+# else waits for a shell update or ships as an exe engine). pypdfium2 carries pdfium.dll.
+for package in ('webview', 'PIL', 'pikepdf', 'pypdfium2', 'pypdfium2_raw'):
+    tmp_ret = collect_all(package)
+    datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 a = Analysis(
     ['main.py'],
@@ -33,7 +36,8 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['tkinter', 'customtkinter', 'turtle', 'PIL', 'Pillow', 'fitz', 'pymupdf', 'pypdf'],
+    # PyMuPDF is AGPL: excluded on purpose so it can never slip into a release.
+    excludes=['tkinter', 'customtkinter', 'turtle', 'fitz', 'pymupdf'],
     noarchive=False,
     optimize=0,
 )

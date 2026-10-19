@@ -47,5 +47,51 @@
     return got.startsWith(stem) ? `A file named ${requestedName} already existed, so this one got a number.` : '';
   }
 
-  window.RunStats = { build, renameNote };
+  // RULES.md section 2: library names never reach the UI, whatever an engine prints.
+  const BRANDED_NAMES = [
+    [/ffmpeg|ffprobe/gi, 'Boltools Media Engine'],
+    [/\b(qpdf|pikepdf|pypdfium2|pdfium|pymupdf|pypdf|fitz)\b/gi, 'PDF Document Core'],
+    [/\b(pillow|PIL)\b/gi, 'Boltools Image Core']
+  ];
+
+  function brand(raw) {
+    return BRANDED_NAMES.reduce((text, [pattern, name]) => text.replace(pattern, name), String(raw || ''));
+  }
+
+  function cleanStatus(raw) {
+    const text = String(raw || '').trim();
+    // qpdf echoes temp paths ("qpdf: C:\...\temp.pdf: write progress: 51%"); users don't need those.
+    if (/^qpdf:/i.test(text)) return 'Writing your file…';
+    const branded = brand(text);
+    return branded.length > 80 ? `${branded.slice(0, 77)}…` : branded;
+  }
+
+  function statCells(items) {
+    return items.map(([label, value], index) => {
+      const cell = document.createElement('div');
+      cell.className = 'th-stat';
+      cell.style.animationDelay = `${380 + index * 70}ms`;
+      const strong = document.createElement('strong');
+      strong.textContent = value;
+      const caption = document.createElement('span');
+      caption.textContent = label;
+      cell.append(strong, caption);
+      return cell;
+    });
+  }
+
+  function failedRows(failed) {
+    return failed.map(({ file, reason }) => {
+      const row = document.createElement('div');
+      row.className = 'th-failed-row';
+      const name = document.createElement('strong');
+      name.textContent = fileNameOf(file);
+      const why = document.createElement('span');
+      why.textContent = brand(reason);
+      row.append(name, why);
+      return row;
+    });
+  }
+
+  window.RunStats = { build, renameNote, brand, cleanStatus, statCells, failedRows };
 })();

@@ -125,3 +125,35 @@
 #studio-dropzone .ft-before { font-size: 12px; color: var(--text-muted); }
 #studio-dropzone.ft-compact .ft-limits,
 #studio-dropzone.ft-compact .ft-before { display: none; }
+
+/* Grid layout: photos, where order does not matter and the picture is the label. */
+/* The list's old space-y utility adds a top margin that knocks grid tiles out of line. */
+#studio-files-list > * + * { margin-top: 0 !important; }
+#studio-files-list.ft-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.ft-grid .ft-row { flex-direction: column; align-items: stretch; gap: 8px; min-height: 0; padding: 8px; }
+.ft-grid .ft-thumb, .ft-grid .ft-kind { width: 100%; aspect-ratio: 4 / 3; height: auto; border-radius: 6px; object-fit: cover; background: var(--surface-inset); clip-path: none; }
+.ft-grid .ft-thumb + .ft-kind { display: none; }
+.ft-grid .ft-text { padding: 0 2px 2px; }
+.ft-grid .ft-name { font-size: 12px; }
+.ft-grid .ft-remove { position: absolute; top: 12px; right: 12px; background: var(--surface-card); box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18); }
+
+/* Previews (file_previews.js): see the outcome before pressing Start. */
+.fp-preview:empty { display: none; }
+.fp-preview { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
+.fp-caption { margin: 0; font-size: 12px; color: var(--text-secondary); }
+.fp-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fp-page {
+  display: grid; place-items: center; width: 34px; height: 44px; border-radius: 5px;
+  border: 1px solid var(--border-hover); background: var(--surface-card);
+  font-size: 11px; font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums;
+  transition: opacity 200ms, border-color 200ms;
+}
+.fp-page.fp-unused { opacity: 0.35; border-style: dashed; }
+.fp-cut { width: 3px; height: 52px; border-radius: 2px; background: var(--brand-primary); box-shadow: 0 0 8px var(--brand-glow); animation: ft-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.fp-table { border: 1px solid var(--border-subtle); border-radius: var(--radius-card); overflow: hidden; }
+.fp-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 10px 14px; font-size: 13px; border-top: 1px solid var(--border-subtle); }
+.fp-row span, .fp-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fp-row span { color: var(--text-secondary); }
+.fp-row strong { font-weight: 600; color: var(--text-primary); }
+.fp-row.fp-same strong { color: var(--text-muted); font-weight: 400; }
+.fp-head { border-top: 0; background: var(--surface-inset); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }

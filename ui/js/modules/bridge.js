@@ -16,7 +16,8 @@ const LONG_RUNNING_METHODS = new Set([
   'browse_directory',
   'install_or_update_tool',
   'install_tool',
-  'execute_tool'
+  'execute_tool',
+  'get_thumbnails'
 ]);
 
 const DEFAULT_TIMEOUT_MS = 5000;

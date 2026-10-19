@@ -26,6 +26,7 @@ from src.core.announcements import announcement_service
 from src.core.tool_store import tool_store_service
 from src.core.ui_dispatcher import ui_dispatcher
 from src.core.output_stats import with_file_sizes
+from src.core.thumbnails import make_thumbnails
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -283,6 +284,10 @@ class DesktopBridge:
             }
         except Exception as ex:
             return {"success": False, "error": str(ex)}
+
+    def get_thumbnails(self, file_paths: List[str]) -> List[Dict[str, Any]]:
+        """Tiny preview data URLs for the image grid (the WebView cannot read local files)."""
+        return make_thumbnails(file_paths)
 
     def inspect_pdf(self, file_paths: List[str]) -> List[Dict[str, Any]]:
         """Inspects PDF files to get page count, size, and password lock status via bundled pdf_engine."""

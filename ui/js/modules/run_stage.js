@@ -51,6 +51,7 @@
   let stackTimer = null;
   let startedAt = 0;
   let inputFiles = [];
+  let failedFiles = [];
 
   const $ = (sel) => (root ? root.querySelector(sel) : null);
   const fileNameOf = (path) => String(path || '').split(/[\\/]/).pop();
@@ -69,6 +70,7 @@
         <p class="th-sub"><span class="th-pct rs-mono"></span><span class="th-elapsed">0:00</span></p>
       </div>
       <div class="th-stats"></div>
+      <div class="th-failed"></div>
       <div class="th-actions"></div>
       <details class="th-log"><summary>Details</summary><div id="studio-log-box" class="th-log-box rs-mono"></div></details>
     `;
@@ -152,13 +154,6 @@
     el.classList.add('th-swap');
   }
 
-  function cleanStatus(raw) {
-    const text = String(raw || '').trim();
-    // qpdf echoes temp paths ("qpdf: C:\...\temp.pdf: write progress: 51%"); users don't need those.
-    if (/^qpdf:/i.test(text)) return 'Writing your file…';
-    return text.length > 80 ? `${text.slice(0, 77)}…` : text;
-  }
-
   function mount(container, id, startButton = null, stateListener = null) {
     stopTimers();
     onStateChange = stateListener || (() => {});
@@ -183,6 +178,7 @@
     $('.th-log-box').replaceChildren();
     $('.th-results').replaceChildren();
     $('.th-stats').replaceChildren();
+    $('.th-failed').replaceChildren();
     $('.th-fx').innerHTML = FX_BY_MODE[mode] || '';
     inputFiles = files.slice();
     renderActions([{ action: 'cancel-tool', label: 'Cancel', tone: 'quiet' }]);
@@ -206,14 +202,14 @@
       targetPercent = Math.max(targetPercent, Math.min(100, percent));
       if (!tweenFrame) tweenFrame = requestAnimationFrame(renderPercent);
     }
-    if (status && !/^(complete|initializing engine)/i.test(status)) setTitle(cleanStatus(status));
+    if (status && !/^(complete|initializing engine)/i.test(status)) setTitle(RunStats.cleanStatus(status));
   }
 
   function log(message) {
     const box = $('.th-log-box');
     if (!box) return;
     const line = document.createElement('div');
-    line.textContent = message;
+    line.textContent = RunStats.brand(message);
     box.appendChild(line);
     box.scrollTop = box.scrollHeight;
   }
@@ -247,27 +243,16 @@
     renderActions([{ action: 'cancel-tool', label: 'Cancel', tone: 'quiet' }]);
   }
 
-  window.RunStage = { mount, start, progress, log, complete, fail, reset, stopping, confirmLeave, keepRunning };
+  window.RunStage = {
+    mount, start, progress, log, complete, fail, reset, stopping, confirmLeave, keepRunning,
+    failedFiles: () => failedFiles.slice()
+  };
 
   // ── Endings ────────────────────────────────────────────────────────────────
   function renderActions(buttons) {
     $('.th-actions').innerHTML = buttons.map(({ action, label, tone }) => `
       <button type="button" data-action="${action}" data-tool-id="${escapeAttr(toolId)}"
         class="th-btn th-btn-${tone}">${label}</button>`).join('');
-  }
-
-  function renderStats(items) {
-    $('.th-stats').replaceChildren(...items.map(([label, value], index) => {
-      const cell = document.createElement('div');
-      cell.className = 'th-stat';
-      cell.style.animationDelay = `${380 + index * 70}ms`;
-      const strong = document.createElement('strong');
-      strong.textContent = value;
-      const caption = document.createElement('span');
-      caption.textContent = label;
-      cell.append(strong, caption);
-      return cell;
-    }));
   }
 
   function landResults(files) {
@@ -292,11 +277,20 @@
     landResults(files);
     const folder = folderNameOf(files[0]);
     $('.th-pct').textContent = '';
-    setTitle(files.length > 1 ? `${files.length} files ready` : 'Your file is ready');
-    $('.th-elapsed').textContent = files.length > 1
-      ? `Saved in ${folder || 'your output folder'}`
-      : `${fileNameOf(files[0])}${folder ? ` · in ${folder}` : ''}`;
-    renderStats(RunStats.build({ stats, outputs: files, inputs: inputFiles, mode, elapsedMs }));
+    failedFiles = (stats && Array.isArray(stats.failed) ? stats.failed : []).map(item => item.file);
+    const total = files.length + failedFiles.length;
+    if (failedFiles.length) {
+      // A batch never hides one failure behind a "success" headline.
+      setTitle(`${files.length} of ${total} done`);
+      $('.th-elapsed').textContent = `${failedFiles.length} could not be processed. The rest are saved${folder ? ` in ${folder}` : ''}.`;
+      $('.th-failed').replaceChildren(...RunStats.failedRows(stats.failed));
+    } else {
+      setTitle(files.length > 1 ? `${files.length} files ready` : 'Your file is ready');
+      $('.th-elapsed').textContent = files.length > 1
+        ? `Saved in ${folder || 'your output folder'}`
+        : `${fileNameOf(files[0])}${folder ? ` · in ${folder}` : ''}`;
+    }
+    $('.th-stats').replaceChildren(...RunStats.statCells(RunStats.build({ stats, outputs: files, inputs: inputFiles, mode, elapsedMs })));
     const note = files.length === 1 ? RunStats.renameNote(requestedName, files[0]) : '';
     if (note) {
       const chip = document.createElement('div');
@@ -304,7 +298,10 @@
       chip.textContent = note;
       $('.th-stats').prepend(chip);
     }
-    renderActions([
+    renderActions(failedFiles.length ? [
+      { action: 'reveal-output-folder', label: 'Show in folder', tone: 'primary' },
+      { action: 'retry-failed', label: failedFiles.length > 1 ? 'Try the failed ones again' : 'Try the failed one again', tone: 'quiet' }
+    ] : [
       { action: 'open-output-file', label: files.length > 1 ? 'Open first file' : 'Open file', tone: 'primary' },
       { action: 'reveal-output-folder', label: 'Show in folder', tone: 'quiet' },
       { action: 'run-stage-reset', label: 'Start over', tone: 'quiet' }
@@ -313,7 +310,7 @@
 
   function fail(message) {
     if (!root) return;
-    const text = String(message || '').replace(/^error:\s*/i, '').trim();
+    const text = RunStats.brand(message).replace(/^error:\s*/i, '').trim();
     const cancelled = /cancel/i.test(text);
     finish(cancelled ? 'stopped' : 'failed');
     $('.th-pct').textContent = '';

@@ -2,3 +2,7 @@
 # Strict Offline Native Desktop Shell
 pywebview>=5.0.0
 PyNaCl>=1.6.0
+# Fixed library set for Python tool engines (bundled into the shell; no AGPL allowed)
+Pillow>=12.3.0
+pikepdf>=10.17.0
+pypdfium2>=5.14.0

@@ -1357,6 +1357,7 @@ function renderToolStudio(container, toolId) {
               </div>
             </div>
             <div id="studio-files-list" class="space-y-1.5 max-h-72 overflow-y-auto pr-1"></div>
+            <div id="studio-preview" class="fp-preview"></div>
           </div>
         </div>
 
@@ -1371,7 +1372,7 @@ function renderToolStudio(container, toolId) {
 
             <!-- Output Settings: Filename & Destination -->
             <div class="pt-3 border-t border-[var(--border-subtle)] space-y-2.5">
-              <div>
+              <div ${ToolUX.get(tool.id).namesOutput === false ? 'hidden' : ''}>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Output File Name</span>
                   <span class="text-[10px] text-[var(--text-muted)] font-mono">${['pdf_studio', 'pdf_merge', 'pdf_split', 'pdf_compress'].includes(tool.id) ? '.pdf' : ''}</span>
@@ -1427,13 +1428,13 @@ function renderToolStudio(container, toolId) {
 
 function getDefaultOptionsForTool(toolId) {
   if (toolId === 'pdf_merge') return { mode: 'merge' };
-  if (toolId === 'pdf_split') return { mode: 'split', split_mode: 'ranges', ranges: '1-', every_n: 1 };
-  if (toolId === 'pdf_compress') return { preset: '150 DPI (Balanced)' };
+  if (toolId === 'pdf_split') return { mode: 'split', split_mode: 'each_page', ranges: '1-3', every_n: 2 };
+  if (toolId === 'pdf_compress') return { preset: 'balanced', target_kb: 0 };
   if (toolId === 'pdf_studio') return { mode: 'merge', split_mode: 'ranges', ranges: '1-', every_n: 1 };
   if (toolId === 'media_audio_extractor') return { format: 'MP3 (320 kbps Studio Quality)' };
   if (toolId === 'video_compressor') return { mode: 'Balanced', target_mb: 50 };
   if (toolId === 'pdf_converter') return { mode: 'PDF to Images (PNG)' };
-  if (toolId === 'image_webp_compress') return { quality: 80, smart_mode: true, max_dim: '1920px (Full HD)' };
+  if (toolId === 'image_webp_compress') return { preset: 'balanced', target_kb: 0 };
   if (toolId === 'system_batch_rename') return { rule: 'Add Suffix', text1: '_v1', text2: '', op_mode: 'Save to Destination' };
   if (toolId === 'subtitle_animator') return {
     style: 'white_box',
@@ -1484,28 +1485,22 @@ function renderToolSpecificOptions(toolId) {
   }
 
   if (toolId === 'pdf_split') {
-    const splitMode = state.activeToolOptions.split_mode || 'ranges';
+    const splitMode = state.activeToolOptions.split_mode || 'each_page';
     const ranges = state.activeToolOptions.ranges || '1-';
     const everyN = state.activeToolOptions.every_n || 1;
 
     return `
       <div class="space-y-2.5">
-        <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Split Method</span>
-        <div class="grid grid-cols-3 gap-1.5">
-          ${[
-            { id: 'ranges', label: 'Page Ranges' },
-            { id: 'each_page', label: 'Single Pages' },
-            { id: 'every_n', label: 'Every N Pages' }
-          ].map(sm => `
-            <button 
-              type="button" 
-              data-action="set-pdf-split-mode" data-split-mode="${escapeAttr(sm.id)}"
-              class="py-1.5 px-1 rounded-md border text-center text-[11px] transition-all cursor-pointer ${splitMode === sm.id ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-bold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}"
-            >
-              ${sm.label}
-            </button>
-          `).join('')}
-        </div>
+        ${OptionsUI.segmented({
+          key: 'split_mode',
+          label: 'Split method',
+          current: splitMode,
+          options: [
+            { value: 'each_page', label: 'Every page' },
+            { value: 'every_n', label: 'Every N pages' },
+            { value: 'ranges', label: 'Page ranges' }
+          ]
+        })}
 
         ${splitMode === 'ranges' ? `
           <div class="space-y-1">
@@ -1676,27 +1671,7 @@ function renderToolSpecificOptions(toolId) {
       </div>
     `;
   } else if (toolId === 'pdf_compress') {
-    const preset = state.activeToolOptions.preset || '150 DPI (Balanced)';
-    return `
-      <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Compression Preset</span>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-        ${[
-          { id: '150 DPI (Balanced)', title: '150 DPI (Balanced)', desc: 'Recommended for ebooks, web & sharing' },
-          { id: '72 DPI (Max Crush)', title: '72 DPI (Max Crush)', desc: 'Clears <200 KB university & portal limits' },
-          { id: '200 DPI (High Quality)', title: '200 DPI (High Quality)', desc: 'Crisp images suited for office printing' },
-          { id: 'Lossless (Deflate Only)', title: 'Lossless Deflate', desc: 'Cleans metadata & optimizes streams' }
-        ].map(p => `
-          <button 
-            type="button"
-            data-action="set-pdf-compress-preset" data-preset="${escapeAttr(p.id)}"
-            class="p-2.5 rounded-lg border text-left text-xs transition-all cursor-pointer ${preset === p.id ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
-          >
-            <div class="font-bold">${p.title}</div>
-            <div class="text-[10px] text-[var(--text-secondary)] mt-0.5 font-normal">${p.desc}</div>
-          </button>
-        `).join('')}
-      </div>
-    `;
+    return OptionsUI.compressGoal(state.activeToolOptions, 'pdf');
   } else if (toolId === 'pdf_converter') {
     return `
       <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Conversion Target</span>
@@ -1713,32 +1688,7 @@ function renderToolSpecificOptions(toolId) {
       })}
     `;
   } else if (toolId === 'image_webp_compress') {
-    const qual = state.activeToolOptions.quality !== undefined ? state.activeToolOptions.quality : 80;
-    return `
-      <div class="space-y-3">
-        <div>
-          <div class="flex items-center justify-between text-xs mb-1.5">
-            <span class="font-semibold text-[var(--text-muted)] uppercase tracking-wider">Quality</span>
-            <span id="qual-val-lbl" class="font-bold text-[var(--brand-primary)]">${qual}%</span>
-          </div>
-          <input type="range" min="40" max="100" value="${qual}" data-action="webp-qual-input" class="w-full accent-[var(--brand-primary)]" />
-        </div>
-        <div>
-          <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Max Dimension Limit</span>
-          ${renderCustomDropdown({
-            id: 'dropdown-webp-dim',
-            currentValue: state.activeToolOptions.max_dim || '1920px (Full HD)',
-            options: [
-              { value: '1920px (Full HD)', label: '1920px (Full HD)' },
-              { value: '2560px (2K)', label: '2560px (2K)' },
-              { value: 'Original (No Downscale)', label: 'Original (No Downscale)' },
-              { value: '1280px (Web Compact)', label: '1280px (Web Compact)' }
-            ],
-            onSelect: 'handleSelectWebpDim'
-          })}
-        </div>
-      </div>
-    `;
+    return OptionsUI.compressGoal(state.activeToolOptions, 'image');
   } else if (toolId === 'system_batch_rename') {
     return `
       <div class="space-y-3">
@@ -1770,10 +1720,7 @@ function renderToolSpecificOptions(toolId) {
             onSelect: 'handleSelectRenameRule'
           })}
         </div>
-        <div>
-          <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Text / Tag</span>
-          <input type="text" value="${state.activeToolOptions.text1 || '_v1'}" data-action="renamer-text-input" class="w-full mt-1.5 px-3 py-2 text-xs rounded-lg bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)]" />
-        </div>
+        ${renderRenameTextInputs(state.activeToolOptions)}
       </div>
     `;
   } else if (toolId === 'subtitle_animator') {
@@ -2035,16 +1982,28 @@ window.handleSelectPdfMode = function(val) {
   if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
 };
 
-window.handleSelectWebpDim = function(val) {
-  state.activeToolOptions.max_dim = val;
-  const optBox = document.getElementById('studio-options-box');
-  if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
-};
+function renderRenameTextInputs(options) {
+  const rule = options.rule || 'Add Suffix';
+  const field = (label, action, value, placeholder) => `
+    <label class="opt-field">
+      <span class="opt-label">${label}</span>
+      <input type="text" value="${escapeAttr(value)}" placeholder="${escapeAttr(placeholder)}" data-action="${action}" />
+    </label>`;
+  if (rule.includes('Find & Replace')) {
+    return field('Find', 'renamer-text-input', options.text1 || '', 'IMG_')
+      + field('Replace with', 'renamer-text2-input', options.text2 || '', 'Trip_');
+  }
+  if (rule.includes('Prefix') || rule.includes('Suffix')) {
+    return field(rule.includes('Prefix') ? 'Text to add at the start' : 'Text to add at the end', 'renamer-text-input', options.text1 ?? '_v1', '_v1');
+  }
+  return '';
+}
 
 window.handleSelectRenameRule = function(val) {
   state.activeToolOptions.rule = val;
   const optBox = document.getElementById('studio-options-box');
   if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
+  refreshStudioPreview();
 };
 
 window.handleSelectRenameOpMode = function(val) {
@@ -2124,6 +2083,21 @@ function formatBytes(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+// Tools whose files are photos: shown as a thumbnail grid, since order does not matter.
+const GRID_TOOLS = new Set(['image_webp_compress']);
+let imageFilesMeta = {};
+const thumbnailsInFlight = new Set();
+
+async function loadImageThumbnails(files) {
+  const missing = files.filter(f => !imageFilesMeta[f] && !thumbnailsInFlight.has(f));
+  if (!missing.length) return;
+  missing.forEach(f => thumbnailsInFlight.add(f));
+  const results = await callBridge('get_thumbnails', missing);
+  missing.forEach(f => thumbnailsInFlight.delete(f));
+  (results || []).forEach(item => { imageFilesMeta[item.file] = item; });
+  if (results && results.length) updateStudioFilesUI();
+}
+
 function updateStudioFilesUI() {
   const wrap = document.getElementById('studio-files-wrap');
   const countLbl = document.getElementById('studio-files-count');
@@ -2177,7 +2151,9 @@ function updateStudioFilesUI() {
 
   if (!list) return;
   const reorderable = ['pdf_studio', 'pdf_merge'].includes(state.activeToolId) && state.selectedFiles.length > 1;
-  FileTray.render(list, state.selectedFiles, { meta: pdfFilesMeta, reorderable });
+  const layout = GRID_TOOLS.has(state.activeToolId) ? 'grid' : 'list';
+  FileTray.render(list, state.selectedFiles, { meta: { ...pdfFilesMeta, ...imageFilesMeta }, reorderable, layout });
+  if (layout === 'grid') loadImageThumbnails(state.selectedFiles);
   FileTray.bindReorder(list, (fromIndex, toIndex) => {
     const [moved] = state.selectedFiles.splice(fromIndex, 1);
     state.selectedFiles.splice(toIndex, 0, moved);
@@ -2391,9 +2367,16 @@ function syncStudioPanelToRun(runState) {
 }
 
 function syncStudioPanelToFiles() {
-  StudioPanel.refreshStart(state.selectedFiles.length);
+  refreshStudioPreview();
   const stageBusy = document.getElementById('studio-stage-left')?.classList.contains('th-on');
   if (!stageBusy) StudioPanel.setPhase(state.selectedFiles.length ? 'ready' : 'empty');
+}
+
+// Re-run after any setting that changes the outcome (split ranges, rename rule).
+function refreshStudioPreview() {
+  const preview = document.getElementById('studio-preview');
+  const label = FilePreviews.render(preview, state.activeToolId, state.selectedFiles, state.activeToolOptions, pdfFilesMeta);
+  StudioPanel.refreshStart(state.selectedFiles.length, label);
 }
 
 // "Next steps" hand the file just made to another tool, already loaded.
@@ -3401,6 +3384,16 @@ async function initApp() {
         navigateBack();
         break;
 
+      case 'retry-failed': {
+        // Load only the files that failed, so the user can fix or remove them and run again.
+        const failed = RunStage.failedFiles();
+        RunStage.reset();
+        state.selectedFiles = failed;
+        updateStudioFilesUI();
+        if (failed.length && failed.every(f => f.toLowerCase().endsWith('.pdf'))) inspectSelectedPdfFiles(failed);
+        break;
+      }
+
       case 'run-stage-keep':
         RunStage.keepRunning();
         break;
@@ -3510,16 +3503,18 @@ async function initApp() {
           state.activeToolOptions.split_mode = sm;
           const optBox = document.getElementById('studio-options-box');
           if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
+          refreshStudioPreview();
         }
         break;
       }
 
-      case 'set-pdf-compress-preset': {
-        const preset = el.dataset.preset;
-        if (preset) {
-          state.activeToolOptions.preset = preset;
+      case 'set-tool-option': {
+        const { key, value } = el.dataset;
+        if (key) {
+          state.activeToolOptions[key] = OptionsUI.parseValue(key, value);
           const optBox = document.getElementById('studio-options-box');
           if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
+          refreshStudioPreview();
         }
         break;
       }
@@ -3724,24 +3719,26 @@ async function initApp() {
         state.activeToolOptions.output_filename = el.value.trim();
         break;
 
-      case 'webp-qual-input': {
-        const lbl = document.getElementById('qual-val-lbl');
-        if (lbl) lbl.innerText = el.value + '%';
-        state.activeToolOptions.quality = el.value;
-        break;
-      }
 
       case 'renamer-text-input':
         state.activeToolOptions.text1 = el.value;
+        refreshStudioPreview();
+        break;
+
+      case 'renamer-text2-input':
+        state.activeToolOptions.text2 = el.value;
+        refreshStudioPreview();
         break;
 
       case 'pdf-ranges-input':
         state.activeToolOptions.ranges = el.value;
+        refreshStudioPreview();
         break;
 
       case 'pdf-every-n-input': {
         const val = parseInt(el.value, 10);
         state.activeToolOptions.every_n = isNaN(val) || val < 1 ? 1 : val;
+        refreshStudioPreview();
         break;
       }
 

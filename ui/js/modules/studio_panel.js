@@ -44,12 +44,13 @@
     if (column) column.dataset.phase = phase;
   }
 
-  function refreshStart(fileCount) {
+  // overrideLabel: a preview may know the real outcome ("Split into 3 files").
+  function refreshStart(fileCount, overrideLabel = '') {
     const button = document.getElementById('studio-btn-execute');
     const label = document.getElementById('studio-btn-exec-label');
     const reason = document.getElementById('studio-start-reason');
     const blocked = ToolUX.blockedReason(toolId, fileCount);
-    if (label) label.textContent = ToolUX.startLabel(toolId, fileCount);
+    if (label) label.textContent = overrideLabel || ToolUX.startLabel(toolId, fileCount);
     if (button) {
       button.disabled = Boolean(blocked);
       button.classList.toggle('sp-blocked', Boolean(blocked));
