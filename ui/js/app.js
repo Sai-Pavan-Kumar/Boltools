@@ -1341,6 +1341,8 @@ function renderToolStudio(container, toolId) {
               Drop ${['pdf_studio', 'pdf_merge', 'pdf_split'].includes(tool.id) ? 'PDF' : ''} files here
             </h4>
             <p class="text-[11px] text-[var(--text-secondary)] mt-0.5">or click to <span class="text-[var(--brand-primary)] font-medium">browse</span></p>
+            <span class="ft-limits">${escapeHtml(ToolUX.get(tool.id).limits)}</span>
+            <span class="ft-before">${escapeHtml(ToolUX.get(tool.id).before)} · Ctrl+O</span>
           </div>
 
           <!-- Selected Files List Card -->
@@ -1359,9 +1361,9 @@ function renderToolStudio(container, toolId) {
         </div>
 
         <!-- Right Pane: Mode Options, Settings & Execution CTA (5 Cols) -->
-        <div class="lg:col-span-5 space-y-3 flex flex-col">
+        <div id="studio-right" class="lg:col-span-5 space-y-3 flex flex-col">
           <!-- Unified Studio Inspector Card -->
-          <div class="p-3.5 rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-3.5">
+          <div id="studio-inspector" class="p-3.5 rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-3.5">
             <!-- Tool Specific Mode Options -->
             <div id="studio-options-box" class="space-y-3">
               ${renderToolSpecificOptions(tool.id)}
@@ -1404,6 +1406,7 @@ function renderToolStudio(container, toolId) {
               <span id="studio-btn-exec-label">${tool.id === 'pdf_merge' ? 'Merge Documents' : (tool.id === 'pdf_split' ? 'Split Document' : (tool.id === 'pdf_compress' ? 'Compress PDF' : (tool.id === 'pdf_studio' ? ((state.activeToolOptions.mode || 'merge') === 'merge' ? 'Merge Documents' : 'Split Document') : 'Start Processing')))}</span>
               ${getIcon('arrow-right', 'w-3.5 h-3.5')}
             </button>
+            <p id="studio-start-reason"></p>
 
           </div>
         </div>
@@ -1411,7 +1414,9 @@ function renderToolStudio(container, toolId) {
     </div>
   `;
 
-  RunStage.mount(document.getElementById('studio-stage-left'), tool.id, document.getElementById('studio-btn-execute'));
+  StudioPanel.mount(document.getElementById('studio-right'), tool.id);
+  StudioPanel.refreshStart(0);
+  RunStage.mount(document.getElementById('studio-stage-left'), tool.id, document.getElementById('studio-btn-execute'), syncStudioPanelToRun);
 
   if (tool.id === 'subtitle_animator') {
     setTimeout(() => {
@@ -2146,6 +2151,8 @@ function updateStudioFilesUI() {
     summarySize.innerText = formatBytes(totalBytes);
   }
 
+  syncStudioPanelToFiles();
+
   if (state.selectedFiles.length === 0) {
     if (wrap) wrap.classList.add('hidden');
     if (dropzone) dropzone.classList.remove('ft-compact');
@@ -2371,8 +2378,50 @@ window.onToolComplete = function(data) {
     btnExec.classList.remove('opacity-50');
   }
 
-  RunStage.complete({ outputs: data.outputs || data.output_file, stats });
+  const outputs = [].concat(data.outputs || data.output_file || []).filter(Boolean);
+  RunStage.complete({ outputs, stats, requestedName: state.activeToolOptions.custom_filename });
+  StudioPanel.showNext(outputs, toolId => state.tools.some(t => t.id === toolId), openToolWithFiles);
 };
+
+// The right column follows the run: locked while working, editable again after a stop or error.
+function syncStudioPanelToRun(runState) {
+  if (runState === 'running') StudioPanel.setPhase('running');
+  else if (runState === 'failed' || runState === 'stopped') StudioPanel.setPhase('ready');
+  else if (runState === 'idle') StudioPanel.setPhase(state.selectedFiles.length ? 'ready' : 'empty');
+}
+
+function syncStudioPanelToFiles() {
+  StudioPanel.refreshStart(state.selectedFiles.length);
+  const stageBusy = document.getElementById('studio-stage-left')?.classList.contains('th-on');
+  if (!stageBusy) StudioPanel.setPhase(state.selectedFiles.length ? 'ready' : 'empty');
+}
+
+// "Next steps" hand the file just made to another tool, already loaded.
+function openToolWithFiles(toolId, files) {
+  navigateTo('tool_studio', toolId);
+  state.selectedFiles = files.slice();
+  updateStudioFilesUI();
+  if (files.every(f => f.toLowerCase().endsWith('.pdf'))) inspectSelectedPdfFiles(files);
+}
+
+function handleStudioShortcut(e) {
+  if (state.currentView !== 'tool_studio') return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o' && !state.isToolRunning) {
+    e.preventDefault();
+    handleStudioBrowseFiles(state.activeToolId, state.selectedFiles.length > 0);
+    return;
+  }
+  if (e.key === 'Escape' && state.isToolRunning) {
+    handleCancelTool();
+    return;
+  }
+  const typing = e.target.closest && e.target.closest('input, textarea, select, button, a, [contenteditable="true"]');
+  const startButton = document.getElementById('studio-btn-execute');
+  if (e.key === 'Enter' && !typing && startButton && !startButton.hidden && !startButton.disabled && state.selectedFiles.length) {
+    e.preventDefault();
+    startButton.click();
+  }
+}
 
 window.onToolError = function(errMsg) {
   state.isToolRunning = false;
@@ -3348,7 +3397,16 @@ async function initApp() {
         break;
 
       case 'navigate-back':
+        if (state.isToolRunning && RunStage.confirmLeave()) break;
         navigateBack();
+        break;
+
+      case 'run-stage-keep':
+        RunStage.keepRunning();
+        break;
+
+      case 'run-stage-stop-back':
+        handleCancelTool().then(navigateBack);
         break;
 
       case 'studio-toggle-fav': {
@@ -3736,6 +3794,7 @@ async function initApp() {
       e.preventDefault();
       openCommandPalette();
     }
+    handleStudioShortcut(e);
     if (e.key === 'Escape') {
       closeCommandPalette();
       closeUninstallModal();

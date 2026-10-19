@@ -141,6 +141,7 @@
 
 .th-stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .th-stats:empty { display: none; }
+.th-note { flex-basis: 100%; text-align: center; margin-bottom: 4px; padding: 6px 12px; border-radius: var(--radius-card); background: var(--brand-light); color: var(--brand-primary); font-size: 12px; font-weight: 600; animation: th-rise 420ms var(--th-ease) 300ms both; }
 .th-stat { display: grid; gap: 2px; min-width: 76px; padding: 8px 12px; text-align: center; border-radius: var(--radius-card); background: var(--surface-inset); animation: th-rise 420ms var(--th-ease) both; }
 .th-stat strong { font-size: 14px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 .th-stat span { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }

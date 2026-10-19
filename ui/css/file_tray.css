@@ -119,3 +119,9 @@
 @media (prefers-reduced-motion: reduce) {
   .ft-row, #studio-dropzone, #studio-dropzone > div:first-child { animation: none !important; transition: none !important; }
 }
+
+/* Empty drop area says what fits and what the tool does, so nobody guesses. */
+#studio-dropzone .ft-limits { margin-top: 8px; padding: 4px 12px; border-radius: var(--radius-pill); background: var(--surface-inset); font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+#studio-dropzone .ft-before { font-size: 12px; color: var(--text-muted); }
+#studio-dropzone.ft-compact .ft-limits,
+#studio-dropzone.ft-compact .ft-before { display: none; }

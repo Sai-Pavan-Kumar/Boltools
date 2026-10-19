@@ -40,6 +40,8 @@
   let root = null;
   let pane = null;
   let primaryButton = null;
+  let onStateChange = () => {};
+  let runningTitle = '';
   let toolId = '';
   let mode = 'transform';
   let shownPercent = 0;
@@ -77,6 +79,7 @@
     root.dataset.state = state;
     if (pane) pane.classList.toggle('th-on', state !== 'idle');
     if (primaryButton) primaryButton.hidden = state !== 'idle';
+    onStateChange(state);
   }
 
   function stopTimers() {
@@ -131,12 +134,6 @@
     return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
   }
 
-  function formatDuration(ms) {
-    if (ms < 1000) return `${Math.max(1, Math.round(ms))} ms`;
-    if (ms < 60000) return `${(ms / 1000).toFixed(1)} s`;
-    return formatElapsed(ms);
-  }
-
   // Eases toward the engine's number so bursty updates still read as one smooth climb.
   function renderPercent() {
     const delta = targetPercent - shownPercent;
@@ -162,8 +159,9 @@
     return text.length > 80 ? `${text.slice(0, 77)}…` : text;
   }
 
-  function mount(container, id, startButton = null) {
+  function mount(container, id, startButton = null, stateListener = null) {
     stopTimers();
+    onStateChange = stateListener || (() => {});
     pane = container;
     primaryButton = startButton;
     toolId = id;
@@ -190,7 +188,8 @@
     renderActions([{ action: 'cancel-tool', label: 'Cancel', tone: 'quiet' }]);
     buildCards(files);
     const count = files.length;
-    setTitle(`${VERB_BY_MODE[mode]} ${count > 1 ? `${count} files` : fileNameOf(files[0])}…`);
+    runningTitle = `${VERB_BY_MODE[mode]} ${count > 1 ? `${count} files` : fileNameOf(files[0])}…`;
+    setTitle(runningTitle);
     startedAt = performance.now();
     elapsedTimer = setInterval(() => {
       const el = $('.th-elapsed');
@@ -231,41 +230,30 @@
     }
   }
 
-  window.RunStage = { mount, start, progress, log, complete, fail, reset, stopping };
+  // Back pressed mid-run: never throw work away silently, ask first.
+  function confirmLeave() {
+    if (!root || root.dataset.state !== 'running') return false;
+    setTitle(`Stop ${VERB_BY_MODE[mode].toLowerCase().replace(/ from$/, '')} and go back?`);
+    renderActions([
+      { action: 'run-stage-keep', label: 'Keep working', tone: 'quiet' },
+      { action: 'run-stage-stop-back', label: 'Stop and go back', tone: 'primary' }
+    ]);
+    return true;
+  }
+
+  function keepRunning() {
+    if (!root || root.dataset.state !== 'running') return;
+    setTitle(runningTitle);
+    renderActions([{ action: 'cancel-tool', label: 'Cancel', tone: 'quiet' }]);
+  }
+
+  window.RunStage = { mount, start, progress, log, complete, fail, reset, stopping, confirmLeave, keepRunning };
 
   // ── Endings ────────────────────────────────────────────────────────────────
   function renderActions(buttons) {
     $('.th-actions').innerHTML = buttons.map(({ action, label, tone }) => `
       <button type="button" data-action="${action}" data-tool-id="${escapeAttr(toolId)}"
         class="th-btn th-btn-${tone}">${label}</button>`).join('');
-  }
-
-  const extOf = (path) => (fileNameOf(path).split('.').pop() || '').toUpperCase();
-
-  function formatChange(outputs) {
-    const from = extOf(inputFiles[0]);
-    const to = extOf(outputs[0]);
-    return from && to && from !== to ? `${from} → ${to}` : '';
-  }
-
-  // Numbers come from the engine or from the files on disk (bridge output_stats); never guessed.
-  function buildStats(stats, outputs, elapsedMs) {
-    const s = stats || {};
-    const items = [];
-    const before = s.orig_size || s.input_bytes;
-    const after = s.new_size || s.output_bytes || s.total_bytes;
-    const showsChange = before && after && mode === 'compress';
-    if (after) items.push([showsChange ? 'Size' : 'Output', showsChange ? `${formatBytes(before)} → ${formatBytes(after)}` : formatBytes(after)]);
-    if (mode === 'compress' && before && after) {
-      items.push(['Saved', after < before ? `${Math.round((1 - after / before) * 100)}%` : 'Already small']);
-    }
-    const format = formatChange(outputs);
-    if (format) items.push(['Format', format]);
-    const pages = s.total_pages ?? s.output_pages;
-    if (pages) items.push(['Pages', String(pages)]);
-    if (outputs.length > 1) items.push(['Files', String(outputs.length)]);
-    items.push(['Time', formatDuration(s.total_time_ms !== undefined ? s.total_time_ms : elapsedMs)]);
-    return items;
   }
 
   function renderStats(items) {
@@ -296,7 +284,7 @@
     setState(state);
   }
 
-  function complete({ outputs, stats }) {
+  function complete({ outputs, stats, requestedName }) {
     if (!root) return;
     const elapsedMs = performance.now() - startedAt;
     finish('done');
@@ -308,7 +296,14 @@
     $('.th-elapsed').textContent = files.length > 1
       ? `Saved in ${folder || 'your output folder'}`
       : `${fileNameOf(files[0])}${folder ? ` · in ${folder}` : ''}`;
-    renderStats(buildStats(stats, files, elapsedMs));
+    renderStats(RunStats.build({ stats, outputs: files, inputs: inputFiles, mode, elapsedMs }));
+    const note = files.length === 1 ? RunStats.renameNote(requestedName, files[0]) : '';
+    if (note) {
+      const chip = document.createElement('div');
+      chip.className = 'th-note';
+      chip.textContent = note;
+      $('.th-stats').prepend(chip);
+    }
     renderActions([
       { action: 'open-output-file', label: files.length > 1 ? 'Open first file' : 'Open file', tone: 'primary' },
       { action: 'reveal-output-folder', label: 'Show in folder', tone: 'quiet' },
