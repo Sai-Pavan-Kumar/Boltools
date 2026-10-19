@@ -154,8 +154,8 @@ class Bridge {
           ok: true,
           data: {
             categories: [
+              { id: "pdf", name: "PDF Studio", desc: "Offline document merging, splitting, compression, and conversion", icon: "file-text", accent: "#DC2626" },
               { id: "video", name: "Media & Video", desc: "Fast offline video compression and extraction", icon: "video", accent: "#2563EB" },
-              { id: "pdf", name: "PDF Studio", desc: "Offline conversion, splitting, and merging", icon: "file-text", accent: "#DC2626" },
               { id: "image", name: "Image Studio", desc: "Batch WebP compression and format conversion", icon: "image", accent: "#059669" },
               { id: "system", name: "System & Files", desc: "Power file renaming and organization", icon: "sliders", accent: "#475569" }
             ],
@@ -169,7 +169,129 @@ class Bridge {
           error: null
         };
       case 'get_catalog_summary':
-        return { ok: true, data: [], error: null };
+        return {
+          ok: true,
+          data: [
+            {
+              id: "media_audio_extractor",
+              name: "Audio Extractor",
+              category_id: "video",
+              category_name: "Media & Video",
+              description: "Extract clean MP3, WAV, AAC, or FLAC audio tracks from video and audio files locally.",
+              icon: "music",
+              status: "installed",
+              version: "1.0.0",
+              remote_version: "1.0.0",
+              size_mb: 2,
+              update_available: false
+            },
+            {
+              id: "video_compressor",
+              name: "Video Compressor",
+              category_id: "video",
+              category_name: "Media & Video",
+              description: "Compress video files with Low, Balanced, and Maximum compression presets.",
+              icon: "video",
+              status: "installed",
+              version: "1.0.0",
+              remote_version: "1.0.0",
+              size_mb: 25,
+              update_available: false
+            },
+            {
+              id: "pdf_merge",
+              name: "Merge PDF",
+              category_id: "pdf",
+              category_name: "PDF Studio",
+              description: "Combine multiple PDF files into a single document in your chosen order.",
+              icon: "merge",
+              status: "installed",
+              version: "0.1.0",
+              remote_version: "0.1.0",
+              size_mb: 4,
+              update_available: false
+            },
+            {
+              id: "pdf_split",
+              name: "Split PDF",
+              category_id: "pdf",
+              category_name: "PDF Studio",
+              description: "Extract page ranges, single pages, or split into separate PDF documents.",
+              icon: "split",
+              status: "installed",
+              version: "0.1.0",
+              remote_version: "0.1.0",
+              size_mb: 4,
+              update_available: false
+            },
+            {
+              id: "pdf_compress",
+              name: "Compress PDF",
+              category_id: "pdf",
+              category_name: "PDF Studio",
+              description: "Reduce PDF file size while preserving high visual and text quality.",
+              icon: "minimize-2",
+              status: "installed",
+              version: "1.0.0",
+              remote_version: "1.0.0",
+              size_mb: 1,
+              update_available: false
+            },
+            {
+              id: "pdf_converter",
+              name: "Convert PDF",
+              category_id: "pdf",
+              category_name: "PDF Studio",
+              description: "Convert PDF pages to high-resolution images or compile photos into a PDF.",
+              icon: "refresh-cw",
+              status: "installed",
+              version: "1.0.0",
+              remote_version: "1.0.0",
+              size_mb: 1,
+              update_available: false
+            },
+            {
+              id: "image_webp_compress",
+              name: "WebP Image Compressor",
+              category_id: "image",
+              category_name: "Image Studio",
+              description: "Bulk compress photos into web-optimized WebP images with custom quality controls.",
+              icon: "image",
+              status: "installed",
+              version: "1.0.0",
+              remote_version: "1.0.0",
+              size_mb: 1,
+              update_available: false
+            },
+            {
+              id: "system_batch_rename",
+              name: "Bulk File Renamer",
+              category_id: "system",
+              category_name: "System & Files",
+              description: "Batch rename files with search & replace, numbering, and extension cleaning.",
+              icon: "sliders",
+              status: "installed",
+              version: "1.0.0",
+              remote_version: "1.0.0",
+              size_mb: 1,
+              update_available: false
+            },
+            {
+              id: "subtitle_animator",
+              name: "Subtitle Animation Maker",
+              category_id: "video",
+              category_name: "Media & Video",
+              description: "Burn viral animated caption styles directly into videos with word-level highlights.",
+              icon: "subtitles",
+              status: "installed",
+              version: "1.0.1",
+              remote_version: "1.0.1",
+              size_mb: 2,
+              update_available: false
+            }
+          ],
+          error: null
+        };
       case 'get_system_stats':
         return { ok: true, data: { cpu: 15, ram: 44, disk: 36 }, error: null };
       case 'get_announcements':
@@ -185,6 +307,7 @@ class Bridge {
       case 'open_file':
       case 'reveal_file':
       case 'open_path':
+      case 'open_url':
         return { ok: true, data: true, error: null };
       case 'read_text_file':
         return { ok: true, data: "", error: null };
@@ -212,6 +335,7 @@ class Bridge {
   async browseFiles(fileTypes) { return await this.call('browse_files', fileTypes); }
   async browseDirectory() { return await this.call('browse_directory'); }
   async openFile(path) { return await this.call('open_file', path); }
+  async openUrl(url) { return await this.call('open_url', url); }
   async revealFile(path) { return await this.call('reveal_file', path); }
   async openPath(path) { return await this.call('open_path', path); }
   async readTextFile(path) { return await this.call('read_text_file', path); }

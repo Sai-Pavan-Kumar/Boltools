@@ -9,6 +9,7 @@ Features:
 
 import os
 import sys
+import time
 
 # Set explicit Windows AppUserModelID so taskbar binds window to Boltools app icon
 if sys.platform == 'win32':

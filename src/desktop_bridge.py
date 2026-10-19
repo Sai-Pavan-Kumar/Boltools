@@ -15,6 +15,7 @@ import shutil
 import re
 import subprocess
 import base64
+import webbrowser
 from typing import Dict, Any, List, Optional
 import webview
 
@@ -55,8 +56,8 @@ class DesktopBridge:
         counts = tool_store_service.get_catalog_counts()
 
         categories = [
+            {"id": "pdf", "name": "PDF Studio", "desc": "Offline document merging, splitting, compression, and conversion", "icon": "file-text", "accent": "#DC2626"},
             {"id": "video", "name": "Media & Video", "desc": "Fast offline video compression, extraction, and formatting", "icon": "video", "accent": "#2563EB"},
-            {"id": "pdf", "name": "PDF Studio", "desc": "Offline conversion, splitting, merging, and document protection", "icon": "file-text", "accent": "#DC2626"},
             {"id": "image", "name": "Image Studio", "desc": "Batch WebP compression, target sizing, and format switching", "icon": "image", "accent": "#059669"},
             {"id": "system", "name": "System & Files", "desc": "Power file renaming, extension repair, and organization", "icon": "sliders", "accent": "#475569"}
         ]
@@ -190,14 +191,34 @@ class DesktopBridge:
             return ""
 
     def open_file(self, target_path: str):
-        """Opens the specified file directly in the OS default application."""
-        if not target_path or not os.path.exists(target_path):
+        """Opens the specified file or URL directly in the OS default application."""
+        if not target_path:
+            return
+        if target_path.startswith("http://") or target_path.startswith("https://"):
+            self.open_url(target_path)
+            return
+        if not os.path.exists(target_path):
             return
         try:
             norm = os.path.normpath(target_path)
             os.startfile(norm)
         except Exception:
             pass
+
+    def open_url(self, url: str):
+        """Opens the specified URL in the user's default web browser."""
+        if not url or not isinstance(url, str):
+            return
+        url_clean = url.strip()
+        if not (url_clean.startswith("http://") or url_clean.startswith("https://")):
+            return
+        try:
+            webbrowser.open(url_clean)
+        except Exception:
+            try:
+                os.startfile(url_clean)
+            except Exception:
+                pass
 
     def reveal_file(self, target_path: str):
         """Opens the exact containing directory in Windows Explorer and selects the file."""
@@ -265,7 +286,8 @@ class DesktopBridge:
             return []
         
         # Locate pdf_engine.exe
-        engine_exe = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "engines", "pdf_studio", "pdf_engine.exe"))
+        target = tool_store_service.get_engine_target("pdf_merge") or tool_store_service.get_engine_target("pdf_studio")
+        engine_exe = target if (target and os.path.exists(target)) else os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "engines", "pdf_studio", "pdf_engine.exe"))
         if not os.path.exists(engine_exe):
             # Fallback using os.path metadata
             results = []

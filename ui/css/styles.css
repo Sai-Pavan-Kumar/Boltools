@@ -1054,3 +1054,30 @@ html.lenis, html.lenis body {
   border-bottom: 2px solid var(--brand-primary) !important;
 }
 
+/* ==========================================================================
+   HOMEPAGE DEDICATED LAYOUT & SPACING CLASSES
+   (Bypasses missing Tailwind 8-step utilities: mt-8, gap-8, space-y-8)
+   ========================================================================== */
+.home-layout-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.home-stage-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+  width: 100%;
+}
+
+.home-tool-card {
+  min-height: 154px;
+}
+
+.home-rail-divider {
+  border-left: 1px solid var(--border-subtle);
+  padding-left: 24px;
+}
+
+

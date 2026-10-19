@@ -10,8 +10,8 @@ def capture():
         context = browser.new_context(viewport={"width": 1280, "height": 840})
         page = context.new_page()
 
-        page.goto(f"file:///{HTML_PATH.replace(os.sep, '/')}")
-        page.wait_for_selector("#main-content", state="attached")
+        page.goto(f"file:///{HTML_PATH.replace(os.sep, '/')}?mock=1")
+        page.wait_for_selector(".home-tool-card", state="attached", timeout=5000)
 
         # Home Light
         page.evaluate("() => applyTheme('light')")

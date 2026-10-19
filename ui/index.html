@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="css/tailwind.min.css">
 
   <!-- Synchronized SurfBoard Design System Tokens & Local @font-face -->
-  <link rel="stylesheet" href="css/styles.css?v=3">
+  <link rel="stylesheet" href="css/styles.css?v=4">
 
   <style>
     /* Custom Scrollbars */
@@ -145,7 +145,7 @@
                 <span class="font-display font-bold text-sm tracking-tight text-[var(--text-primary)]">Boltools</span>
                 <span class="px-1.5 py-0.5 text-[8px] font-semibold rounded-full bg-[var(--surface-pill)] text-[var(--text-muted)]">v1.0</span>
               </div>
-              <p class="text-[10px] text-[var(--text-muted)] tracking-wide">built by <span class="font-bold text-[#005ae0]">The SurfBoard</span></p>
+              <p class="text-[10px] text-[var(--text-muted)] tracking-wide">built by <a href="http://thesurfboard.in" data-action="open-url" data-url="http://thesurfboard.in" target="_blank" rel="noopener noreferrer" class="font-bold text-[#005ae0] hover:underline cursor-pointer" title="Visit The SurfBoard">The SurfBoard</a></p>
             </div>
           </div>
         </div>
@@ -174,6 +174,43 @@
             <span>Settings</span>
           </button>
         </nav>
+
+        <!-- Categories Section -->
+        <div id="sidebar-categories-section" class="pt-3 border-t border-[var(--border-subtle)] space-y-1">
+          <span class="px-2 text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">Categories</span>
+          
+          <button data-action="nav-category" data-cat="pdf" class="sidebar-cat-btn w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer group">
+            <div class="flex items-center gap-2.5">
+              <svg class="w-3.5 h-3.5 text-red-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+              <span>PDF Studio</span>
+            </div>
+            <span id="cat-count-pdf" class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500 font-mono">2</span>
+          </button>
+
+          <button data-action="nav-category" data-cat="video" class="sidebar-cat-btn w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer group">
+            <div class="flex items-center gap-2.5">
+              <svg class="w-3.5 h-3.5 text-blue-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
+              <span>Media & Video</span>
+            </div>
+            <span id="cat-count-video" class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-mono">3</span>
+          </button>
+
+          <button data-action="nav-category" data-cat="image" class="sidebar-cat-btn w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer group">
+            <div class="flex items-center gap-2.5">
+              <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+              <span>Image Studio</span>
+            </div>
+            <span id="cat-count-image" class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-mono">1</span>
+          </button>
+
+          <button data-action="nav-category" data-cat="system" class="sidebar-cat-btn w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer group">
+            <div class="flex items-center gap-2.5">
+              <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/></svg>
+              <span>System & Files</span>
+            </div>
+            <span id="cat-count-system" class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-mono">1</span>
+          </button>
+        </div>
       </div>
 
       <!-- Bottom Hardware Monitor & Privacy Assurance -->
@@ -345,13 +382,13 @@
   </div>
 
   <!-- Modular Core Scripts -->
-  <script src="js/modules/utils.js?v=3"></script>
-  <script src="js/modules/bridge.js?v=3"></script>
-  <script src="js/modules/store.js?v=3"></script>
-  <script src="js/modules/virtual_grid.js?v=3"></script>
-  <script src="js/modules/search_index.js?v=3"></script>
-  <script src="js/modules/perf.js?v=3"></script>
-  <script src="js/icons.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/modules/utils.js?v=7"></script>
+  <script src="js/modules/bridge.js?v=7"></script>
+  <script src="js/modules/store.js?v=7"></script>
+  <script src="js/modules/virtual_grid.js?v=7"></script>
+  <script src="js/modules/search_index.js?v=7"></script>
+  <script src="js/modules/perf.js?v=7"></script>
+  <script src="js/icons.js?v=7"></script>
+  <script src="js/app.js?v=7"></script>
 </body>
 </html>

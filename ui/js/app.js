@@ -5,14 +5,132 @@
 
 // ── Default Fallback Categories & Tools (Immediate 0ms Offline Render) ────────
 const DEFAULT_CATEGORIES = [
+  { id: "pdf", name: "PDF Studio", desc: "Offline document merging, splitting, compression, and conversion", icon: "file-text", accent: "#DC2626" },
   { id: "video", name: "Media & Video", desc: "Fast offline video compression, extraction, and formatting", icon: "video", accent: "#2563EB" },
-  { id: "pdf", name: "PDF Studio", desc: "Offline conversion, splitting, merging, and document protection", icon: "file-text", accent: "#DC2626" },
   { id: "image", name: "Image Studio", desc: "Batch WebP compression, target sizing, and format switching", icon: "image", accent: "#059669" },
   { id: "system", name: "System & Files", desc: "Power file renaming, extension repair, and organization", icon: "sliders", accent: "#475569" }
 ];
 
-// Pure Modular Shell: No tools are pre-bundled. Tools are loaded dynamically from catalog.
-const DEFAULT_TOOLS = [];
+// Offline Default Tools for instantaneous 0ms startup
+const DEFAULT_TOOLS = [
+  {
+    id: "media_audio_extractor",
+    name: "Audio Extractor",
+    category_id: "video",
+    category_name: "Media & Video",
+    description: "Extract clean MP3, WAV, AAC, or FLAC audio tracks from video and audio files locally.",
+    icon: "music",
+    status: "installed",
+    version: "1.0.0",
+    remote_version: "1.0.0",
+    size_mb: 2,
+    update_available: false
+  },
+  {
+    id: "video_compressor",
+    name: "Video Compressor",
+    category_id: "video",
+    category_name: "Media & Video",
+    description: "Compress video files with Low, Balanced, and Maximum compression presets.",
+    icon: "video",
+    status: "installed",
+    version: "1.0.0",
+    remote_version: "1.0.0",
+    size_mb: 25,
+    update_available: false
+  },
+  {
+    id: "pdf_merge",
+    name: "Merge PDF",
+    category_id: "pdf",
+    category_name: "PDF Studio",
+    description: "Combine multiple PDF documents into a single file in your desired order.",
+    icon: "merge",
+    status: "installed",
+    version: "0.1.0",
+    remote_version: "0.1.0",
+    size_mb: 4,
+    update_available: false
+  },
+  {
+    id: "pdf_split",
+    name: "Split PDF",
+    category_id: "pdf",
+    category_name: "PDF Studio",
+    description: "Extract page ranges or split each page into independent PDF documents.",
+    icon: "split",
+    status: "installed",
+    version: "0.1.0",
+    remote_version: "0.1.0",
+    size_mb: 4,
+    update_available: false
+  },
+  {
+    id: "pdf_compress",
+    name: "Compress PDF",
+    category_id: "pdf",
+    category_name: "PDF Studio",
+    description: "Reduce PDF file size while preserving high visual and text quality.",
+    icon: "minimize-2",
+    status: "installed",
+    version: "1.0.0",
+    remote_version: "1.0.0",
+    size_mb: 1,
+    update_available: false
+  },
+  {
+    id: "pdf_converter",
+    name: "Convert PDF",
+    category_id: "pdf",
+    category_name: "PDF Studio",
+    description: "Convert PDF pages to high-resolution images or compile photos into a PDF.",
+    icon: "refresh-cw",
+    status: "installed",
+    version: "1.0.0",
+    remote_version: "1.0.0",
+    size_mb: 1,
+    update_available: false
+  },
+  {
+    id: "image_webp_compress",
+    name: "WebP Image Compressor",
+    category_id: "image",
+    category_name: "Image Studio",
+    description: "Bulk compress photos into web-optimized WebP images with custom quality controls.",
+    icon: "image",
+    status: "installed",
+    version: "1.0.0",
+    remote_version: "1.0.0",
+    size_mb: 1,
+    update_available: false
+  },
+  {
+    id: "system_batch_rename",
+    name: "Bulk File Renamer",
+    category_id: "system",
+    category_name: "System & Files",
+    description: "Batch rename files with search & replace, numbering, and extension cleaning.",
+    icon: "sliders",
+    status: "installed",
+    version: "1.0.0",
+    remote_version: "1.0.0",
+    size_mb: 1,
+    update_available: false
+  },
+  {
+    id: "subtitle_animator",
+    name: "Subtitle Animation Maker",
+    category_id: "video",
+    category_name: "Media & Video",
+    description: "Burn viral animated caption styles directly into videos with word-level highlights.",
+    icon: "subtitles",
+    status: "installed",
+    version: "1.0.1",
+    remote_version: "1.0.1",
+    size_mb: 2,
+    update_available: false
+  }
+];
 
 // ── Application State ────────────────────────────────────────────────────────
 const state = (window.boltoolsStore && window.boltoolsStore.state) ? window.boltoolsStore.state : {
@@ -249,7 +367,7 @@ function updateBreadcrumb(crumbs) {
 /// 1. Home Dashboard View (File-First Intelligent Workspace)
 function renderHome(container) {
   const readyTools = state.tools.filter(t => t.status === 'installed' || t.status === 'update_available' || t.update_available);
-  const installedTools = readyTools.length > 0 ? readyTools : state.tools.filter(t => t.id === 'pdf_studio');
+  const installedTools = readyTools.length > 0 ? readyTools : state.tools.filter(t => ['pdf_merge', 'pdf_split', 'pdf_studio'].includes(t.id));
 
   // Compute Recent Files & Real User Recent Tools (do not inject default fake tools)
   const recentFilesList = (state.recentFiles || []).slice(0, 5);
@@ -262,19 +380,33 @@ function renderHome(container) {
   const hasRecentActivity = recentFilesList.length > 0 || recentToolsList.length > 0;
 
   // Real Tools Cards Grid (Using authentic tools from state.tools)
-  const displayTools = state.tools.slice(0, 8);
+  const displayTools = state.tools;
   const toolsGridHtml = displayTools.map(t => {
     const isFav = (state.favorites || []).includes(t.id);
+    const isInstalled = t.status === 'installed' || t.status === 'update_available' || t.update_available;
     // Concise 2-line description mapping for ultra-clean UI
     let desc = t.description;
-    if (t.id === 'pdf_studio') {
-      desc = 'Merge and split PDF documents offline with zero quality loss.';
+    if (t.id === 'pdf_merge') {
+      desc = 'Combine multiple PDF documents offline in chosen sequence.';
+    } else if (t.id === 'pdf_split') {
+      desc = 'Extract page ranges or separate individual PDF pages.';
+    } else if (t.id === 'pdf_compress') {
+      desc = 'Reduce PDF file size offline with customizable DPI quality presets.';
+    } else if (t.id === 'pdf_converter') {
+      desc = 'Convert PDF pages to images or compile photos into a PDF.';
+    } else if (t.id === 'subtitle_animator') {
+      desc = 'Animate viral short-form video subtitles with custom styling.';
+    } else if (t.id === 'pdf_studio') {
+      desc = 'Merge, split, and compress PDF documents offline with zero quality loss.';
     } else if (desc && desc.length > 70) {
       desc = desc.substring(0, 68).trim() + '...';
     }
 
     return `
-      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md overflow-hidden">
+      <div 
+        ${isInstalled ? `data-action="open-tool" data-tool-id="${escapeAttr(t.id)}"` : `data-action="install-tool" data-tool-id="${escapeAttr(t.id)}"`} 
+        class="home-tool-card group rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md overflow-hidden"
+      >
         <div class="p-4 pb-3">
           <div class="flex items-center justify-between mb-2.5">
             <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] text-[var(--brand-primary)] group-hover:scale-105 transition-transform">
@@ -293,9 +425,19 @@ function renderHome(container) {
           <h4 class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(t.name)}</h4>
           <p class="text-[11px] text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed" title="${escapeAttr(t.description)}">${escapeHtml(desc)}</p>
         </div>
-        <div class="px-4 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform">
-          <span>Open Tool</span>
-          ${getIcon('arrow-right', 'w-3 h-3')}
+        <div class="px-4 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px]">
+          ${isInstalled ? `
+            <span class="font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform flex items-center justify-between w-full">
+              <span>Open Tool</span>
+              ${getIcon('arrow-right', 'w-3 h-3')}
+            </span>
+          ` : `
+            <span class="text-[11px] font-mono text-[var(--text-muted)]">${t.size_mb || 1} MB</span>
+            <button type="button" data-action="install-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-2.5 py-1 text-[11px] font-medium rounded-md bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1 shadow-xs cursor-pointer">
+              ${getIcon('download', 'w-3 h-3')}
+              <span>Install</span>
+            </button>
+          `}
         </div>
       </div>
     `;
@@ -363,7 +505,7 @@ function renderHome(container) {
 
     if (recentFilesMarkup || recentToolsMarkup) {
       rightRailHtml = `
-        <div style="width: 280px; flex-shrink: 0;" class="space-y-6">
+        <div class="home-rail-divider space-y-6" style="width: 296px; flex-shrink: 0; border-left: 1px solid var(--border-subtle); padding-left: 24px;">
           ${recentFilesMarkup ? `
             <div>
               ${recentFilesHeader}
@@ -387,9 +529,9 @@ function renderHome(container) {
   }
 
   container.innerHTML = `
-    <div class="max-w-6xl mx-auto pb-10 space-y-8 animate-in fade-in duration-150">
+    <div class="max-w-6xl mx-auto pb-10 animate-in fade-in duration-150 home-layout-container" style="display: flex; flex-direction: column; gap: 32px;">
       <!-- 1. Hero Dropzone Section (Full Top Banner with Clean Proportions) -->
-      <div class="space-y-4">
+      <div style="display: flex; flex-direction: column; gap: 16px;">
         <div>
           <h1 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">What do you want to build or process?</h1>
           <p class="text-xs text-[var(--text-secondary)] mt-1">Select or drop any file directly. Boltools automatically recognizes the format and suggests instant actions.</p>
@@ -412,7 +554,7 @@ function renderHome(container) {
       </div>
 
       <!-- 2. Main Content Stage: Utilities on Left + Generous Gap + Recent Activity Rail on Right -->
-      <div class="flex items-start gap-8 mt-8" style="width: 100%;">
+      <div class="home-stage-row" style="display: flex; align-items: flex-start; gap: 28px; width: 100%;">
         <!-- Left Column: Utilities & Tools Grid -->
         <div class="flex-1" style="min-width: 0;">
           <div class="flex items-center justify-between mb-4">
@@ -422,7 +564,7 @@ function renderHome(container) {
               ${getIcon('chevron-right', 'w-3 h-3')}
             </button>
           </div>
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px;">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             ${toolsGridHtml}
           </div>
         </div>
@@ -536,7 +678,8 @@ function openPdfStudioWithFiles(files, mode = 'merge') {
   const modal = document.getElementById('modal-file-action');
   if (modal) modal.classList.add('hidden');
 
-  navigateTo('tool_studio', 'pdf_studio');
+  const targetToolId = mode === 'split' ? 'pdf_split' : 'pdf_merge';
+  navigateTo('tool_studio', targetToolId);
   state.selectedFiles = files.slice();
   state.activeToolOptions.mode = mode;
   updateStudioFilesUI();
@@ -546,7 +689,7 @@ function openPdfStudioWithFiles(files, mode = 'merge') {
 // 1b. My Tools View (Sidebar Navigation)
 function renderMyTools(container) {
   const installedTools = state.tools.filter(t => t.status === 'installed' || t.status === 'update_available' || t.update_available);
-  const toolsToDisplay = installedTools.length > 0 ? installedTools : state.tools.filter(t => t.id === 'pdf_studio');
+  const toolsToDisplay = installedTools.length > 0 ? installedTools : state.tools.filter(t => ['pdf_merge', 'pdf_split', 'pdf_studio'].includes(t.id));
 
   const toolsHtml = toolsToDisplay.map(t => `
     <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="p-4 rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] flex items-center justify-between gap-3 cursor-pointer transition-all">
@@ -652,34 +795,50 @@ function renderCategoryView(container, categoryId) {
 
   const catTools = state.tools.filter(t => t.category_id === categoryId);
 
+  // Responsive balanced grid layout: avoids lonely orphan cards
+  const gridClass = catTools.length === 4
+    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4"
+    : (catTools.length === 2
+        ? "grid grid-cols-1 sm:grid-cols-2 gap-4"
+        : (catTools.length === 3
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            : "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"));
+
   const toolCardsHtml = catTools.length > 0 ? catTools.map(t => {
-    const isInstalled = t.status === 'installed';
+    const isInstalled = t.status === 'installed' || t.status === 'update_available' || t.update_available;
     return `
-      <div data-action="open-tool" data-tool-id="${escapeAttr(t.id)}" class="group rounded-2xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between hover:shadow-md relative overflow-hidden">
-        <div class="p-5 pb-3">
-          <div class="flex items-center justify-between gap-2 mb-3">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--surface-inset)] group-hover:scale-105 transition-transform shadow-xs" style="color: ${cat.accent};">
-              ${getIcon(t.icon, 'w-5 h-5')}
+      <div 
+        ${isInstalled ? `data-action="open-tool" data-tool-id="${escapeAttr(t.id)}"` : `data-action="install-tool" data-tool-id="${escapeAttr(t.id)}"`} 
+        class="group rounded-xl bg-[var(--surface-card)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] cursor-pointer transition-all duration-200 flex flex-col justify-between shadow-xs hover:shadow-md relative overflow-hidden"
+      >
+        <div class="p-4 pb-3">
+          <div class="flex items-center justify-between gap-2 mb-2.5">
+            <div class="w-9 h-9 rounded-lg flex items-center justify-center bg-[var(--surface-inset)] group-hover:scale-105 transition-transform" style="color: ${cat.accent};">
+              ${getIcon(t.icon, 'w-4.5 h-4.5')}
             </div>
             <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full ${isInstalled ? 'bg-emerald-500/10 text-emerald-500' : 'bg-[var(--surface-pill)] text-[var(--text-muted)]'}">
               ${isInstalled ? 'Ready' : 'Available'}
             </span>
           </div>
           <h4 class="text-sm font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors line-clamp-1">${escapeHtml(t.name)}</h4>
-          <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">${escapeHtml(t.description)}</p>
+          <p class="text-xs text-[var(--text-secondary)] mt-1.5 line-clamp-2 leading-relaxed" title="${escapeAttr(t.description)}">${escapeHtml(t.description)}</p>
         </div>
-        <div class="px-5 py-3.5 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
-          <span class="text-xs font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
-            <span>Open Tool</span>
-            ${getIcon('arrow-right', 'w-3 h-3')}
-          </span>
+        <div class="px-4 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
           ${isInstalled ? `
-            <button data-action="uninstall-tool" data-tool-id="${escapeAttr(t.id)}" data-tool-name="${escapeAttr(t.name)}" class="px-2 py-1 text-[11px] font-normal rounded-md text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors">
+            <span class="text-xs font-semibold text-[var(--brand-primary)] group-hover:translate-x-0.5 transition-transform flex items-center gap-1.5">
+              <span>Open Tool</span>
+              ${getIcon('arrow-right', 'w-3.5 h-3.5')}
+            </span>
+            <button data-action="uninstall-tool" data-tool-id="${escapeAttr(t.id)}" data-tool-name="${escapeAttr(t.name)}" class="px-2 py-1 text-[11px] font-normal rounded-md text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer">
               Uninstall
             </button>
           ` : `
-            <button data-action="install-tool" data-tool-id="${escapeAttr(t.id)}" class="px-2.5 py-1 text-[11px] font-medium rounded-md bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-hover)] transition-all">
-              Install
+            <span class="text-[11px] font-mono text-[var(--text-muted)]">
+              ${t.size_mb || 1} MB • Offline
+            </span>
+            <button data-action="install-tool" data-tool-id="${escapeAttr(t.id)}" class="btn-primary px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+              ${getIcon('download', 'w-3 h-3')}
+              <span>Install</span>
             </button>
           `}
         </div>
@@ -718,7 +877,7 @@ function renderCategoryView(container, categoryId) {
             ${getIcon('chevron-right', 'w-3 h-3')}
           </button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <div class="${gridClass}">
           ${toolCardsHtml}
         </div>
       </div>
@@ -1179,7 +1338,7 @@ function renderToolStudio(container, toolId) {
               ${getIcon('upload-cloud', 'w-5 h-5')}
             </div>
             <h4 class="text-xs font-semibold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors">
-              Drop ${tool.id === 'pdf_studio' ? 'PDF' : ''} files here
+              Drop ${['pdf_studio', 'pdf_merge', 'pdf_split'].includes(tool.id) ? 'PDF' : ''} files here
             </h4>
             <p class="text-[11px] text-[var(--text-secondary)] mt-0.5">or click to <span class="text-[var(--brand-primary)] font-medium">browse</span></p>
           </div>
@@ -1217,14 +1376,14 @@ function renderToolStudio(container, toolId) {
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">Output File Name</span>
-                  <span class="text-[10px] text-[var(--text-muted)] font-mono">${tool.id === 'pdf_studio' ? '.pdf' : ''}</span>
+                  <span class="text-[10px] text-[var(--text-muted)] font-mono">${['pdf_studio', 'pdf_merge', 'pdf_split', 'pdf_compress'].includes(tool.id) ? '.pdf' : ''}</span>
                 </div>
                 <input 
                   type="text" 
                   id="studio-out-filename" 
-                  value="${escapeAttr(state.activeToolOptions.custom_filename || (tool.id === 'pdf_studio' ? ((state.activeToolOptions.mode || 'merge') === 'merge' ? 'merged_document.pdf' : 'split_document') : 'output_result'))}" 
+                  value="${escapeAttr(state.activeToolOptions.custom_filename || (tool.id === 'pdf_merge' ? 'merged_document.pdf' : (tool.id === 'pdf_split' ? 'split_document' : (tool.id === 'pdf_compress' ? 'compressed_document.pdf' : (tool.id === 'pdf_studio' ? ((state.activeToolOptions.mode || 'merge') === 'merge' ? 'merged_document.pdf' : 'split_document') : 'output_result')))))}" 
                   data-action="studio-out-filename-input" 
-                  placeholder="merged_document.pdf" 
+                  placeholder="${tool.id === 'pdf_split' ? 'split_document' : (tool.id === 'pdf_compress' ? 'compressed_document.pdf' : 'merged_document.pdf')}" 
                   class="w-full px-2.5 py-1.5 text-xs rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono" 
                 />
               </div>
@@ -1246,7 +1405,7 @@ function renderToolStudio(container, toolId) {
               data-action="studio-execute" data-tool-id="${escapeAttr(tool.id)}"
               class="btn-primary w-full py-2.5 text-xs font-semibold rounded-md bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span id="studio-btn-exec-label">${tool.id === 'pdf_studio' ? ((state.activeToolOptions.mode || 'merge') === 'merge' ? 'Merge Documents' : 'Split Document') : 'Start Processing'}</span>
+              <span id="studio-btn-exec-label">${tool.id === 'pdf_merge' ? 'Merge Documents' : (tool.id === 'pdf_split' ? 'Split Document' : (tool.id === 'pdf_compress' ? 'Compress PDF' : (tool.id === 'pdf_studio' ? ((state.activeToolOptions.mode || 'merge') === 'merge' ? 'Merge Documents' : 'Split Document') : 'Start Processing')))}</span>
               ${getIcon('arrow-right', 'w-3.5 h-3.5')}
             </button>
 
@@ -1295,6 +1454,9 @@ function renderToolStudio(container, toolId) {
 }
 
 function getDefaultOptionsForTool(toolId) {
+  if (toolId === 'pdf_merge') return { mode: 'merge' };
+  if (toolId === 'pdf_split') return { mode: 'split', split_mode: 'ranges', ranges: '1-', every_n: 1 };
+  if (toolId === 'pdf_compress') return { preset: '150 DPI (Balanced)' };
   if (toolId === 'pdf_studio') return { mode: 'merge', split_mode: 'ranges', ranges: '1-', every_n: 1 };
   if (toolId === 'media_audio_extractor') return { format: 'MP3 (320 kbps Studio Quality)' };
   if (toolId === 'video_compressor') return { mode: 'Balanced', target_mb: 50 };
@@ -1319,6 +1481,9 @@ function getDefaultOptionsForTool(toolId) {
 }
 
 function getDropzoneHint(toolId) {
+  if (toolId === 'pdf_merge') return 'Select or drop PDF documents (drag list items to reorder merge sequence)';
+  if (toolId === 'pdf_split') return 'Select or drop a PDF document to split or extract pages';
+  if (toolId === 'pdf_compress') return 'Select or drop PDF documents to compress and optimize file size';
   if (toolId === 'pdf_studio') return 'Select or drop PDF documents (drag list items to reorder merge sequence)';
   if (toolId === 'media_audio_extractor') return 'Supports MP4, MKV, MOV, WebM, AVI, FLV, WMV';
   if (toolId === 'video_compressor') return 'Supports MP4, MKV, MOV, WebM, AVI';
@@ -1330,6 +1495,82 @@ function getDropzoneHint(toolId) {
 }
 
 function renderToolSpecificOptions(toolId) {
+  if (toolId === 'pdf_merge') {
+    const mergeIconSvg = `<svg class="w-4 h-4 text-[var(--brand-primary)] shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/><rect x="8" y="6" width="12" height="14" rx="1.5"/><path d="M12 13h4"/><path d="M14 11v4"/></svg>`;
+    return `
+      <div class="space-y-2">
+        <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Merge Sequence</span>
+        <div class="p-3 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-1">
+          <div class="font-semibold text-[var(--text-primary)] flex items-center gap-1.5">
+            ${mergeIconSvg}
+            <span>Sequential File Ordering</span>
+          </div>
+          <p class="text-[11px] leading-relaxed">Files merge from top to bottom. Drag and reorder the files on the left list to set your desired page sequence.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  if (toolId === 'pdf_split') {
+    const splitMode = state.activeToolOptions.split_mode || 'ranges';
+    const ranges = state.activeToolOptions.ranges || '1-';
+    const everyN = state.activeToolOptions.every_n || 1;
+
+    return `
+      <div class="space-y-2.5">
+        <span class="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider block">Split Method</span>
+        <div class="grid grid-cols-3 gap-1.5">
+          ${[
+            { id: 'ranges', label: 'Page Ranges' },
+            { id: 'each_page', label: 'Single Pages' },
+            { id: 'every_n', label: 'Every N Pages' }
+          ].map(sm => `
+            <button 
+              type="button" 
+              data-action="set-pdf-split-mode" data-split-mode="${escapeAttr(sm.id)}"
+              class="py-1.5 px-1 rounded-md border text-center text-[11px] transition-all cursor-pointer ${splitMode === sm.id ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-bold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}"
+            >
+              ${sm.label}
+            </button>
+          `).join('')}
+        </div>
+
+        ${splitMode === 'ranges' ? `
+          <div class="space-y-1">
+            <label class="text-[11px] font-medium text-[var(--text-secondary)]">Page Ranges (e.g. 1-3, 5, 8-)</label>
+            <input 
+              type="text" 
+              value="${escapeAttr(ranges)}" 
+              data-action="pdf-ranges-input" 
+              placeholder="1-3, 5, 8-" 
+              class="w-full px-2.5 py-1 text-xs rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono"
+            />
+            <span class="text-[10px] text-[var(--text-muted)] block">Separate ranges with commas. Use '8-' for page 8 to end.</span>
+          </div>
+        ` : ''}
+
+        ${splitMode === 'every_n' ? `
+          <div class="space-y-1">
+            <label class="text-[11px] font-medium text-[var(--text-secondary)]">Split Every N Pages</label>
+            <input 
+              type="number" 
+              min="1" 
+              max="500" 
+              value="${everyN}" 
+              data-action="pdf-every-n-input" 
+              class="w-full px-2.5 py-1 text-xs rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] font-mono"
+            />
+          </div>
+        ` : ''}
+
+        ${splitMode === 'each_page' ? `
+          <div class="p-2 rounded-md bg-[var(--surface-inset)] text-[10px] text-[var(--text-secondary)]">
+            Extracts each page as an individual zero-padded PDF (<code class="text-[var(--brand-primary)] font-mono">page_001.pdf</code>).
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
   if (toolId === 'pdf_studio') {
     const mode = state.activeToolOptions.mode || 'merge';
     const splitMode = state.activeToolOptions.split_mode || 'ranges';
@@ -1458,6 +1699,28 @@ function renderToolSpecificOptions(toolId) {
             class="p-2.5 rounded-lg border text-left text-xs transition-all ${state.activeToolOptions.mode === m ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
           >
             ${m}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  } else if (toolId === 'pdf_compress') {
+    const preset = state.activeToolOptions.preset || '150 DPI (Balanced)';
+    return `
+      <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Compression Preset</span>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+        ${[
+          { id: '150 DPI (Balanced)', title: '150 DPI (Balanced)', desc: 'Recommended for ebooks, web & sharing' },
+          { id: '72 DPI (Max Crush)', title: '72 DPI (Max Crush)', desc: 'Clears <200 KB university & portal limits' },
+          { id: '200 DPI (High Quality)', title: '200 DPI (High Quality)', desc: 'Crisp images suited for office printing' },
+          { id: 'Lossless (Deflate Only)', title: 'Lossless Deflate', desc: 'Cleans metadata & optimizes streams' }
+        ].map(p => `
+          <button 
+            type="button"
+            data-action="set-pdf-compress-preset" data-preset="${escapeAttr(p.id)}"
+            class="p-2.5 rounded-lg border text-left text-xs transition-all cursor-pointer ${preset === p.id ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
+          >
+            <div class="font-bold">${p.title}</div>
+            <div class="text-[10px] text-[var(--text-secondary)] mt-0.5 font-normal">${p.desc}</div>
           </button>
         `).join('')}
       </div>
@@ -1826,7 +2089,7 @@ function setStudioMode(modeName) {
 
 async function handleStudioBrowseFiles(toolId, isAppend = false) {
   let fileTypes = [];
-  if (toolId === 'pdf_studio') {
+  if (['pdf_studio', 'pdf_merge', 'pdf_split'].includes(toolId)) {
     fileTypes = ['PDF Documents (*.pdf)', 'All Files (*.*)'];
   } else if (toolId === 'video_compressor') {
     fileTypes = ['Video Files (*.mp4;*.mkv;*.mov;*.webm;*.avi;*.flv;*.wmv;*.m4v)'];
@@ -1854,7 +2117,7 @@ async function handleStudioBrowseFiles(toolId, isAppend = false) {
       state.selectedFiles = files;
     }
     updateStudioFilesUI();
-    if (toolId === 'pdf_studio') {
+    if (['pdf_studio', 'pdf_merge', 'pdf_split'].includes(toolId)) {
       inspectSelectedPdfFiles(state.selectedFiles);
     } else if (toolId === 'subtitle_animator') {
       await handleSubtitleFilesLoaded(files);
@@ -1919,7 +2182,7 @@ function updateStudioFilesUI() {
   if (state.selectedFiles.length === 0) {
     if (wrap) wrap.classList.add('hidden');
     if (dropTitle) {
-      dropTitle.innerText = `Drop ${state.activeToolId === 'pdf_studio' ? 'PDF' : ''} files here`;
+      dropTitle.innerText = `Drop ${['pdf_studio', 'pdf_merge', 'pdf_split'].includes(state.activeToolId) ? 'PDF' : ''} files here`;
     }
     if (dropHint) {
       dropHint.innerHTML = `or click to <span class="text-[var(--brand-primary)] font-medium">browse</span>`;
@@ -1943,7 +2206,7 @@ function updateStudioFilesUI() {
 
   if (!list) return;
 
-  if (state.activeToolId === 'pdf_studio') {
+  if (['pdf_studio', 'pdf_merge', 'pdf_split'].includes(state.activeToolId)) {
     list.innerHTML = state.selectedFiles.map((f, idx) => {
       const meta = pdfFilesMeta[f] || {};
       const pages = meta.pages !== undefined ? meta.pages : null;
@@ -2248,6 +2511,12 @@ async function handleExecuteTool(toolId) {
       <h4 class="text-sm font-semibold text-[var(--text-primary)]">Processing in Progress</h4>
       <p class="text-xs text-[var(--text-secondary)] mt-1">Executing offline tool engine on your PC...</p>
     `;
+  }
+
+  if (toolId === 'pdf_merge') {
+    state.activeToolOptions.mode = 'merge';
+  } else if (toolId === 'pdf_split') {
+    state.activeToolOptions.mode = 'split';
   }
 
   const customFileName = document.getElementById('studio-out-filename')?.value?.trim();
@@ -3294,7 +3563,12 @@ async function initApp() {
 
       case 'open-tool': {
         const tid = el.dataset.toolId;
-        if (tid) navigateTo('tool_studio', tid);
+        const tool = state.tools.find(t => t.id === tid);
+        if (tool && tool.status !== 'installed' && !tool.update_available) {
+          installTool(tid);
+        } else if (tid) {
+          navigateTo('tool_studio', tid);
+        }
         break;
       }
 
@@ -3461,6 +3735,16 @@ async function initApp() {
         break;
       }
 
+      case 'set-pdf-compress-preset': {
+        const preset = el.dataset.preset;
+        if (preset) {
+          state.activeToolOptions.preset = preset;
+          const optBox = document.getElementById('studio-options-box');
+          if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
+        }
+        break;
+      }
+
       case 'sub-select-style': {
         const style = el.dataset.style;
         if (style) handleSelectSubtitleStyle(style);
@@ -3618,6 +3902,20 @@ async function initApp() {
         break;
       }
 
+      case 'open-url': {
+        e.stopPropagation();
+        e.preventDefault();
+        const targetUrl = el.dataset.url || el.getAttribute('href');
+        if (targetUrl) {
+          if (window.boltoolsBridge) {
+            callBridge('open_url', targetUrl);
+          } else {
+            window.open(targetUrl, '_blank');
+          }
+        }
+        break;
+      }
+
       default:
         break;
     }
@@ -3725,8 +4023,82 @@ async function initApp() {
     }
   });
 
+  function updateSidebarCategoryCounts() {
+    let catSection = document.getElementById('sidebar-categories-section');
+    if (!catSection) {
+      const nav = document.querySelector('aside nav');
+      if (nav && nav.parentNode) {
+        catSection = document.createElement('div');
+        catSection.id = 'sidebar-categories-section';
+        catSection.className = 'pt-3 border-t border-[var(--border-subtle)] space-y-1';
+        nav.parentNode.insertBefore(catSection, nav.nextElementSibling);
+      }
+    }
+
+    if (catSection && (!catSection.querySelector('.sidebar-cat-btn') || catSection.children.length <= 1)) {
+      catSection.innerHTML = `
+        <span class="px-2 text-[10px] font-semibold text-[var(--text-muted)] tracking-wider uppercase">Categories</span>
+        <button data-action="nav-category" data-cat="pdf" class="sidebar-cat-btn w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-3.5 h-3.5 text-red-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+            <span>PDF Studio</span>
+          </div>
+          <span id="cat-count-pdf" class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500 font-mono">2</span>
+        </button>
+
+        <button data-action="nav-category" data-cat="video" class="sidebar-cat-btn w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-3.5 h-3.5 text-blue-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
+            <span>Media & Video</span>
+          </div>
+          <span id="cat-count-video" class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-mono">3</span>
+        </button>
+
+        <button data-action="nav-category" data-cat="image" class="sidebar-cat-btn w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-3.5 h-3.5 text-emerald-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+            <span>Image Studio</span>
+          </div>
+          <span id="cat-count-image" class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-mono">1</span>
+        </button>
+
+        <button data-action="nav-category" data-cat="system" class="sidebar-cat-btn w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-hover)] transition-all cursor-pointer group">
+          <div class="flex items-center gap-2.5">
+            <svg class="w-3.5 h-3.5 text-amber-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="8" y2="8"/><line x1="17" x2="23" y1="16" y2="16"/></svg>
+            <span>System & Files</span>
+          </div>
+          <span id="cat-count-system" class="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 font-mono">1</span>
+        </button>
+      `;
+    }
+
+    const counts = {
+      pdf: state.tools.filter(t => t.category_id === 'pdf').length,
+      video: state.tools.filter(t => t.category_id === 'video').length,
+      image: state.tools.filter(t => t.category_id === 'image').length,
+      system: state.tools.filter(t => t.category_id === 'system').length,
+    };
+    Object.keys(counts).forEach(catId => {
+      const el = document.getElementById(`cat-count-${catId}`);
+      if (el && counts[catId] !== undefined && counts[catId] > 0) {
+        el.innerText = counts[catId];
+      }
+    });
+
+    if (state.activeCategoryId) {
+      document.querySelectorAll('.sidebar-cat-btn').forEach(btn => {
+        if (btn.dataset.cat === state.activeCategoryId) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+  }
+
   // Render initial view immediately with guaranteed defaults (0ms UI latency)
   navigateTo('home', null, false);
+  updateSidebarCategoryCounts();
 
   // Background bridge synchronization loop
   async function syncBridgeData() {
@@ -3745,6 +4117,7 @@ async function initApp() {
         const summaryData = await callBridge('get_catalog_summary');
         if (Array.isArray(summaryData)) {
           state.tools = summaryData;
+          updateSidebarCategoryCounts();
         }
 
         // Check unread announcements and pending updates

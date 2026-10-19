@@ -134,7 +134,9 @@ class ToolStoreService:
         self._global_lock = threading.Lock()
 
         # Defer manifest network synchronization by 10s to avoid blocking startup
-        threading.Timer(10.0, self.sync_manifest_async).start()
+        manifest_timer = threading.Timer(10.0, self.sync_manifest_async)
+        manifest_timer.daemon = True
+        manifest_timer.start()
 
     def _get_tool_lock(self, tool_id: str) -> threading.Lock:
         """Retrieves or creates a thread lock for a given tool_id."""
@@ -310,9 +312,22 @@ class ToolStoreService:
         threading.Thread(target=_fetch, daemon=True).start()
 
     def get_tool_meta(self, tool_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieves raw manifest definition for a tool."""
+        """Retrieves raw manifest definition for a tool with backwards-compatible aliases."""
         tools = self.cached_manifest.get("tools", [])
-        return next((t for t in tools if t.get("id") == tool_id), None)
+        found = next((t for t in tools if t.get("id") == tool_id), None)
+        if not found and tool_id == "pdf_studio":
+            return {
+                "id": "pdf_studio",
+                "name": "PDF Studio (Merge & Split)",
+                "category_id": "pdf",
+                "category_name": "PDF Studio",
+                "description": "Offline PDF merge and split utility powered by QPDF.",
+                "engine_type": "exe",
+                "engine_folder": "pdf_studio",
+                "entry": "pdf_engine.exe",
+                "is_implemented": True
+            }
+        return found
 
     # ── Active Version Pointer Resolution (current.json) ──────────────────────
     def get_active_pointer(self, tool_id: str) -> Optional[Dict[str, Any]]:
@@ -370,34 +385,40 @@ class ToolStoreService:
         
         Priority:
         1. Dynamic version folder resolved via ~/.boltools/engines/<tool_id>/current.json
-        2. Legacy flat ~/.boltools/engines/<tool_id>/engine.py
-        3. Factory bundled engine in software/engines/<folder>/engine.py
+        2. Legacy flat ~/.boltools/engines/<tool_id>/engine.py or custom entry
+        3. Factory bundled engine in software/engines/<folder>/entry
         """
         validate_id(tool_id, "tool_id")
 
-        # 1. Versioned current.json resolution
-        pointer = self.get_active_pointer(tool_id)
-        if pointer:
-            v_folder = f"v{pointer['version']}"
-            entry_file = pointer.get("entry", "engine.py")
-            target_path = os.path.join(self.engines_dir, tool_id, v_folder, entry_file)
-            assert_inside_dir(target_path, self.engines_dir)
-            if os.path.isfile(target_path):
-                return target_path
-
-        # 2. User/Dynamic legacy engine override (fallback)
-        dyn_engine = os.path.join(self.engines_dir, tool_id, "engine.py")
-        if os.path.isfile(dyn_engine):
-            assert_inside_dir(dyn_engine, self.engines_dir)
-            return dyn_engine
-
-        # 3. Bundled factory engine (fallback)
         meta = self.get_tool_meta(tool_id)
         folder = validate_id((meta.get("engine_folder") or tool_id) if meta else tool_id, "engine_folder")
-        bundled_engine = os.path.join(self.bundled_engines_dir, folder, "engine.py")
-        if os.path.isfile(bundled_engine):
-            assert_inside_dir(bundled_engine, self.bundled_engines_dir)
-            return bundled_engine
+        entry_file = meta.get("entry", "engine.py") if meta else "engine.py"
+
+        # 1. Versioned current.json resolution (check tool_id first, then folder)
+        for check_id in [tool_id, folder]:
+            pointer = self.get_active_pointer(check_id)
+            if pointer:
+                v_folder = f"v{pointer['version']}"
+                e_file = pointer.get("entry", entry_file)
+                target_path = os.path.join(self.engines_dir, check_id, v_folder, e_file)
+                assert_inside_dir(target_path, self.engines_dir)
+                if os.path.isfile(target_path):
+                    return target_path
+
+        # 2. User/Dynamic legacy engine override (fallback)
+        for check_id in [tool_id, folder]:
+            for e_name in [entry_file, "engine.py"]:
+                dyn_engine = os.path.join(self.engines_dir, check_id, e_name)
+                if os.path.isfile(dyn_engine):
+                    assert_inside_dir(dyn_engine, self.engines_dir)
+                    return dyn_engine
+
+        # 3. Bundled factory engine (fallback)
+        for e_name in [entry_file, "engine.py"]:
+            bundled_engine = os.path.join(self.bundled_engines_dir, folder, e_name)
+            if os.path.isfile(bundled_engine):
+                assert_inside_dir(bundled_engine, self.bundled_engines_dir)
+                return bundled_engine
 
         return None
 
@@ -432,12 +453,13 @@ class ToolStoreService:
 
             remote_version = m_tool.get("version", "1.0.0")
 
-            has_engine = (tool_id in installed_ids)
+            folder = m_tool.get("engine_folder") or tool_id
+            has_engine = (tool_id in installed_ids) or (folder in installed_ids) or self.is_engine_installed_locally(tool_id)
             saved_state = self.tool_states.get(tool_id, {})
             saved_status = saved_state.get("status")
 
             # Check version from current.json if available
-            pointer = self.get_active_pointer(tool_id)
+            pointer = self.get_active_pointer(tool_id) or (self.get_active_pointer(folder) if folder else None)
             active_version = pointer.get("version") if pointer else saved_state.get("version", "1.0.0")
 
             if saved_status == "available":
