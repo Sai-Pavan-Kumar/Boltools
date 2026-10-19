@@ -1,80 +1,118 @@
 /**
- * Run Stage: the part of a tool screen that shows a job from "ready" to "done".
+ * Run Stage: plays a tool's job inside the file area itself.
  *
- * Replaces the old progress bar + log box. One component for every tool, so a
- * run feels the same whether it merges PDFs or extracts audio. Owns its own
- * DOM; app.js only calls mount / start / progress / log / complete / fail.
- * Everything engine-provided is written with textContent (file names are user data).
+ * The files the user added become document cards that act out the operation
+ * (merge stacks them, compress squeezes, split fans out, convert re-labels),
+ * and the finished file lands in the same spot with its actions. The point is
+ * that the user watches *their* files being worked on, not an abstract bar.
+ * Engine text and file names only reach the DOM through textContent.
  */
 (function () {
-  const RING_RADIUS = 52;
-  const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+  const MAX_CARDS = 5;
+  const CARD_GAP_PX = 112;
+  const STACK_DELAY_MS = 520;
   const ELAPSED_TICK_MS = 250;
 
+  const MODE_BY_TOOL = {
+    pdf_merge: 'merge',
+    pdf_split: 'split',
+    pdf_compress: 'compress',
+    image_webp_compress: 'compress',
+    video_compressor: 'compress'
+  };
+
+  const VERB_BY_MODE = { merge: 'Merging', split: 'Splitting', compress: 'Compressing', transform: 'Converting' };
+
   let root = null;
+  let pane = null;
+  let primaryButton = null;
+  let toolId = '';
+  let mode = 'transform';
   let shownPercent = 0;
   let targetPercent = 0;
   let tweenFrame = null;
   let elapsedTimer = null;
+  let stackTimer = null;
   let startedAt = 0;
-  let toolIdForRetry = '';
-  let primaryButton = null;
 
   const $ = (sel) => (root ? root.querySelector(sel) : null);
+  const fileNameOf = (path) => String(path || '').split(/[\\/]/).pop();
+  const folderNameOf = (path) => String(path || '').split(/[\\/]/).slice(-2, -1)[0] || '';
 
   function template() {
     return `
-      <div class="rs-idle">
-        <span class="rs-summary"><span id="studio-summary-count">0 files</span><span class="rs-dot"></span><span id="studio-summary-size" class="rs-mono">0 B</span></span>
-        <span class="rs-local" title="Your files are processed by this computer and never uploaded">
-          <span class="rs-local-pulse"></span>Stays on this PC
-        </span>
+      <div class="th-scene" aria-hidden="true">
+        <div class="th-halo"></div>
+        <div class="th-cards"></div>
+        <div class="th-results"></div>
       </div>
-
-      <div class="rs-active" aria-live="polite">
-        <div class="rs-orb">
-          <svg viewBox="0 0 120 120" class="rs-ring" aria-hidden="true">
-            <circle class="rs-ring-track" cx="60" cy="60" r="${RING_RADIUS}"></circle>
-            <circle class="rs-ring-fill" cx="60" cy="60" r="${RING_RADIUS}"
-              stroke-dasharray="${RING_LENGTH}" stroke-dashoffset="${RING_LENGTH}"></circle>
-            <path class="rs-check" d="M41 61 l13 13 l26 -28"></path>
-            <path class="rs-cross" d="M46 46 L74 74 M74 46 L46 74"></path>
-          </svg>
-          <span class="rs-orbit" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span class="rs-pct rs-mono">0<small>%</small></span>
-        </div>
-        <div class="rs-copy">
-          <p class="rs-status">Getting ready…</p>
-          <p class="rs-sub"><span class="rs-elapsed rs-mono">0:00</span><span class="rs-dot"></span><span class="rs-sub-text">Working on this PC</span></p>
-        </div>
-        <button type="button" data-action="cancel-tool" class="rs-btn rs-btn-quiet rs-cancel">Cancel</button>
+      <div class="th-copy" aria-live="polite">
+        <p class="th-title"></p>
+        <p class="th-sub"><span class="th-pct rs-mono"></span><span class="th-elapsed">0:00</span></p>
       </div>
-
-      <div class="rs-result" aria-live="polite">
-        <p class="rs-result-title"></p>
-        <p class="rs-result-sub"></p>
-        <div class="rs-stats"></div>
-        <div class="rs-actions"></div>
-      </div>
-
-      <details class="rs-log">
-        <summary>Details</summary>
-        <div id="studio-log-box" class="rs-log-box rs-mono"></div>
-      </details>
+      <div class="th-stats"></div>
+      <div class="th-actions"></div>
+      <details class="th-log"><summary>Details</summary><div id="studio-log-box" class="th-log-box rs-mono"></div></details>
     `;
   }
 
-  // The tool's own start button hides outside "idle": one clear next step at a time.
   function setState(state) {
-    if (root) root.dataset.state = state;
+    if (!root) return;
+    root.dataset.state = state;
+    if (pane) pane.classList.toggle('th-on', state !== 'idle');
     if (primaryButton) primaryButton.hidden = state !== 'idle';
+  }
+
+  function stopTimers() {
+    clearInterval(elapsedTimer);
+    clearTimeout(stackTimer);
+    cancelAnimationFrame(tweenFrame);
+    elapsedTimer = stackTimer = tweenFrame = null;
+  }
+
+  function makeCard(path, tag = null) {
+    const kind = FileTray.kindOf(path);
+    const card = document.createElement('div');
+    card.className = `th-card th-tone-${kind.tone}`;
+    card.innerHTML = '<span class="th-fold"></span><span class="th-kind"></span><span class="th-lines"><i></i><i></i><i></i></span><span class="th-name"></span>';
+    card.querySelector('.th-kind').textContent = tag || kind.label;
+    card.querySelector('.th-name').textContent = fileNameOf(path);
+    return card;
+  }
+
+  // Cards sit in a row first, then (for merge) slide into one slightly fanned stack.
+  function placeCards(cards, layout) {
+    const mid = (cards.length - 1) / 2;
+    cards.forEach((card, index) => {
+      const offset = index - mid;
+      const stacked = layout === 'stack';
+      card.style.setProperty('--x', `${stacked ? offset * 6 : offset * CARD_GAP_PX}px`);
+      card.style.setProperty('--y', `${stacked ? -index * 4 : 0}px`);
+      card.style.setProperty('--r', `${stacked ? offset * 4 : offset * 2}deg`);
+      card.style.setProperty('--d', `${index * 60}ms`);
+    });
+  }
+
+  function buildCards(files) {
+    const shown = files.slice(0, MAX_CARDS);
+    const cards = shown.map(path => makeCard(path));
+    const hidden = files.length - shown.length;
+    if (hidden > 0) {
+      const more = document.createElement('span');
+      more.className = 'th-more';
+      more.textContent = `+${hidden}`;
+      cards[cards.length - 1].appendChild(more);
+    }
+    $('.th-cards').replaceChildren(...cards);
+    placeCards(cards, 'row');
+    if (mode === 'merge' && cards.length > 1) {
+      stackTimer = setTimeout(() => placeCards(cards, 'stack'), STACK_DELAY_MS);
+    }
   }
 
   function formatElapsed(ms) {
     const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = String(totalSeconds % 60).padStart(2, '0');
-    return `${minutes}:${seconds}`;
+    return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
   }
 
   function formatDuration(ms) {
@@ -83,70 +121,61 @@
     return formatElapsed(ms);
   }
 
-  function stopTimers() {
-    clearInterval(elapsedTimer);
-    cancelAnimationFrame(tweenFrame);
-    elapsedTimer = null;
-    tweenFrame = null;
-  }
-
-  // The number eases toward the engine's value instead of jumping, so bursts of
-  // updates (or a single 5% -> 100% leap on fast jobs) still read as smooth motion.
+  // Eases toward the engine's number so bursty updates still read as one smooth climb.
   function renderPercent() {
     const delta = targetPercent - shownPercent;
     shownPercent = Math.abs(delta) < 0.4 ? targetPercent : shownPercent + delta * 0.18;
-    const fill = $('.rs-ring-fill');
-    const label = $('.rs-pct');
-    if (fill) fill.style.strokeDashoffset = String(RING_LENGTH * (1 - shownPercent / 100));
-    if (label) label.firstChild.textContent = String(Math.round(shownPercent));
+    const label = $('.th-pct');
+    if (label) label.textContent = `${Math.round(shownPercent)}%`;
     tweenFrame = shownPercent === targetPercent ? null : requestAnimationFrame(renderPercent);
   }
 
-  function setTarget(percent) {
-    targetPercent = Math.max(targetPercent, Math.min(100, percent));
-    if (!tweenFrame) tweenFrame = requestAnimationFrame(renderPercent);
-  }
-
-  // Cross-fades the status line so rapid engine messages don't flicker.
-  function setStatus(text) {
-    const el = $('.rs-status');
+  function setTitle(text) {
+    const el = $('.th-title');
     if (!el || el.textContent === text) return;
-    el.classList.remove('rs-swap');
+    el.classList.remove('th-swap');
     void el.offsetWidth;
     el.textContent = text;
-    el.classList.add('rs-swap');
+    el.classList.add('th-swap');
   }
 
   function cleanStatus(raw) {
-    // Engines echo tool-internal prefixes ("qpdf: C:\...\temp.pdf: write progress: 51%").
     const text = String(raw || '').trim();
+    // qpdf echoes temp paths ("qpdf: C:\...\temp.pdf: write progress: 51%"); users don't need those.
     if (/^qpdf:/i.test(text)) return 'Writing your file…';
-    return text.length > 90 ? `${text.slice(0, 87)}…` : text;
+    return text.length > 80 ? `${text.slice(0, 77)}…` : text;
   }
 
-  function mount(container, toolId, startButton = null) {
-    primaryButton = startButton;
+  function mount(container, id, startButton = null) {
     stopTimers();
+    pane = container;
+    primaryButton = startButton;
+    toolId = id;
+    mode = MODE_BY_TOOL[id] || 'transform';
     root = document.createElement('section');
-    root.className = 'rs';
+    root.className = 'th';
+    root.dataset.mode = mode;
     root.innerHTML = template();
-    container.replaceChildren(root);
-    toolIdForRetry = toolId;
+    container.appendChild(root);
     setState('idle');
   }
 
-  function start(fileCount) {
+  function start(files) {
     if (!root) return;
     stopTimers();
-    shownPercent = 0;
-    targetPercent = 0;
-    renderPercent();
-    $('.rs-log-box').replaceChildren();
-    root.classList.remove('rs-indeterminate');
-    setStatus(fileCount > 1 ? `Getting ${fileCount} files ready…` : 'Getting your file ready…');
+    shownPercent = targetPercent = 0;
+    root.classList.add('th-indeterminate');
+    $('.th-pct').textContent = '';
+    $('.th-log-box').replaceChildren();
+    $('.th-results').replaceChildren();
+    $('.th-stats').replaceChildren();
+    renderActions([{ action: 'cancel-tool', label: 'Cancel', tone: 'quiet' }]);
+    buildCards(files);
+    const count = files.length;
+    setTitle(`${VERB_BY_MODE[mode]} ${count > 1 ? `${count} files` : fileNameOf(files[0])}…`);
     startedAt = performance.now();
     elapsedTimer = setInterval(() => {
-      const el = $('.rs-elapsed');
+      const el = $('.th-elapsed');
       if (el) el.textContent = formatElapsed(performance.now() - startedAt);
     }, ELAPSED_TICK_MS);
     setState('running');
@@ -155,13 +184,16 @@
   function progress(percent, status) {
     if (!root || root.dataset.state !== 'running') return;
     const indeterminate = percent === undefined || percent < 0;
-    root.classList.toggle('rs-indeterminate', indeterminate);
-    if (!indeterminate) setTarget(percent);
-    if (status) setStatus(cleanStatus(status));
+    root.classList.toggle('th-indeterminate', indeterminate);
+    if (!indeterminate) {
+      targetPercent = Math.max(targetPercent, Math.min(100, percent));
+      if (!tweenFrame) tweenFrame = requestAnimationFrame(renderPercent);
+    }
+    if (status && !/^(complete|initializing engine)/i.test(status)) setTitle(cleanStatus(status));
   }
 
   function log(message) {
-    const box = $('.rs-log-box');
+    const box = $('.th-log-box');
     if (!box) return;
     const line = document.createElement('div');
     line.textContent = message;
@@ -169,110 +201,97 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  function fileNameOf(path) {
-    return String(path || '').split(/[\\/]/).pop();
+  window.RunStage = { mount, start, progress, log, complete, fail, reset };
+
+  // ── Endings ────────────────────────────────────────────────────────────────
+  function renderActions(buttons) {
+    $('.th-actions').innerHTML = buttons.map(({ action, label, tone }) => `
+      <button type="button" data-action="${action}" data-tool-id="${escapeAttr(toolId)}"
+        class="th-btn th-btn-${tone}">${label}</button>`).join('');
   }
 
-  function folderNameOf(path) {
-    const parts = String(path || '').split(/[\\/]/);
-    return parts.length > 1 ? parts[parts.length - 2] : '';
-  }
-
-  // Only facts the engine actually reported are shown; no invented numbers.
+  // Only numbers the engine actually reported are shown.
   function buildStats(stats, elapsedMs) {
-    const items = [];
-    const timeMs = stats && stats.total_time_ms !== undefined ? stats.total_time_ms : elapsedMs;
-    items.push(['Time', formatDuration(timeMs)]);
+    const items = [['Time', formatDuration(stats && stats.total_time_ms !== undefined ? stats.total_time_ms : elapsedMs)]];
     if (!stats) return items;
     if (stats.orig_size && stats.new_size) {
-      const saved = Math.max(0, stats.orig_size - stats.new_size);
       items.push(['Size', `${formatBytes(stats.orig_size)} → ${formatBytes(stats.new_size)}`]);
+      const saved = stats.orig_size - stats.new_size;
       if (saved > 0) items.push(['Saved', `${Math.round((saved / stats.orig_size) * 100)}%`]);
     } else if (stats.total_bytes) {
       items.push(['Size', formatBytes(stats.total_bytes)]);
     }
     const pages = stats.total_pages ?? stats.output_pages;
     if (pages) items.push(['Pages', String(pages)]);
-    if (stats.total_chunks) items.push(['Files', String(stats.total_chunks)]);
     return items;
   }
 
   function renderStats(items) {
-    const box = $('.rs-stats');
-    box.replaceChildren(...items.map(([label, value], index) => {
+    $('.th-stats').replaceChildren(...items.map(([label, value], index) => {
       const cell = document.createElement('div');
-      cell.className = 'rs-stat';
-      cell.style.animationDelay = `${120 + index * 70}ms`;
-      const valueEl = document.createElement('strong');
-      valueEl.textContent = value;
-      const labelEl = document.createElement('span');
-      labelEl.textContent = label;
-      cell.append(valueEl, labelEl);
+      cell.className = 'th-stat';
+      cell.style.animationDelay = `${380 + index * 70}ms`;
+      const strong = document.createElement('strong');
+      strong.textContent = value;
+      const caption = document.createElement('span');
+      caption.textContent = label;
+      cell.append(strong, caption);
       return cell;
     }));
   }
 
-  function renderActions(buttons) {
-    $('.rs-actions').innerHTML = buttons.map(({ action, label, primary }) => `
-      <button type="button" data-action="${action}" data-tool-id="${escapeAttr(toolIdForRetry)}"
-        class="rs-btn ${primary ? 'rs-btn-primary' : 'rs-btn-quiet'}">${label}</button>`).join('');
+  function landResults(files) {
+    const shown = files.slice(0, MAX_CARDS);
+    const cards = shown.map(path => makeCard(path));
+    cards.forEach(card => card.insertAdjacentHTML('beforeend', '<span class="th-check"></span>'));
+    $('.th-results').replaceChildren(...cards);
+    placeCards(cards, cards.length > 1 ? 'row' : 'stack');
   }
 
   function finish(state) {
     stopTimers();
-    root.classList.remove('rs-indeterminate');
+    root.classList.remove('th-indeterminate');
     setState(state);
   }
 
   function complete({ outputs, stats }) {
     if (!root) return;
     const elapsedMs = performance.now() - startedAt;
-    targetPercent = 100;
-    shownPercent = 100;
-    renderPercent();
     finish('done');
-
     const files = (Array.isArray(outputs) ? outputs : [outputs]).filter(Boolean);
-    const first = files[0] || '';
-    const folder = folderNameOf(first);
-    $('.rs-result-title').textContent = files.length > 1 ? `${files.length} files ready` : 'Your file is ready';
-    $('.rs-result-sub').textContent = files.length > 1
+    landResults(files);
+    const folder = folderNameOf(files[0]);
+    $('.th-pct').textContent = '';
+    setTitle(files.length > 1 ? `${files.length} files ready` : 'Your file is ready');
+    $('.th-elapsed').textContent = files.length > 1
       ? `Saved in ${folder || 'your output folder'}`
-      : `${fileNameOf(first)}${folder ? ` · in ${folder}` : ''}`;
+      : `${fileNameOf(files[0])}${folder ? ` · in ${folder}` : ''}`;
     renderStats(buildStats(stats, elapsedMs));
     renderActions([
-      { action: 'open-output-file', label: files.length > 1 ? 'Open first file' : 'Open file', primary: true },
-      { action: 'reveal-output-folder', label: 'Show in folder' },
-      { action: 'run-stage-reset', label: 'Start over' }
+      { action: 'open-output-file', label: files.length > 1 ? 'Open first file' : 'Open file', tone: 'primary' },
+      { action: 'reveal-output-folder', label: 'Show in folder', tone: 'quiet' },
+      { action: 'run-stage-reset', label: 'Start over', tone: 'quiet' }
     ]);
-  }
-
-  function humanError(message) {
-    const text = String(message || '').replace(/^error:\s*/i, '').trim();
-    if (/cancel/i.test(text)) return { title: 'Stopped', detail: 'Nothing was changed. Your original files are safe.' };
-    if (/already running/i.test(text)) return { title: 'One thing at a time', detail: 'Another job is still finishing. Try again in a moment.' };
-    return { title: 'That didn’t work', detail: text || 'The tool stopped unexpectedly. Your original files are safe.' };
   }
 
   function fail(message) {
     if (!root) return;
-    const { title, detail } = humanError(message);
-    const wasCancel = title === 'Stopped';
-    finish(wasCancel ? 'stopped' : 'failed');
-    $('.rs-result-title').textContent = title;
-    $('.rs-result-sub').textContent = detail;
-    $('.rs-stats').replaceChildren();
+    const text = String(message || '').replace(/^error:\s*/i, '').trim();
+    const cancelled = /cancel/i.test(text);
+    finish(cancelled ? 'stopped' : 'failed');
+    $('.th-pct').textContent = '';
+    setTitle(cancelled ? 'Stopped' : 'That didn’t work');
+    $('.th-elapsed').textContent = cancelled
+      ? 'Nothing was changed. Your files are safe.'
+      : (text || 'The tool stopped unexpectedly. Your files are safe.');
     renderActions([
-      { action: 'studio-execute', label: wasCancel ? 'Run again' : 'Try again', primary: true },
-      { action: 'run-stage-reset', label: 'Back' }
+      { action: 'studio-execute', label: cancelled ? 'Run again' : 'Try again', tone: 'primary' },
+      { action: 'run-stage-reset', label: 'Back to files', tone: 'quiet' }
     ]);
-    if (!wasCancel) log(`Error: ${detail}`);
+    if (!cancelled) log(`Error: ${text}`);
   }
 
   function reset() {
-    if (!root) return;
-    finish('idle');
+    if (root) finish('idle');
   }
-
-  window.RunStage = { mount, start, progress, log, complete, fail, reset };
 })();

@@ -1327,7 +1327,7 @@ function renderToolStudio(container, toolId) {
       <!-- Studio 2-Pane Grid: Left Stage (Files & Dropzone) + Right Panel (Configuration & Actions) -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 items-start min-h-0">
         <!-- Left Pane: File Workspace & Dropzone (7 Cols) -->
-        <div class="lg:col-span-7 space-y-3">
+        <div id="studio-stage-left" class="lg:col-span-7 space-y-3">
           <!-- Clean Hero Dropzone -->
           <div 
             id="studio-dropzone" 
@@ -1405,14 +1405,13 @@ function renderToolStudio(container, toolId) {
               ${getIcon('arrow-right', 'w-3.5 h-3.5')}
             </button>
 
-            <div id="run-stage-host"></div>
           </div>
         </div>
       </div>
     </div>
   `;
 
-  RunStage.mount(document.getElementById('run-stage-host'), tool.id, document.getElementById('studio-btn-execute'));
+  RunStage.mount(document.getElementById('studio-stage-left'), tool.id, document.getElementById('studio-btn-execute'));
 
   if (tool.id === 'subtitle_animator') {
     setTimeout(() => {
@@ -2312,7 +2311,7 @@ async function handleExecuteTool(toolId) {
     btnExec.disabled = true;
     btnExec.classList.add('opacity-50');
   }
-  RunStage.start(state.selectedFiles.length);
+  RunStage.start(state.selectedFiles);
 
   if (toolId === 'pdf_merge') {
     state.activeToolOptions.mode = 'merge';
