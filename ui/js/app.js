@@ -1348,10 +1348,6 @@ function renderToolStudio(container, toolId) {
             <div class="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)] text-xs">
               <span id="studio-files-count" class="font-semibold text-[var(--text-primary)]">0 files added</span>
               <div class="flex items-center gap-3">
-                <button type="button" data-action="studio-add-more-files" data-tool-id="${escapeAttr(tool.id)}" class="font-medium text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
-                  ${getIcon('plus', 'w-3 h-3')}
-                  <span>Add more</span>
-                </button>
                 <button type="button" data-action="clear-studio-files" class="font-medium text-red-500 hover:underline flex items-center gap-1 cursor-pointer">
                   ${getIcon('trash', 'w-3 h-3')}
                   <span>Clear all</span>
@@ -2153,6 +2149,7 @@ function updateStudioFilesUI() {
 
   if (state.selectedFiles.length === 0) {
     if (wrap) wrap.classList.add('hidden');
+    if (dropzone) dropzone.classList.remove('ft-compact');
     if (dropTitle) {
       dropTitle.innerText = `Drop ${['pdf_studio', 'pdf_merge', 'pdf_split'].includes(state.activeToolId) ? 'PDF' : ''} files here`;
     }
@@ -2162,174 +2159,23 @@ function updateStudioFilesUI() {
     return;
   }
 
-  // Update dropzone header
-  if (dropTitle) {
-    dropTitle.innerText = `${state.selectedFiles.length} file${state.selectedFiles.length > 1 ? 's' : ''} selected`;
-  }
-  if (dropHint) {
-    dropHint.innerHTML = `Drag to reorder sequence or click to add more`;
-  }
+  // With files present the drop area shrinks to a slim bar; the list becomes the focus.
+  if (dropzone) dropzone.classList.add('ft-compact');
+  if (dropTitle) dropTitle.innerText = 'Add more files';
 
   if (wrap) wrap.classList.remove('hidden');
   if (countLbl) {
     const sizeSummary = totalBytes > 0 ? ` • ${formatBytes(totalBytes)}` : '';
-    countLbl.innerText = `${state.selectedFiles.length} file${state.selectedFiles.length > 1 ? 's' : ''} added${sizeSummary}`;
+    countLbl.innerText = `${state.selectedFiles.length} file${state.selectedFiles.length > 1 ? 's' : ''}${sizeSummary}`;
   }
 
   if (!list) return;
-
-  if (['pdf_studio', 'pdf_merge', 'pdf_split'].includes(state.activeToolId)) {
-    list.innerHTML = state.selectedFiles.map((f, idx) => {
-      const meta = pdfFilesMeta[f] || {};
-      const pages = meta.pages !== undefined ? meta.pages : null;
-      const sizeStr = meta.size_bytes ? formatBytes(meta.size_bytes) : '';
-      const isLocked = meta.is_locked || false;
-      const fileName = f.split('\\').pop().split('/').pop();
-
-      let badgeHtml = '';
-      if (isLocked) {
-        badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/20 shrink-0">Locked</span>`;
-      } else {
-        badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 shrink-0 flex items-center gap-1 font-mono">${getIcon('check', 'w-3 h-3')} Ready</span>`;
-      }
-
-      let metaSubtext = '';
-      if (pages !== null && sizeStr) {
-        metaSubtext = `${sizeStr} • ${pages} page${pages === 1 ? '' : 's'}`;
-      } else if (sizeStr) {
-        metaSubtext = sizeStr;
-      } else if (pages !== null) {
-        metaSubtext = `${pages} page${pages === 1 ? '' : 's'}`;
-      } else {
-        metaSubtext = 'Inspecting file...';
-      }
-
-      return `
-        <div 
-          class="file-drag-item p-2.5 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] hover:border-[var(--border-hover)] flex items-center justify-between text-xs text-[var(--text-primary)] gap-2.5 transition-all select-none"
-          draggable="true"
-          data-file-idx="${idx}"
-        >
-          <div class="flex items-center gap-2 truncate min-w-0">
-            <span class="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-grab active:cursor-grabbing shrink-0 text-xs font-bold select-none px-0.5" title="Drag to reorder">⋮⋮</span>
-            <span class="w-5 h-5 rounded bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[10px] font-mono font-bold flex items-center justify-center shrink-0 text-[var(--text-secondary)]">${idx + 1}</span>
-            <div class="w-7 h-7 rounded-md bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 border border-red-500/20 font-bold text-[9px]">
-              PDF
-            </div>
-            <div class="truncate">
-              <div class="truncate font-semibold text-[var(--text-primary)]" title="${escapeAttr(fileName)}">${escapeHtml(fileName)}</div>
-              <div class="text-[10px] text-[var(--text-secondary)] font-mono mt-0.5">${escapeHtml(metaSubtext)}</div>
-            </div>
-          </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            ${badgeHtml}
-            <button 
-              type="button" 
-              data-action="remove-studio-file"
-              data-file-idx="${idx}"
-              class="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
-              title="Remove file"
-            >
-              ${getIcon('x', 'w-3.5 h-3.5')}
-            </button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  } else {
-    list.innerHTML = state.selectedFiles.map((f, idx) => {
-      const fileName = f.split('\\').pop().split('/').pop();
-      return `
-        <div class="p-2.5 rounded-md bg-[var(--surface-inset)] border border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-primary)] gap-2.5">
-          <div class="truncate font-medium">${escapeHtml(fileName)}</div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <span class="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 font-mono">Ready</span>
-            <button 
-              type="button" 
-              data-action="remove-studio-file"
-              data-file-idx="${idx}"
-              class="w-6 h-6 rounded-md flex items-center justify-center text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
-              title="Remove file"
-            >
-              ${getIcon('x', 'w-3.5 h-3.5')}
-            </button>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  attachListDragDelegation();
-}
-
-function attachListDragDelegation() {
-  const list = document.getElementById('studio-files-list');
-  if (!list || list._dragBound) return;
-  list._dragBound = true;
-
-  list.addEventListener('dragstart', (e) => {
-    const item = e.target.closest('.file-drag-item');
-    if (!item) return;
-    const idx = parseInt(item.dataset.fileIdx, 10);
-    if (!isNaN(idx)) {
-      draggedPdfIndex = idx;
-      if (e.dataTransfer) {
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', String(idx));
-      }
-      item.classList.add('opacity-50');
-    }
-  });
-
-  list.addEventListener('dragend', (e) => {
-    draggedPdfIndex = null;
-    list.querySelectorAll('.file-drag-item').forEach(el => {
-      el.classList.remove('border-t-2', 'border-b-2', 'border-[var(--brand-primary)]', 'opacity-50');
-    });
-  });
-
-  list.addEventListener('dragover', (e) => {
-    const item = e.target.closest('.file-drag-item');
-    if (!item) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-    const rect = item.getBoundingClientRect();
-    const relY = e.clientY - rect.top;
-    if (relY < rect.height / 2) {
-      item.classList.add('border-t-2', 'border-[var(--brand-primary)]');
-      item.classList.remove('border-b-2');
-    } else {
-      item.classList.add('border-b-2', 'border-[var(--brand-primary)]');
-      item.classList.remove('border-t-2');
-    }
-  });
-
-  list.addEventListener('dragleave', (e) => {
-    const item = e.target.closest('.file-drag-item');
-    if (item && !item.contains(e.relatedTarget)) {
-      item.classList.remove('border-t-2', 'border-b-2', 'border-[var(--brand-primary)]');
-    }
-  });
-
-  list.addEventListener('drop', (e) => {
-    const item = e.target.closest('.file-drag-item');
-    if (!item) return;
-    e.preventDefault();
-    item.classList.remove('border-t-2', 'border-b-2', 'border-[var(--brand-primary)]', 'opacity-50');
-    const targetIdx = parseInt(item.dataset.fileIdx, 10);
-    let sourceIdx = draggedPdfIndex;
-    if (sourceIdx === null && e.dataTransfer) {
-      const data = e.dataTransfer.getData('text/plain');
-      if (data !== '') sourceIdx = parseInt(data, 10);
-    }
-    draggedPdfIndex = null;
-    if (sourceIdx !== null && !isNaN(sourceIdx) && !isNaN(targetIdx) && sourceIdx !== targetIdx) {
-      if (sourceIdx >= 0 && sourceIdx < state.selectedFiles.length && targetIdx >= 0 && targetIdx < state.selectedFiles.length) {
-        const moved = state.selectedFiles.splice(sourceIdx, 1)[0];
-        state.selectedFiles.splice(targetIdx, 0, moved);
-        updateStudioFilesUI();
-      }
-    }
+  const reorderable = ['pdf_studio', 'pdf_merge'].includes(state.activeToolId) && state.selectedFiles.length > 1;
+  FileTray.render(list, state.selectedFiles, { meta: pdfFilesMeta, reorderable });
+  FileTray.bindReorder(list, (fromIndex, toIndex) => {
+    const [moved] = state.selectedFiles.splice(fromIndex, 1);
+    state.selectedFiles.splice(toIndex, 0, moved);
+    updateStudioFilesUI();
   });
 }
 
@@ -2401,10 +2247,14 @@ window.handlePdfDrop = function(e, targetIdx) {
 };
 
 function removeStudioFile(idx) {
-  if (idx >= 0 && idx < state.selectedFiles.length) {
+  if (idx < 0 || idx >= state.selectedFiles.length) return;
+  const list = document.getElementById('studio-files-list');
+  const commit = () => {
     state.selectedFiles.splice(idx, 1);
     updateStudioFilesUI();
-  }
+  };
+  if (list) FileTray.animateRemoval(list, idx, commit);
+  else commit();
 }
 
 window.removePdfFile = function(idx) {
