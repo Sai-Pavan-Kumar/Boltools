@@ -398,9 +398,10 @@ class ToolStoreService:
         #    tested with run.bat before it is deployed and re-downloaded. Never active in release.
         if not IS_RELEASE and os.environ.get("BOLTOOLS_DEV") == "1":
             repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-            dev_engine = os.path.join(repo_root, "website", "engines", folder, entry_file)
-            if os.path.isfile(dev_engine):
-                return dev_engine
+            for source_dir in (("website", "engines"), ("software", "engines")):
+                dev_engine = os.path.join(repo_root, *source_dir, folder, entry_file)
+                if os.path.isfile(dev_engine):
+                    return dev_engine
 
         # 1. Versioned current.json resolution (check tool_id first, then folder)
         for check_id in [tool_id, folder]:

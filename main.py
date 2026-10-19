@@ -83,7 +83,11 @@ def _apply_win_icon(window):
 
 
 def main():
-    ui_html_path = f"{os.path.join(root_dir, 'ui', 'index.html')}?shell=native"
+    # WebView2 keeps an HTTP cache in storage_path and happily served a stale index.html
+    # after updates, so new scripts never loaded. A per-launch URL forces a fresh page;
+    # the ?v= stamps on scripts and styles still let those be cached between launches.
+    launch_stamp = int(time.time())
+    ui_html_path = f"{os.path.join(root_dir, 'ui', 'index.html')}?shell=native&launch={launch_stamp}"
     icon_path = _get_icon_path()
 
     # Create native Windows WebView2 window
