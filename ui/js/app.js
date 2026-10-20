@@ -289,6 +289,9 @@ function navigateTo(viewName, toolId = null, pushHistory = true) {
   } else if (viewName === 'settings') {
     renderSettings(container);
     updateBreadcrumb(['Home', 'Settings']);
+  } else if (viewName === 'support') {
+    SupportPage.render(container);
+    updateBreadcrumb(['Home', 'Support the developer']);
   } else if (viewName === 'tool_studio') {
     if (toolId) recordRecentTool(toolId);
     renderToolStudio(container, toolId);

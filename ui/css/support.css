@@ -1,0 +1,59 @@
+/* Support page: one calm card, QR on a white tile so it scans in dark mode too. 4px grid. */
+.support { display: flex; justify-content: center; padding: 32px 16px; }
+
+.support-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--surface-card);
+  text-align: center;
+}
+
+.support-title { margin: 0 0 8px; font-size: 22px; font-weight: 700; color: var(--text-primary); }
+.support-lead { margin: 0 0 24px; font-size: 14px; line-height: 1.5; color: var(--text-secondary); }
+
+.support-qr {
+  display: inline-flex;
+  padding: 12px;
+  border-radius: 12px;
+  background: #FFFFFF; /* scanners need dark-on-light; this stays white in dark mode on purpose */
+  border: 1px solid var(--border-subtle);
+}
+.support-qr img { display: block; width: 232px; height: 232px; }
+
+.support-hint { margin: 16px 0 20px; font-size: 13px; color: var(--text-secondary); }
+
+.support-upi {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--surface-inset);
+}
+.support-upi-id {
+  flex: 1;
+  text-align: left;
+  font-family: 'Geist Mono', monospace;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+.support-copy {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.support-copy:hover { filter: brightness(1.08); }
+.support-copy:focus-visible { outline: 2px solid var(--border-active); outline-offset: 2px; }
+
+.support-note { margin: 16px 0 0; font-size: 12px; color: var(--text-muted); }
