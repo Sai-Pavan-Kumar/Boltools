@@ -3349,12 +3349,12 @@ async function initApp() {
 
       case 'set-theme': {
         const theme = el.dataset.theme;
-        if (theme) ThemeTransition.switchTo(theme, el);
+        if (theme) ThemeTransition.switchTo(theme);
         break;
       }
 
       case 'toggle-theme':
-        ThemeTransition.switchTo(state.theme === 'dark' ? 'light' : 'dark', el);
+        ThemeTransition.switchTo(state.theme === 'dark' ? 'light' : 'dark');
         break;
 
       case 'browse-default-folder':
