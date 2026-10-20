@@ -215,25 +215,26 @@ class ToolStoreService:
                 time.sleep(0.05 * (attempt + 1))
 
     def _load_cached_manifest(self) -> Dict[str, Any]:
-        """Loads manifest from cache or bundled local fallback."""
-        if os.path.exists(self.manifest_cache_file):
-            try:
-                with open(self.manifest_cache_file, "r", encoding="utf-8") as f:
-                    manifest = json.load(f)
-                    if manifest and isinstance(manifest, dict) and "tools" in manifest:
-                        return manifest
-            except Exception:
-                pass
+        """The newer of the saved list and the list shipped with the app.
 
-        bundled_manifest_path = get_data_path("tools_manifest.json")
-        if os.path.exists(bundled_manifest_path):
-            try:
-                with open(bundled_manifest_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception:
-                pass
+        After an app update the saved copy can be older than the bundled one; trusting
+        it first meant tool updates installed old versions until the online refresh.
+        """
+        candidates = [m for m in (self._read_manifest(self.manifest_cache_file),
+                                  self._read_manifest(get_data_path("tools_manifest.json"))) if m]
+        if not candidates:
+            return {"schema_version": "1.0.0", "tools": []}
+        # max() keeps the first on a tie, so the saved copy wins when both are equal.
+        return max(candidates, key=lambda m: m.get("sequence", 0))
 
-        return {"schema_version": "1.0.0", "tools": []}
+    @staticmethod
+    def _read_manifest(path: str) -> Optional[Dict[str, Any]]:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+        except (OSError, ValueError):
+            return None
+        return manifest if isinstance(manifest, dict) and "tools" in manifest else None
 
     def verify_manifest_signature(self, manifest_bytes: bytes, sig_bytes: bytes, key_id: str = "key_1") -> bool:
         """Verifies Ed25519 signature against exact raw manifest bytes BEFORE parsing JSON."""
