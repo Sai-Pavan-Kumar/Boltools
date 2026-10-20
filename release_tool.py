@@ -16,6 +16,7 @@ import subprocess
 import argparse
 import hashlib
 import getpass
+import shutil
 from typing import Optional, Tuple
 
 SOFTWARE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +25,9 @@ BUNDLES_DIR = os.path.join(SOFTWARE_DIR, "release_bundles")
 CATALOG_PATH = os.path.join(SOFTWARE_DIR, "catalog.json")
 TOOLS_MANIFEST_PATH = os.path.join(SOFTWARE_DIR, "tools_manifest.json")
 TOOLS_MANIFEST_SIG_PATH = os.path.join(SOFTWARE_DIR, "tools_manifest.sig")
+# The app downloads the list and its signature from the website, so both copies must
+# carry the exact signed bytes.
+WEBSITE_DIR = os.path.join(os.path.dirname(SOFTWARE_DIR), "website")
 ANNOUNCEMENTS_PATH = os.path.join(SOFTWARE_DIR, "announcements.json")
 
 
@@ -215,7 +219,7 @@ def sign_manifest(key_path: Optional[str] = None, passphrase: Optional[str] = No
 
     manifest_data["sequence"] = manifest_data.get("sequence", 0) + 1
     # Pretty-print with fixed indent for canonical formatting
-    formatted_json = json.dumps(manifest_data, indent=2) + "\n"
+    formatted_json = json.dumps(manifest_data, indent=2, ensure_ascii=False) + "\n"
     raw_manifest_bytes = formatted_json.encode("utf-8")
 
     # Write updated manifest back to disk
@@ -228,6 +232,13 @@ def sign_manifest(key_path: Optional[str] = None, passphrase: Optional[str] = No
     # Write binary signature to tools_manifest.sig
     with open(TOOLS_MANIFEST_SIG_PATH, "wb") as sf:
         sf.write(sig_bytes)
+
+    if os.path.isdir(WEBSITE_DIR):
+        shutil.copyfile(TOOLS_MANIFEST_PATH, os.path.join(WEBSITE_DIR, "tools_manifest.json"))
+        shutil.copyfile(TOOLS_MANIFEST_SIG_PATH, os.path.join(WEBSITE_DIR, "tools_manifest.sig"))
+        print(f"[*] Copied signed list and signature to {WEBSITE_DIR}")
+    else:
+        print(f"[WARN] Website folder not found; copy tools_manifest.json and .sig there by hand.")
 
     print(f"[PASS] Successfully signed tools_manifest.json (Sequence: {manifest_data['sequence']})")
     print(f"[*] Signature written to: {TOOLS_MANIFEST_SIG_PATH} ({len(sig_bytes)} bytes)")
