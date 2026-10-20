@@ -1152,6 +1152,7 @@ function renderSettings(container) {
         </div>
       </div>
 
+      ${NotificationSettings.card()}
       <!-- Storage & Directory -->
       <div class="p-5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-3">
         <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">Storage & Output</span>
@@ -1217,6 +1218,7 @@ function renderSettings(container) {
       </div>
     </div>
   `;
+  NotificationSettings.load();
 }
 
 async function handleBrowseDefaultFolder() {
@@ -3314,6 +3316,10 @@ async function initApp() {
         if (theme) ThemeTransition.switchTo(theme, el);
         break;
       }
+
+      case 'toggle-background-check':
+        NotificationSettings.toggle();
+        break;
 
       case 'install-details':
         InstallDetails.show(el.dataset.toolId);

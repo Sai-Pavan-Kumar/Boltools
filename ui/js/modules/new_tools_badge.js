@@ -1,5 +1,5 @@
 /**
- * New tools in the store: a dot on Tool Hub until the user opens it, and the
+ * New tools in the store: a dot on Tool Store until the user opens it, and the
  * bell refreshed with "<tool> is available". Python decides what is new
  * (src/core/new_tools.py); this only shows it.
  */

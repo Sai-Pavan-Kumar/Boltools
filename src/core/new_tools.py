@@ -23,7 +23,8 @@ _lock = threading.Lock()
 
 def _read() -> Dict:
     try:
-        with open(STATE_FILE, "r", encoding="utf-8") as f:
+        # utf-8-sig: a copy edited in Notepad or PowerShell may start with a BOM.
+        with open(STATE_FILE, "r", encoding="utf-8-sig") as f:
             data = json.load(f)
     except (OSError, ValueError):
         return {}
@@ -92,7 +93,7 @@ def bell_items(tools: List[Dict]) -> List[Dict]:
         "date": notified[t["id"]],
         "tag": "NEW TOOL",
         "title": f"{t.get('name', t['id'])} is available",
-        "description": f"{t.get('description', '')} Download it from Tool Hub whenever you like.".strip(),
-        "cta_text": "Open Tool Hub",
+        "description": f"{t.get('description', '')} Download it from Tool Store whenever you like.".strip(),
+        "cta_text": "Open Tool Store",
         "cta_action": "navigate_hub",
     } for t in recent]

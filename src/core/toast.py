@@ -3,7 +3,7 @@
 Uses the notification API built into Windows through PowerShell. A desktop app
 may only show notifications under a name Windows knows, so the app registers
 its ID (HKCU\\Software\\Classes\\AppUserModelId, no admin) and a boltools://
-link so clicking a notification opens Boltools on Tool Hub.
+link so clicking a notification opens Boltools on Tool Store.
 """
 
 import os
@@ -69,8 +69,8 @@ def announce_new_tools(tools) -> None:
         return
     if len(tools) == 1:
         title = f"{tools[0].get('name', 'A new tool')} is available"
-        body = "Download it from Tool Hub whenever you like."
+        body = "Download it from Tool Store whenever you like."
     else:
         title = f"{len(tools)} new tools are available"
-        body = ", ".join(t.get("name", t["id"]) for t in tools[:3]) + ". Download them from Tool Hub."
+        body = ", ".join(t.get("name", t["id"]) for t in tools[:3]) + ". Download them from Tool Store."
     show(title, body)

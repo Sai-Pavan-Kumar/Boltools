@@ -31,7 +31,7 @@ from src.core.launch_requests import launch_requests
 from src.core.engine_compat import run_blocker
 from src.core.file_actions import menu_entries
 from src.core import previews
-from src.core import new_tools
+from src.core import new_tools, background_check
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -397,12 +397,21 @@ class DesktopBridge:
         return new_tools.bell_items(self._manifest_tools()) + list(announcement_service.cached_announcements)
 
     def get_new_tools(self) -> List[str]:
-        """Ids of store tools the user has not looked at yet (the Tool Hub dot)."""
+        """Ids of store tools the user has not looked at yet (the Tool Store dot)."""
         return [t["id"] for t in new_tools.unseen(self._manifest_tools())]
 
     def mark_store_seen(self) -> bool:
         new_tools.mark_store_seen(self._manifest_tools())
         return True
+
+    def get_background_check(self) -> bool:
+        return background_check.is_enabled()
+
+    def set_background_check(self, enabled: bool) -> bool:
+        return background_check.set_enabled(bool(enabled), self._app_root())
+
+    def _app_root(self) -> str:
+        return os.path.dirname(self.base_dir) if getattr(sys, "frozen", False) else self.base_dir
 
     @staticmethod
     def _manifest_tools() -> List[Dict[str, Any]]:

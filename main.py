@@ -53,7 +53,7 @@ from src.core import single_instance
 from src.core.explorer_menu import write_menu_file
 from src.core.file_actions import resolve_key
 from src.core.ui_port import main_window_port
-from src.core import new_tools, toast
+from src.core import new_tools, toast, background_check
 from src.core.ui_dispatcher import ui_dispatcher
 from src.core.launch_requests import launch_requests
 from src.core.tool_store import tool_store_service
@@ -105,8 +105,14 @@ def _apply_win_icon(window):
         pass
 
 
+def _run_background_check_and_exit():
+    """Task Scheduler run: no window, just the new-tools check (see background_check.py)."""
+    background_check.run_check(tool_store_service, new_tools, toast, _get_icon_path() or "")
+    sys.exit(0)
+
+
 def _announce_new_tools(manifest):
-    """Each new store tool gets one Windows notification, plus the bell and the Tool Hub dot."""
+    """Each new store tool gets one Windows notification, plus the bell and the Tool Store dot."""
     fresh = new_tools.take_unannounced((manifest or {}).get("tools", []))
     if fresh:
         toast.announce_new_tools(fresh)
@@ -130,6 +136,8 @@ def _run_quick_action(request) -> bool:
 
 
 def main():
+    if background_check.CHECK_ARG in sys.argv:
+        _run_background_check_and_exit()
     launch_request = single_instance.parse_open_request(sys.argv)
     if launch_request and _run_quick_action(launch_request):
         return
@@ -144,6 +152,7 @@ def main():
     toast.register(_get_icon_path() or "")
     tool_store_service.add_manifest_listener(_announce_new_tools)
     _announce_new_tools(tool_store_service.cached_manifest or {})
+    background_check.sync_on_start(root_dir)
 
     # WebView2 keeps an HTTP cache in storage_path and happily served a stale index.html
     # after updates, so new scripts never loaded. A per-launch URL forces a fresh page;

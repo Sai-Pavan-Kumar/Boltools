@@ -1,5 +1,5 @@
 /**
- * Tool Hub: what installing a tool puts on this PC, before the user installs.
+ * Tool Store: what installing a tool puts on this PC, before the user installs.
  * The plan comes from src/core/install_plan.py through the catalog summary.
  */
 const InstallDetails = (() => {
