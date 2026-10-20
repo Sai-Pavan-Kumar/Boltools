@@ -1,13 +1,7 @@
-/* Theme switch "light switch" (see js/modules/theme_transition.js). The
-   browser's default cross-fade is off; a soft radial mask does the work. */
+/* Theme switch (see js/modules/theme_transition.js). The browser's default
+   cross-fade is off; the new theme grows as a feathered circle instead. */
 
-/* Registered so the mask radii animate smoothly. */
-@property --hole {
-  syntax: '<length>';
-  inherits: false;
-  initial-value: 0px;
-}
-
+/* Registered so the reveal radius can be animated smoothly. */
 @property --reveal {
   syntax: '<length>';
   inherits: false;
@@ -15,29 +9,38 @@
 }
 
 ::view-transition-old(root),
-::view-transition-new(root) {
+::view-transition-new(root),
+::view-transition-group(theme-ring),
+::view-transition-new(theme-ring) {
   animation: none;
   mix-blend-mode: normal;
 }
 
-::view-transition-old(root) { z-index: 1; }
-::view-transition-new(root) { z-index: 2; }
+::view-transition { background: var(--vt-old-bg); }
 
-/* To dark: the dark screen closes in from the edges; the clear "hole" in the
-   middle shrinks to nothing. The 240px fade makes it read as dimming, not a wipe. */
-html[data-theme-switch="to-dark"]::view-transition-new(root) {
-  -webkit-mask-image: radial-gradient(circle at center,
-    transparent var(--hole), #000 calc(var(--hole) + 240px));
-  mask-image: radial-gradient(circle at center,
-    transparent var(--hole), #000 calc(var(--hole) + 240px));
+::view-transition-old(root) { z-index: 1; transform-origin: center; }
+
+::view-transition-new(root) {
+  z-index: 2;
+  /* Solid inside, fading to clear over the last 64px (FEATHER_PX in the JS): a soft edge, not a hard cut. */
+  -webkit-mask-image: radial-gradient(circle at var(--vt-x) var(--vt-y),
+    #000 calc(var(--reveal) - 64px), transparent var(--reveal));
+  mask-image: radial-gradient(circle at var(--vt-x) var(--vt-y),
+    #000 calc(var(--reveal) - 64px), transparent var(--reveal));
 }
 
-/* To light: the light screen blooms out from the centre with a wide soft edge. */
-html[data-theme-switch="to-light"]::view-transition-new(root) {
-  -webkit-mask-image: radial-gradient(circle at center,
-    #000 calc(var(--reveal) - 240px), transparent var(--reveal));
-  mask-image: radial-gradient(circle at center,
-    #000 calc(var(--reveal) - 240px), transparent var(--reveal));
+::view-transition-group(theme-ring) { z-index: 3; }
+
+/* Light ring that rides the soft edge. Only exists during the switch. */
+.theme-ring {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  view-transition-name: theme-ring;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand-primary) 55%, transparent),
+    0 0 28px 6px color-mix(in srgb, var(--brand-primary) 35%, transparent),
+    inset 0 0 28px 6px color-mix(in srgb, var(--brand-primary) 25%, transparent);
 }
 
 html.theme-switching *,
@@ -46,7 +49,7 @@ html.theme-switching *::after {
   transition: none !important;
 }
 
-/* The sun/moon turns into place while the light changes. */
+/* The sun/moon turns into place as the light leaves the button. */
 .theme-icon-enter {
   animation: theme-icon-enter 520ms cubic-bezier(0.22, 1, 0.36, 1);
 }

@@ -1,38 +1,62 @@
 /**
- * Theme switch that feels like a room light.
- *  - To dark: the screen dims from the edges inward, like a lamp switching off.
- *  - To light: a soft glow blooms from the centre, then settles.
+ * Theme switch: the new theme spreads from the pressed button with a soft,
+ * feathered edge, a faint brand-blue light ring rides that edge, and the old
+ * screen sinks back a little (shrinks and dims) as if pushed away.
  *
  * Built on View Transitions: the browser snapshots both screens once and only
- * GPU properties are animated (mask, filter), so it stays smooth on slow PCs.
- * Reduced-motion users, and any browser error, get an instant switch.
+ * GPU properties are animated (mask, transform, filter), so it stays smooth on
+ * slow PCs. Reduced-motion users, and any browser error, get an instant switch.
  */
 const ThemeTransition = (() => {
-  const TO_DARK = { duration: 620, easing: 'cubic-bezier(0.45, 0, 0.2, 1)' };   // slow start, like a dimmer
-  const TO_LIGHT = { duration: 680, easing: 'cubic-bezier(0.33, 1, 0.68, 1)' }; // visible bloom, soft landing
-  const BLOOM_PEAK = 1.35; // how bright the old screen flares before the light theme takes over
+  const DURATION_MS = 650;
+  const EASING = 'cubic-bezier(0.22, 1, 0.36, 1)'; // quick start, long soft landing
+  const FEATHER_PX = 64; // width of the soft edge; also where the ring sits
+  const RING_FADE_START = 0.7; // the ring fades out over the last 30%
 
   function prefersReducedMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }
 
-  // Centre to farthest corner, plus the soft edge, so the mask fully clears the screen.
-  function screenRadius() {
-    return Math.hypot(window.innerWidth, window.innerHeight) / 2 + 240;
+  // Radius that reaches the farthest screen corner from (x, y), plus the feather.
+  function coverRadius(x, y) {
+    const far = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    return far + FEATHER_PX;
   }
 
-  function animateToDark(root, radius) {
-    root.animate({ '--hole': [`${radius}px`, '0px'] },
-      { ...TO_DARK, pseudoElement: '::view-transition-new(root)' });
-    root.animate({ filter: ['brightness(1)', 'brightness(0.6)'] },
-      { ...TO_DARK, pseudoElement: '::view-transition-old(root)' });
+  function originOf(el) {
+    if (!el) return { x: window.innerWidth - 40, y: 34 };
+    const box = el.getBoundingClientRect();
+    return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
   }
 
-  function animateToLight(root, radius) {
+  // A full-size ring centred on the button; the transition scales it up from 0.
+  function addRing(x, y, radius) {
+    const ring = document.createElement('div');
+    ring.className = 'theme-ring';
+    ring.setAttribute('aria-hidden', 'true');
+    const ringRadius = radius - FEATHER_PX / 2;
+    Object.assign(ring.style, {
+      left: `${x - ringRadius}px`,
+      top: `${y - ringRadius}px`,
+      width: `${ringRadius * 2}px`,
+      height: `${ringRadius * 2}px`
+    });
+    document.body.appendChild(ring);
+    return ring;
+  }
+
+  function animate(x, y, radius) {
+    const root = document.documentElement;
+    const timing = { duration: DURATION_MS, easing: EASING };
     root.animate({ '--reveal': ['0px', `${radius}px`] },
-      { ...TO_LIGHT, pseudoElement: '::view-transition-new(root)' });
-    root.animate({ filter: ['brightness(1)', `brightness(${BLOOM_PEAK})`] },
-      { ...TO_LIGHT, pseudoElement: '::view-transition-old(root)' });
+      { ...timing, pseudoElement: '::view-transition-new(root)' });
+    root.animate({ transform: ['scale(1)', 'scale(0.975)'], filter: ['brightness(1)', 'brightness(0.78)'] },
+      { ...timing, pseudoElement: '::view-transition-old(root)' });
+    root.animate({
+      transform: ['scale(0)', 'scale(1)', 'scale(1)'],
+      opacity: [0.9, 0.55, 0],
+      offset: [0, RING_FADE_START, 1]
+    }, { ...timing, pseudoElement: '::view-transition-new(theme-ring)' });
   }
 
   function spinIcon() {
@@ -40,33 +64,35 @@ const ThemeTransition = (() => {
     if (icon) icon.classList.add('theme-icon-enter');
   }
 
-  function switchTo(theme) {
+  function switchTo(theme, originEl) {
     if (theme === state.theme) return;
     if (!document.startViewTransition || prefersReducedMotion()) {
       applyTheme(theme);
       return;
     }
+    const { x, y } = originOf(originEl);
+    const radius = coverRadius(x, y);
     const root = document.documentElement;
-    const toDark = theme === 'dark';
-    // Picks the matching mask in theme_transition.css.
-    root.dataset.themeSwitch = toDark ? 'to-dark' : 'to-light';
+    root.style.setProperty('--vt-x', `${x}px`);
+    root.style.setProperty('--vt-y', `${y}px`);
+    // Behind the sinking old screen: its own background, so no light or dark rim shows.
+    root.style.setProperty('--vt-old-bg', getComputedStyle(document.body).backgroundColor);
     // Per-element colour fades would run inside the snapshot and look muddy.
     root.classList.add('theme-switching');
-    const cleanUp = () => {
-      root.classList.remove('theme-switching');
-      delete root.dataset.themeSwitch;
-    };
+    let ring = null;
     try {
       const transition = document.startViewTransition(() => {
         applyTheme(theme);
+        ring = addRing(x, y, radius);
         spinIcon();
       });
-      transition.ready
-        .then(() => (toDark ? animateToDark : animateToLight)(root, screenRadius()))
-        .catch(() => {});
-      transition.finished.finally(cleanUp);
+      transition.ready.then(() => animate(x, y, radius)).catch(() => {});
+      transition.finished.finally(() => {
+        root.classList.remove('theme-switching');
+        if (ring) ring.remove();
+      });
     } catch (err) {
-      cleanUp();
+      root.classList.remove('theme-switching');
       applyTheme(theme);
     }
   }
