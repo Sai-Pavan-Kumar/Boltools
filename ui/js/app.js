@@ -276,6 +276,7 @@ function navigateTo(viewName, toolId = null, pushHistory = true) {
     updateBreadcrumb(['Home']);
   } else if (viewName === 'tool_hub') {
     renderToolHub(container);
+    NewToolsBadge.storeOpened();
     updateBreadcrumb(['Home', 'Tool Store']);
   } else if (viewName === 'my_tools') {
     renderMyTools(container);
@@ -3859,6 +3860,7 @@ async function initApp() {
         const seenIds = JSON.parse(localStorage.getItem('boltools-seen-announcements') || '[]');
         const unread = (state.announcements || []).filter(a => !seenIds.includes(a.id)).length;
         updateBellBadge(unread > 0 ? unread : 0);
+        NewToolsBadge.refresh();
 
         // Re-render to reflect synced state
         const container = document.getElementById('main-content');

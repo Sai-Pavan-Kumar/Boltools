@@ -53,6 +53,8 @@ from src.core import single_instance
 from src.core.explorer_menu import write_menu_file
 from src.core.file_actions import resolve_key
 from src.core.ui_port import main_window_port
+from src.core import new_tools, toast
+from src.core.ui_dispatcher import ui_dispatcher
 from src.core.launch_requests import launch_requests
 from src.core.tool_store import tool_store_service
 
@@ -103,8 +105,18 @@ def _apply_win_icon(window):
         pass
 
 
+def _announce_new_tools(manifest):
+    """Each new store tool gets one Windows notification, plus the bell and the Tool Hub dot."""
+    fresh = new_tools.take_unannounced((manifest or {}).get("tools", []))
+    if fresh:
+        toast.announce_new_tools(fresh)
+    ui_dispatcher.send("onNewTools", [t["id"] for t in fresh])
+
+
 def _run_quick_action(request) -> bool:
     """Right-click one-click actions finish in a small card; False means open the app."""
+    if "tool_id" not in request:
+        return False
     tools = (tool_store_service.cached_manifest or {}).get("tools", [])
     tool, action = resolve_key(tools, request["tool_id"])
     files = [f for f in request["files"] if os.path.isfile(f)]
@@ -129,6 +141,9 @@ def main():
     _sync_explorer_menu()
     # A tool added online joins the right-click menu at once, not after a restart.
     tool_store_service.add_manifest_listener(lambda _manifest: _sync_explorer_menu())
+    toast.register(_get_icon_path() or "")
+    tool_store_service.add_manifest_listener(_announce_new_tools)
+    _announce_new_tools(tool_store_service.cached_manifest or {})
 
     # WebView2 keeps an HTTP cache in storage_path and happily served a stale index.html
     # after updates, so new scripts never loaded. A per-launch URL forces a fresh page;

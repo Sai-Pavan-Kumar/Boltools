@@ -53,7 +53,9 @@ def listen(on_request: Callable[[Dict], None]) -> None:
 
 
 def parse_open_request(argv) -> Optional[Dict]:
-    """Reads `--open-tool <tool_id> <file> <file>...` from the right-click menu."""
+    """Reads `--open-tool <tool_id> <file>...` (right-click) or a boltools:// link (notifications)."""
+    if any(str(arg).lower().startswith("boltools://") for arg in argv[1:]):
+        return {"view": "tool_hub"}
     if "--open-tool" not in argv:
         return None
     idx = argv.index("--open-tool")

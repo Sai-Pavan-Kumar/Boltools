@@ -2,6 +2,11 @@
 // Ready state with the files already in the tray.
 const OpenRequest = (() => {
   function open(request) {
+    // A notification click opens the store.
+    if (request && request.view === 'tool_hub') {
+      navigateTo('tool_hub');
+      return;
+    }
     if (!request || !request.tool_id || !Array.isArray(request.files) || !request.files.length) return;
     if (state.isToolRunning) return; // never swap files under a running job
     openToolWithFiles(request.tool_id, request.files);

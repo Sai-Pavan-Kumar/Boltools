@@ -31,6 +31,7 @@ from src.core.launch_requests import launch_requests
 from src.core.engine_compat import run_blocker
 from src.core.file_actions import menu_entries
 from src.core import previews
+from src.core import new_tools
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -80,7 +81,7 @@ class DesktopBridge:
             "settings": {
                 "default_downloads": os.path.join(os.path.expanduser("~"), "Downloads")
             },
-            "announcements": announcement_service.cached_announcements,
+            "announcements": self.get_announcements(),
             "system_stats": {"cpu": cpu, "ram": ram, "disk": disk},
             "default_downloads": os.path.join(os.path.expanduser("~"), "Downloads")
         }
@@ -392,8 +393,20 @@ class DesktopBridge:
         return {"cpu": cpu, "ram": ram, "disk": disk}
 
     def get_announcements(self) -> List[Dict[str, Any]]:
-        """Returns the latest announcements from the service cache."""
-        return announcement_service.cached_announcements
+        """Bell list: one notice per new tool in the store, then the published announcements."""
+        return new_tools.bell_items(self._manifest_tools()) + list(announcement_service.cached_announcements)
+
+    def get_new_tools(self) -> List[str]:
+        """Ids of store tools the user has not looked at yet (the Tool Hub dot)."""
+        return [t["id"] for t in new_tools.unseen(self._manifest_tools())]
+
+    def mark_store_seen(self) -> bool:
+        new_tools.mark_store_seen(self._manifest_tools())
+        return True
+
+    @staticmethod
+    def _manifest_tools() -> List[Dict[str, Any]]:
+        return (tool_store_service.cached_manifest or {}).get("tools", [])
 
     def get_tool_details(self, tool_id: str) -> Optional[Dict[str, Any]]:
         """Returns complete tool definition."""

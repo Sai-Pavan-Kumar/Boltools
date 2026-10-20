@@ -41,6 +41,22 @@
   padding: 0;
 }
 
+/* New tools waiting in the store. */
+#app-sidebar .sidebar-nav-btn { position: relative; }
+.sb-new-dot {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  box-shadow: 0 0 0 2px var(--surface-sidebar);
+}
+.sb-new-dot[hidden] { display: none; }
+.sidebar-collapsed .sb-new-dot { top: 8px; right: 12px; margin-top: 0; }
+
 @media (prefers-reduced-motion: reduce) {
   #app-sidebar, .sb-toggle-arrow { transition: none; }
 }

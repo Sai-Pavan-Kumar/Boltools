@@ -15,6 +15,8 @@ _TOOL_ID = re.compile(r"^[a-z0-9_]{1,64}$")
 
 
 def _clean(request: Optional[Dict]) -> Optional[Dict]:
+    if request and request.get("view") == "tool_hub":
+        return {"view": "tool_hub"}
     if not request or not _TOOL_ID.match(str(request.get("tool_id", ""))):
         return None
     files = [os.path.abspath(f) for f in request.get("files", []) if isinstance(f, str) and os.path.isfile(f)]
