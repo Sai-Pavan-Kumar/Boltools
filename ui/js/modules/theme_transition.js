@@ -47,7 +47,9 @@ const ThemeTransition = (() => {
 
   function animate(x, y, radius) {
     const root = document.documentElement;
-    const timing = { duration: DURATION_MS, easing: EASING };
+    // fill: 'forwards' holds the last frame; without it the new screen snaps back to
+    // hidden for a frame before the transition ends, which shows as a flash.
+    const timing = { duration: DURATION_MS, easing: EASING, fill: 'forwards' };
     root.animate({ '--reveal': ['0px', `${radius}px`] },
       { ...timing, pseudoElement: '::view-transition-new(root)' });
     root.animate({ transform: ['scale(1)', 'scale(0.975)'], filter: ['brightness(1)', 'brightness(0.78)'] },
