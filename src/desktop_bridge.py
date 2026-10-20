@@ -111,7 +111,7 @@ class DesktopBridge:
         target = tool_store_service.get_engine_target(tool_id) or tool_meta.get("target", "")
 
         if not target or not os.path.exists(target):
-            self._notify_frontend("onToolError", f"Engine file for '{tool_id}' not found. Please click Install/Update in Tool Hub to download.")
+            self._notify_frontend("onToolError", f"Engine file for '{tool_id}' not found. Please click Install or Update in Tool Store to download.")
             return
 
         def _on_progress(pct: float, status: str):

@@ -276,7 +276,7 @@ function navigateTo(viewName, toolId = null, pushHistory = true) {
     updateBreadcrumb(['Home']);
   } else if (viewName === 'tool_hub') {
     renderToolHub(container);
-    updateBreadcrumb(['Home', 'Tool Hub']);
+    updateBreadcrumb(['Home', 'Tool Store']);
   } else if (viewName === 'my_tools') {
     renderMyTools(container);
     updateBreadcrumb(['Home', 'My Tools']);
@@ -349,7 +349,7 @@ function updateBreadcrumb(crumbs) {
       // Find navigation target for breadcrumb item
       let actionAttr = '';
       if (crumb === 'Home') actionAttr = 'data-action="nav" data-view="home"';
-      else if (crumb === 'Tool Hub') actionAttr = 'data-action="nav" data-view="tool_hub"';
+      else if (crumb === 'Tool Store') actionAttr = 'data-action="nav" data-view="tool_hub"';
       else if (crumb === 'My Tools') actionAttr = 'data-action="nav" data-view="my_tools"';
       else if (crumb === 'History') actionAttr = 'data-action="nav" data-view="history"';
       else if (crumb === 'Favorites') actionAttr = 'data-action="nav" data-view="favorites"';
@@ -563,7 +563,7 @@ function renderHome(container) {
           <div class="flex items-center justify-between mb-4">
             <span class="text-xs font-bold text-[var(--text-muted)] tracking-wider uppercase">Utilities & Tools</span>
             <button data-action="nav" data-view="tool_hub" class="text-xs font-semibold text-[var(--brand-primary)] hover:underline flex items-center gap-1 cursor-pointer">
-              <span>View Tool Hub</span>
+              <span>View Tool Store</span>
               ${getIcon('chevron-right', 'w-3 h-3')}
             </button>
           </div>
@@ -888,7 +888,7 @@ function renderCategoryView(container, categoryId) {
   `;
 }
 
-// ── Tool Hub Search & Virtual Grid Controller ───────────────────────────────
+// ── Tool Store Search & Virtual Grid Controller ───────────────────────────────
 let activeHubVirtualGrid = null;
 let activeSearchIndex = null;
 let hubSearchDebounceTimer = null;
@@ -962,13 +962,13 @@ function renderToolHub(container) {
     { id: 'All', label: 'All' },
     { id: 'Installed', label: 'Installed' },
     { id: 'Updates', label: updatesCount > 0 ? `Updates (${updatesCount})` : 'Updates', badge: updatesCount > 0 },
-    { id: 'Hub Catalog', label: 'Hub Catalog' }
+    { id: 'Hub Catalog', label: 'Available' }
   ];
 
   container.innerHTML = `
     <div class="max-w-5xl mx-auto space-y-5 pb-6 h-full flex flex-col">
       <div>
-        <h2 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">Tool Hub</h2>
+        <h2 class="text-xl font-bold font-display text-[var(--text-primary)] tracking-tight">Tool Store</h2>
         <p class="text-xs text-[var(--text-secondary)] mt-1">Browse, install, and update modular offline tools directly on this PC.</p>
       </div>
 
@@ -1108,7 +1108,7 @@ function renderFavorites(container) {
         <h3 class="text-base font-semibold text-[var(--text-primary)]">No Pinned Favorites Yet</h3>
         <p class="text-xs text-[var(--text-secondary)] max-w-sm mx-auto mt-1 mb-5">Pin frequently used utilities using the heart icon inside any tool studio for instant access.</p>
         <button data-action="nav" data-view="tool_hub" class="btn-primary px-4 py-2 text-xs font-medium rounded-lg bg-[var(--brand-primary)] hover:bg-[var(--brand-hover)] text-white shadow-sm transition-all inline-flex items-center gap-1.5 cursor-pointer">
-          <span>Browse Tool Hub</span>
+          <span>Browse Tool Store</span>
           ${getIcon('arrow-right', 'w-3.5 h-3.5')}
         </button>
       </div>

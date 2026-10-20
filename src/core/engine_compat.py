@@ -12,7 +12,7 @@ from typing import Optional
 from src._build import IS_RELEASE
 from src.core.tool_store import is_newer_version, tool_store_service
 
-UPDATE_FIRST_MESSAGE = "This tool has a free update that it needs before it can run. Open Tool Hub and press Update."
+UPDATE_FIRST_MESSAGE = "This tool has a free update that it needs before it can run. Open Tool Store and press Update."
 
 
 def run_blocker(tool_id: str) -> Optional[str]:

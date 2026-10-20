@@ -545,7 +545,7 @@ class ToolStoreService:
                 "size_mb": t.get("size_mb", 25),
                 "update_available": bool(t.get("update_available", False)),
                 "description": desc,
-                # Data-driven screens for tools released through Tool Hub (ui/js/modules/tool_settings.js).
+                # Data-driven screens for tools released through Tool Store (ui/js/modules/tool_settings.js).
                 "settings": t.get("settings") or [],
                 "ux": t.get("ux") or None,
                 "accepts": t.get("accepts") or [],

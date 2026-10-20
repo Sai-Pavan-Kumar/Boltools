@@ -1,6 +1,6 @@
 /**
  * Tool settings described by the tools list, so a new tool ships through
- * Tool Hub with its own settings screen and no app update.
+ * Tool Store with its own settings screen and no app update.
  *
  * A tool entry may carry:
  *   settings: [
