@@ -13,17 +13,7 @@ Set-Location $PSScriptRoot
 $python = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
 $buildFlags = Join-Path $PSScriptRoot 'src\_build.py'
 
-& $python -c @'
-import sys
-import nacl.signing
-from src._build import EMBEDDED_PUBLIC_KEYS
-key = nacl.signing.VerifyKey(bytes.fromhex(EMBEDDED_PUBLIC_KEYS["key_1"]))
-try:
-    key.verify(open("tools_manifest.json", "rb").read(), open("tools_manifest.sig", "rb").read())
-except Exception:
-    sys.exit("tools_manifest.json is not signed with this key. Run: release_tool.py --sign-manifest --key-file <key>")
-print("Signature OK")
-'@
+& $python (Join-Path $PSScriptRoot 'tools_dev\verify_signature.py')
 if ($LASTEXITCODE -ne 0) { throw 'Signature check failed.' }
 
 & $python -m unittest discover -s tools_dev -p 'test_*.py'
