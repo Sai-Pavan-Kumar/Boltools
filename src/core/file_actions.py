@@ -35,6 +35,9 @@ def menu_items(tools: Iterable[Dict]) -> List[Dict]:
                 "label": action["label"],
                 "accepts": action.get("accepts") or accepts,
                 "min_files": int(action.get("min_files", min_files)),
+                "tool_id": tool["id"],
+                "tool_name": tool.get("name") or tool["id"],
+                "options": dict(action.get("options") or {}),
             })
         if not quick:
             items.append({
@@ -42,6 +45,9 @@ def menu_items(tools: Iterable[Dict]) -> List[Dict]:
                 "label": tool.get("menu_label") or tool.get("name") or tool["id"],
                 "accepts": accepts,
                 "min_files": min_files,
+                "tool_id": tool["id"],
+                "tool_name": tool.get("name") or tool["id"],
+                "options": {},
             })
     return items
 

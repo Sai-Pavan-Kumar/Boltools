@@ -29,6 +29,7 @@ from src.core.output_stats import with_file_sizes
 from src.core.thumbnails import make_thumbnails
 from src.core.launch_requests import launch_requests
 from src.core.engine_compat import run_blocker
+from src.core.file_actions import menu_entries
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -397,6 +398,14 @@ class DesktopBridge:
         """Returns complete tool definition."""
         validate_identifier(tool_id, "tool_id")
         return tool_store_service.get_tool_meta(tool_id)
+
+    def get_file_actions(self, file_paths: List[str]) -> List[Dict[str, Any]]:
+        """Actions that fit these files, from installed tools only (same rules as the right-click menu)."""
+        paths = [p for p in (file_paths or []) if isinstance(p, str)]
+        installed = {t["id"] for t in tool_store_service.get_catalog_summary()
+                     if t.get("status") in ("installed", "update_available")}
+        tools = (tool_store_service.cached_manifest or {}).get("tools", [])
+        return [e for e in menu_entries(tools, paths) if e["tool_id"] in installed]
 
     def get_launch_request(self) -> Optional[Dict[str, Any]]:
         """The right-click request this window was started with, handed out once."""

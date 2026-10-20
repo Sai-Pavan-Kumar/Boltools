@@ -620,61 +620,7 @@ let pendingGlobalFiles = [];
 function handleGlobalFileInput(files) {
   if (!files || files.length === 0) return;
   pendingGlobalFiles = files;
-
-  const firstFile = files[0];
-  const ext = firstFile.split('.').pop().toLowerCase();
-  const fileName = firstFile.split('\\').pop().split('/').pop();
-
-  if (ext === 'pdf') {
-    const modal = document.getElementById('modal-file-action');
-    const title = document.getElementById('file-action-title');
-    const sub = document.getElementById('file-action-subtitle');
-    const icon = document.getElementById('file-action-icon');
-    const opts = document.getElementById('file-action-options');
-
-    if (modal && opts) {
-      if (title) title.innerText = files.length > 1 ? `${files.length} PDF Documents Detected` : `PDF Document Detected`;
-      if (sub) sub.innerText = files.length > 1 ? `${fileName} + ${files.length - 1} more` : fileName;
-      if (icon) {
-        icon.className = 'w-8 h-8 rounded-md bg-red-500/10 text-red-500 flex items-center justify-center font-bold text-[10px] border border-red-500/20 shrink-0';
-        icon.innerText = 'PDF';
-      }
-
-      opts.innerHTML = `
-        <button data-action="smart-action-merge" class="w-full p-3 rounded-lg border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] text-left flex items-center justify-between group transition-all cursor-pointer">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-md bg-[var(--brand-primary)] text-white flex items-center justify-center shrink-0">
-              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4"/><rect x="8" y="6" width="12" height="14" rx="1.5"/><path d="M12 13h4"/><path d="M14 11v4"/></svg>
-            </div>
-            <div>
-              <div class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">Merge PDFs into One File</div>
-              <div class="text-[11px] text-[var(--text-secondary)]">Combine ${files.length} document${files.length > 1 ? 's' : ''} in your chosen order</div>
-            </div>
-          </div>
-          ${getIcon('arrow-right', 'w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--brand-primary)]')}
-        </button>
-
-        <button data-action="smart-action-split" class="w-full p-3 rounded-lg border border-[var(--border-subtle)] hover:border-[var(--brand-primary)] bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] text-left flex items-center justify-between group transition-all cursor-pointer">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-md bg-[var(--surface-card)] border border-[var(--border-subtle)] text-[var(--brand-primary)] flex items-center justify-center shrink-0">
-              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
-            </div>
-            <div>
-              <div class="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--brand-primary)]">Split or Extract Pages</div>
-              <div class="text-[11px] text-[var(--text-secondary)]">Extract page ranges or separate individual sheets</div>
-            </div>
-          </div>
-          ${getIcon('arrow-right', 'w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--brand-primary)]')}
-        </button>
-      `;
-
-      modal.classList.remove('hidden');
-      return;
-    }
-  }
-
-  // Fallback direct open for PDF studio
-  openPdfStudioWithFiles(files, 'merge');
+  FileActionsPicker.open(files);
 }
 
 function openPdfStudioWithFiles(files, mode = 'merge') {
@@ -3357,6 +3303,10 @@ async function initApp() {
         if (theme) ThemeTransition.switchTo(theme, el);
         break;
       }
+
+      case 'pick-file-action':
+        FileActionsPicker.pick(el.dataset.index);
+        break;
 
       case 'toggle-sidebar':
         SidebarToggle.toggle();
