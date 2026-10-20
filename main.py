@@ -127,6 +127,8 @@ def main():
         return
     launch_requests.set_initial(launch_request)
     _sync_explorer_menu()
+    # A tool added online joins the right-click menu at once, not after a restart.
+    tool_store_service.add_manifest_listener(lambda _manifest: _sync_explorer_menu())
 
     # WebView2 keeps an HTTP cache in storage_path and happily served a stale index.html
     # after updates, so new scripts never loaded. A per-launch URL forces a fresh page;

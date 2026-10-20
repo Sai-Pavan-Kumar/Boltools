@@ -126,6 +126,7 @@ class ToolStoreService:
         self.release_bundles_dir = os.path.join(get_base_dir(), "release_bundles")
 
         self.tool_states = self._load_tool_states()
+        self._manifest_listeners: List[Any] = []
         self.cached_manifest = self._load_cached_manifest()
         self._cached_resolved_catalog: Optional[List[Dict[str, Any]]] = None
 
@@ -213,6 +214,17 @@ class ToolStoreService:
                 if attempt == attempts - 1:
                     raise
                 time.sleep(0.05 * (attempt + 1))
+
+    def add_manifest_listener(self, listener) -> None:
+        """Called with the new list whenever a newer signed list is accepted online."""
+        self._manifest_listeners.append(listener)
+
+    def _notify_manifest_listeners(self, manifest: Dict[str, Any]) -> None:
+        for listener in list(self._manifest_listeners):
+            try:
+                listener(manifest)
+            except Exception as err:
+                print(f"[tool-store] manifest listener failed: {err}", file=sys.stderr)
 
     def _load_cached_manifest(self) -> Dict[str, Any]:
         """The newer of the saved list and the list shipped with the app.
@@ -317,6 +329,7 @@ class ToolStoreService:
                             json.dump(data, f, indent=2)
                     except Exception:
                         pass
+                    self._notify_manifest_listeners(data)
                     break
 
                 except Exception:
