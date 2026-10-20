@@ -1234,7 +1234,7 @@ function renderSettings(container) {
       <div class="p-5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-4">
         <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">About & Diagnostics</span>
         <div>
-          <h4 class="text-sm font-semibold text-[var(--text-primary)]">Boltools Desktop v1.0</h4>
+          <h4 class="text-sm font-semibold text-[var(--text-primary)]">Boltools Desktop v1.1</h4>
           <p class="text-xs text-[var(--text-secondary)] leading-relaxed mt-0.5">Fast, private, 100% offline utilities for creators and power users. Designed and built with obsessed human craftsmanship.</p>
         </div>
         <div>

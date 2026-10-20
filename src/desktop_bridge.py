@@ -28,6 +28,7 @@ from src.core.ui_dispatcher import ui_dispatcher
 from src.core.output_stats import with_file_sizes
 from src.core.thumbnails import make_thumbnails
 from src.core.launch_requests import launch_requests
+from src.core.engine_compat import run_blocker
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -99,6 +100,11 @@ class DesktopBridge:
 
         if not tool_meta:
             self._notify_frontend("onToolError", f"Unknown tool: {tool_id}")
+            return
+
+        blocker = run_blocker(tool_id)
+        if blocker:
+            self._notify_frontend("onToolError", blocker)
             return
 
         engine_type = tool_meta.get("engine_type", "python")

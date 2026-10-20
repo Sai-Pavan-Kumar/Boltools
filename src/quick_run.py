@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 
 import webview
 
+from src.core.engine_compat import run_blocker
 from src.core.output_stats import with_file_sizes
 from src.core.tool_store import tool_store_service
 from src.engine_runner import engine_runner
@@ -62,6 +63,10 @@ def _push(window, method: str, payload: Dict[str, Any]):
 
 def _start_engine(window, tool: Dict, action: Dict, files: List[str]):
     _push(window, "start", {"label": action["label"], "files": files})
+    blocker = run_blocker(tool["id"])
+    if blocker:
+        _push(window, "failed", {"message": blocker})
+        return
     target = tool_store_service.get_engine_target(tool["id"]) or ""
     if not target or not os.path.exists(target):
         _push(window, "failed", {"message": "This tool is not installed yet. Open Boltools to install it."})

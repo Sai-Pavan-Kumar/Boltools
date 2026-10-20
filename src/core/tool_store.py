@@ -191,10 +191,28 @@ class ToolStoreService:
             temp_fd, temp_path = tempfile.mkstemp(dir=self.state_dir, prefix="tool_states_", suffix=".tmp")
             with os.fdopen(temp_fd, "w", encoding="utf-8") as f:
                 json.dump(self.tool_states, f, indent=2)
-            os.replace(temp_path, self.tool_states_file)
+            self._replace_with_retry(temp_path, self.tool_states_file)
             self.invalidate_cache()
-        except Exception:
-            pass
+        except Exception as err:
+            # Our own half-written temp file; leaving it behind piled up dozens in ~/.boltools.
+            print(f"[tool-store] could not save tool states: {err}", file=sys.stderr)
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+    @staticmethod
+    def _replace_with_retry(source: str, target: str, attempts: int = 5):
+        """Windows refuses os.replace while another process is reading the target; retry briefly."""
+        import time
+        for attempt in range(attempts):
+            try:
+                os.replace(source, target)
+                return
+            except PermissionError:
+                if attempt == attempts - 1:
+                    raise
+                time.sleep(0.05 * (attempt + 1))
 
     def _load_cached_manifest(self) -> Dict[str, Any]:
         """Loads manifest from cache or bundled local fallback."""

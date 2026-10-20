@@ -6,7 +6,7 @@ In release binaries, IS_RELEASE is strictly True and ignores BOLTOOLS_DEV overri
 
 IS_RELEASE: bool = False
 BUILD_MIN_SEQUENCE: int = 1
-APP_VERSION: str = "1.0.0"
+APP_VERSION: str = "1.1.0"
 
 # Public keys embedded in app binary for Ed25519 manifest verification.
 # Allows dual keys for zero-downtime key rotation.

@@ -43,7 +43,8 @@
             "format": "MP3 (320 kbps Studio Quality)"
           }
         }
-      ]
+      ],
+      "min_engine_version": "1.1.0"
     },
     {
       "id": "video_compressor",
@@ -80,7 +81,8 @@
             "target_mb": 50
           }
         }
-      ]
+      ],
+      "min_engine_version": "1.1.0"
     },
     {
       "id": "pdf_merge",
@@ -222,7 +224,8 @@
             "mode": "Images to PDF Document"
           }
         }
-      ]
+      ],
+      "min_engine_version": "1.1.0"
     },
     {
       "id": "image_webp_compress",
@@ -263,7 +266,8 @@
             "target_kb": 50
           }
         }
-      ]
+      ],
+      "min_engine_version": "1.1.0"
     },
     {
       "id": "system_batch_rename",
@@ -284,7 +288,8 @@
         "*"
       ],
       "min_files": 1,
-      "menu_label": "Rename files…"
+      "menu_label": "Rename files…",
+      "min_engine_version": "1.1.0"
     },
     {
       "id": "subtitle_animator",
@@ -310,7 +315,8 @@
         "vtt"
       ],
       "min_files": 1,
-      "menu_label": "Add animated subtitles…"
+      "menu_label": "Add animated subtitles…",
+      "min_engine_version": "1.1.0"
     }
   ]
 }
