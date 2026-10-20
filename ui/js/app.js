@@ -224,6 +224,7 @@ function toggleTheme() {
 function navigateTo(viewName, toolId = null, pushHistory = true) {
   state.currentView = viewName;
   state.activeToolId = toolId;
+  if (viewName !== 'tool_studio') LivePreview.stop();
   if (pushHistory) {
     const last = state.navHistory[state.navHistory.length - 1];
     const lastView = typeof last === 'string' ? last : (last ? last.view : null);
@@ -1369,6 +1370,7 @@ function renderToolStudio(container, toolId) {
   `;
 
   StudioPanel.mount(document.getElementById('studio-right'), tool.id);
+  LivePreview.mount(tool.id);
   StudioPanel.refreshStart(0);
   RunStage.mount(document.getElementById('studio-stage-left'), tool.id, document.getElementById('studio-btn-execute'), syncStudioPanelToRun);
 
@@ -2222,7 +2224,9 @@ async function handleExecuteTool(toolId) {
     btnExec.disabled = true;
     btnExec.classList.add('opacity-50');
   }
-  RunStage.start(state.selectedFiles);
+  // A live tool's result is already on screen; saving needs no run animation.
+  if (LivePreview.isLiveTool(toolId)) LivePreview.startSave();
+  else RunStage.start(state.selectedFiles);
 
   if (toolId === 'pdf_merge') {
     state.activeToolOptions.mode = 'merge';
@@ -2248,11 +2252,13 @@ async function handleCancelTool() {
 
 // Bridge Event Handlers (Called by Python evaluate_js)
 window.onToolProgress = function(data) {
+  if (LivePreview.isSaving()) return;
   const pct = data.indeterminate ? -1 : data.percent;
   RunStage.progress(pct, data.status);
 };
 
 window.onToolLog = function(msg) {
+  if (LivePreview.isSaving()) return;
   RunStage.log(msg);
 };
 
@@ -2283,6 +2289,10 @@ window.onToolComplete = function(data) {
   }
 
   const outputs = [].concat(data.outputs || data.output_file || []).filter(Boolean);
+  if (LivePreview.isSaving()) {
+    LivePreview.finishSave(outputs);
+    return;
+  }
   if (PreviewViewer.isPreviewTool(state.activeToolId)) {
     RunStage.reset();
     syncStudioPanelToRun('idle');
@@ -2302,6 +2312,7 @@ function syncStudioPanelToRun(runState) {
 
 function syncStudioPanelToFiles() {
   refreshStudioPreview();
+  LivePreview.refresh();
   prefillSingleFileName();
   const stageBusy = document.getElementById('studio-stage-left')?.classList.contains('th-on');
   if (!stageBusy) StudioPanel.setPhase(state.selectedFiles.length ? 'ready' : 'empty');
@@ -2358,6 +2369,7 @@ window.onToolError = function(errMsg) {
     btnExec.disabled = false;
     btnExec.classList.remove('opacity-50');
   }
+  if (LivePreview.isSaving()) return LivePreview.finishSave([], errMsg);
   RunStage.fail(errMsg);
 };
 
@@ -3481,6 +3493,7 @@ async function initApp() {
           const optBox = document.getElementById('studio-options-box');
           if (optBox) optBox.innerHTML = renderToolSpecificOptions(state.activeToolId);
           refreshStudioPreview();
+          LivePreview.refresh();
         }
         break;
       }
@@ -3682,6 +3695,7 @@ async function initApp() {
 
       case 'set-tool-text':
         state.activeToolOptions[el.dataset.key] = el.value;
+        LivePreview.refresh();
         break;
 
       case 'studio-out-filename-input':

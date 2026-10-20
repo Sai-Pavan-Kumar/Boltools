@@ -1,0 +1,43 @@
+/* Live preview (js/modules/live_preview.js). 4px grid, tokens only. */
+.lp { display: flex; flex-direction: column; gap: 12px; padding: 12px; border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--surface-card); }
+.lp[hidden] { display: none; }
+
+.lp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.lp-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 10px; background: var(--surface-inset); }
+.lp-tabs:empty { display: none; }
+.lp-tab {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lp-tab:hover { color: var(--text-primary); }
+.lp-tab.is-active { background: var(--surface-card); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+.lp-tab:focus-visible { outline: 2px solid var(--border-active); outline-offset: 2px; }
+
+.lp-status { font-size: 12px; color: var(--text-muted); }
+
+.lp-stage {
+  display: flex;
+  justify-content: center;
+  min-height: 240px;
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--surface-inset);
+}
+.lp-image { align-self: flex-start; max-width: 100%; height: auto; border-radius: 8px; }
+.lp-image:not([src]) { visibility: hidden; }
+/* Real on-screen widths (the engine draws at 2-3x), so text reads as a viewer sees it. */
+.lp-image[data-layout="phone"] { width: 412px; }
+.lp-image[data-layout="desktop"] { width: 1176px; }
+.lp-image[data-layout="sidebar"] { width: 402px; }
+
+.lp-foot { margin: 0; font-size: 12px; color: var(--text-muted); text-align: center; }

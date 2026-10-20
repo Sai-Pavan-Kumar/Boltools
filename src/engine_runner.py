@@ -83,6 +83,19 @@ if sys.platform == "win32":
         _HAS_WIN32_JOB = False
 
 
+def engine_command(engine_type: str, executable_target: str) -> List[str]:
+    """How to start an engine; empty for an engine type this app cannot run."""
+    if engine_type in ["python", "py"]:
+        if getattr(sys, "frozen", False):
+            return [sys.executable, "--engine-worker", executable_target]
+        return [sys.executable, executable_target]
+    if engine_type in ["binary", "executable", "exe"]:
+        return [executable_target]
+    if engine_type == "command":
+        return executable_target.split()
+    return []
+
+
 def _create_win32_job():
     """Creates a Windows Job Object configured to kill child processes on close."""
     if not _HAS_WIN32_JOB:
@@ -170,18 +183,8 @@ class EngineRunner:
                 "output_dir": output_dir
             }
 
-            # Prepare command based on runtime
-            cmd: List[str] = []
-            if engine_type in ["python", "py"]:
-                if getattr(sys, "frozen", False):
-                    cmd = [sys.executable, "--engine-worker", executable_target]
-                else:
-                    cmd = [sys.executable, executable_target]
-            elif engine_type in ["binary", "executable", "exe"]:
-                cmd = [executable_target]
-            elif engine_type == "command":
-                cmd = executable_target.split()
-            else:
+            cmd = engine_command(engine_type, executable_target)
+            if not cmd:
                 with self.lock:
                     self.is_starting = False
                 on_error({"code": "UNSUPPORTED_ENGINE", "message": f"Unsupported engine type: {engine_type}"})

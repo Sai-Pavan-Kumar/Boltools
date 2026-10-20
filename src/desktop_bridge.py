@@ -31,6 +31,7 @@ from src.core.launch_requests import launch_requests
 from src.core.engine_compat import run_blocker
 from src.core.file_actions import menu_entries
 from src.core import previews
+from src.core import live_preview
 from src.core import new_tools, background_check
 from src.engine_runner import engine_runner
 
@@ -439,6 +440,16 @@ class DesktopBridge:
 
     def save_previews(self, paths: List[str], dest_dir: str) -> Dict[str, Any]:
         return previews.save(paths, dest_dir)
+
+    # Live preview tools (see src/core/live_preview.py)
+    def live_preview(self, tool_id: str, file_path: str, options: Dict[str, Any]) -> Dict[str, Any]:
+        meta = tool_store_service.get_tool_meta(tool_id) if isinstance(tool_id, str) else None
+        target = tool_store_service.get_engine_target(tool_id) if meta else None
+        return live_preview.render_tool(meta, target, file_path, options)
+
+    def stop_live_preview(self) -> bool:
+        live_preview.live_preview.stop()
+        return True
 
     def get_launch_request(self) -> Optional[Dict[str, Any]]:
         """The right-click request this window was started with, handed out once."""

@@ -372,12 +372,12 @@
       "category_name": "Image Studio",
       "description": "See how your video thumbnail looks in a real feed on phone and desktop, with your title and the length badge.",
       "icon": "play",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "engine_type": "python",
       "engine_folder": "thumbnail_preview",
       "engine_url": "https://boltools.thesurfboard.in/engines/thumbnail_preview/engine.py",
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/thumbnail_preview/engine.py",
-      "release_notes": "New tool: phone feed, desktop grid and sidebar previews at real size. Tip: the file name is used as the title.",
+      "release_notes": "Previews now appear on the tool screen and update as you type. Save only when you want the files.",
       "is_implemented": true,
       "accepts": [
         "jpg",
@@ -430,18 +430,18 @@
       ],
       "ux": {
         "namesOutput": false,
-        "verb": "Preview",
+        "verb": "Save previews for",
         "noun": "thumbnail",
         "minFiles": 1,
         "limits": "JPG, PNG or WEBP · one or many",
-        "before": "A thumbnail becomes phone, desktop and sidebar previews"
+        "before": "Previews update as you type the title"
       },
-      "sha256": "8782d1889d53f5006c2c69eaacce818f62187a894fcd182d1daabbc99bbce3cf",
-      "output": "preview",
+      "sha256": "5ef26170b26e302a9cf4da0c10ff0b6d3f8c68c683b79359a9d5ea35eb953117",
+      "output": "live",
       "needs": [
         "picture_pdf_core"
       ],
-      "size_bytes": 10896,
+      "size_bytes": 12577,
       "size_mb": 0.01
     }
   ]
