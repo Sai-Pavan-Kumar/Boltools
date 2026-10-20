@@ -2207,7 +2207,10 @@ async function handleExecuteTool(toolId) {
     return;
   }
 
-  const outDir = document.getElementById('studio-out-folder')?.value || state.defaultDownloads;
+  // Preview tools write to a private folder; the viewer shows them and Save copies them out.
+  const outDir = PreviewViewer.isPreviewTool(toolId)
+    ? await callBridge('new_preview_dir')
+    : (document.getElementById('studio-out-folder')?.value || state.defaultDownloads);
   state.isToolRunning = true;
 
   const btnExec = document.getElementById('studio-btn-execute');
@@ -2254,7 +2257,7 @@ window.onToolComplete = function(data) {
   state.lastOutputFile = data.output_file || '';
   const stats = data.stats || null;
 
-  if (state.lastOutputFile) {
+  if (state.lastOutputFile && !PreviewViewer.isPreviewTool(state.activeToolId)) {
     const fullPath = state.lastOutputFile;
     const fileName = fullPath.split('\\').pop().split('/').pop();
     const fileExt = fileName.split('.').pop() || 'file';
@@ -2276,6 +2279,12 @@ window.onToolComplete = function(data) {
   }
 
   const outputs = [].concat(data.outputs || data.output_file || []).filter(Boolean);
+  if (PreviewViewer.isPreviewTool(state.activeToolId)) {
+    RunStage.reset();
+    syncStudioPanelToRun('idle');
+    PreviewViewer.show(outputs);
+    return;
+  }
   RunStage.complete({ outputs, stats, requestedName: state.activeToolOptions.custom_filename });
   StudioPanel.showNext(outputs, toolId => state.tools.some(t => t.id === toolId), openToolWithFiles);
 };

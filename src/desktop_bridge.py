@@ -30,6 +30,7 @@ from src.core.thumbnails import make_thumbnails
 from src.core.launch_requests import launch_requests
 from src.core.engine_compat import run_blocker
 from src.core.file_actions import menu_entries
+from src.core import previews
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -406,6 +407,16 @@ class DesktopBridge:
                      if t.get("status") in ("installed", "update_available")}
         tools = (tool_store_service.cached_manifest or {}).get("tools", [])
         return [e for e in menu_entries(tools, paths) if e["tool_id"] in installed]
+
+    # Preview tools (see src/core/previews.py)
+    def new_preview_dir(self) -> str:
+        return previews.new_preview_dir()
+
+    def read_preview_image(self, path: str) -> Optional[str]:
+        return previews.read_image(path)
+
+    def save_previews(self, paths: List[str], dest_dir: str) -> Dict[str, Any]:
+        return previews.save(paths, dest_dir)
 
     def get_launch_request(self) -> Optional[Dict[str, Any]]:
         """The right-click request this window was started with, handed out once."""

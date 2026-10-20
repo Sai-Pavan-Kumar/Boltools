@@ -562,6 +562,7 @@ class ToolStoreService:
                 "settings": t.get("settings") or [],
                 "ux": t.get("ux") or None,
                 "accepts": t.get("accepts") or [],
+                "output": t.get("output") or "files",
             })
         return summaries
 
