@@ -1453,7 +1453,7 @@ function getDefaultOptionsForTool(toolId) {
     chunk_size: 4,
     subtitles: getSampleSubtitleCues()
   };
-  return {};
+  return ToolSettings.defaults(toolId);
 }
 
 function getDropzoneHint(toolId) {
@@ -1860,7 +1860,7 @@ function renderToolSpecificOptions(toolId) {
       </div>
     `;
   }
-  return '';
+  return ToolSettings.render(toolId, state.activeToolOptions);
 }
 
 // ── Custom Dropdown Component ───────────────────────────────────────────────
@@ -2008,7 +2008,7 @@ async function handleStudioBrowseFiles(toolId, isAppend = false) {
   } else if (toolId === 'subtitle_animator') {
     fileTypes = ['Media & Subtitle Files (*.mp4;*.mkv;*.mov;*.webm;*.srt;*.vtt)', 'Video Files (*.mp4;*.mkv;*.mov;*.webm)', 'Subtitle Files (*.srt;*.vtt)', 'All Files (*.*)'];
   } else {
-    fileTypes = ['All Files (*.*)'];
+    fileTypes = ToolSettings.fileFilter(toolId);
   }
 
   const files = await callBridge('browse_files', fileTypes);
@@ -3240,6 +3240,8 @@ function showToast(message, type = 'info') {
   }, 4000);
 }
 
+const DOWNLOAD_PAGE_URL = 'https://boltools.thesurfboard.in/download';
+
 function handleAnnouncementAction(action, target) {
   closeAnnouncementsModal();
   if (action === 'update_tool' && target) {
@@ -3256,6 +3258,9 @@ function handleAnnouncementAction(action, target) {
     }
   } else if (action === 'navigate_category' && target) {
     navigateToCategory(target);
+  } else if (action === 'open_download') {
+    // Fixed address: notices are not signed, so they never choose where a click goes.
+    callBridge('open_url', DOWNLOAD_PAGE_URL);
   } else {
     navigateTo('tool_hub');
   }
@@ -3698,6 +3703,10 @@ async function initApp() {
 
       case 'studio-out-folder-input':
         state.customOutputDir = el.value;
+        break;
+
+      case 'set-tool-text':
+        state.activeToolOptions[el.dataset.key] = el.value;
         break;
 
       case 'studio-out-filename-input':

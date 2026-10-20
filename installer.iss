@@ -2,7 +2,7 @@
 ; Boltools Desktop Suite - Production Installer
 
 #define MyAppName "Boltools"
-#define MyAppVersion "1.1.2"
+#define MyAppVersion "1.1.3"
 #define MyAppPublisher "The SurfBoard"
 #define MyAppURL "https://thesurfboard.in"
 #define MyAppExeName "Boltools.exe"

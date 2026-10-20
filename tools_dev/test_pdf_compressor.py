@@ -30,9 +30,9 @@ class TestPdfCompressor(unittest.TestCase):
         self.assertTrue(os.path.exists(target), f"Engine target {target} must exist on disk")
         self.assertTrue(target.endswith("engine.py"))
 
-    def test_all_nine_tools_in_catalog(self):
+    def test_original_tools_stay_in_catalog(self):
+        # New tools may be added through Tool Hub; none of the original nine may disappear.
         tools = desktop_bridge.get_catalog_summary()
-        self.assertEqual(len(tools), 9, f"Catalog must contain exactly 9 tools, got {len(tools)}")
         tool_ids = {t["id"] for t in tools}
         expected_ids = {
             "media_audio_extractor",
@@ -45,7 +45,7 @@ class TestPdfCompressor(unittest.TestCase):
             "system_batch_rename",
             "subtitle_animator"
         }
-        self.assertEqual(tool_ids, expected_ids, "All 9 expected tools must be present")
+        self.assertTrue(expected_ids <= tool_ids, f"Missing tools: {expected_ids - tool_ids}")
 
 if __name__ == "__main__":
     unittest.main()

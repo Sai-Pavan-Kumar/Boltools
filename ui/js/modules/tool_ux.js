@@ -43,7 +43,7 @@
   };
 
   function get(toolId) {
-    return TOOLS[toolId] || FALLBACK;
+    return TOOLS[toolId] || { ...FALLBACK, ...(ToolSettings.ux(toolId) || {}) };
   }
 
   function startLabel(toolId, fileCount) {

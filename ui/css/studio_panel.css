@@ -73,6 +73,11 @@
 .opt-field { display: flex; flex-direction: column; gap: 8px; }
 .opt-label { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
 .opt-hint { margin: 0; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.opt-input {
+  min-height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border-subtle);
+  background: var(--surface-inset); color: var(--text-primary); font: inherit; font-size: 14px;
+}
+.opt-input:focus { outline: none; border-color: var(--border-active); }
 .opt-segmented { display: grid; grid-template-columns: repeat(var(--opt-count), minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 10px; background: var(--surface-inset); }
 .opt-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
 .opt-choice {
