@@ -8,12 +8,14 @@ the action's fixed settings, and the result is saved next to the original file
 import ctypes
 import json
 import os
-from typing import Any, Dict, List
+import threading
+from typing import Any, Dict, List, Tuple
 
 import webview
 
 from src.core.engine_compat import run_blocker
 from src.core.output_stats import with_file_sizes
+from src.core.ui_port import free_port
 from src.core.tool_store import tool_store_service
 from src.engine_runner import engine_runner
 
@@ -54,22 +56,46 @@ class QuickCardApi:
         self.close()
 
 
-def _push(window, method: str, payload: Dict[str, Any]):
-    try:
-        window.evaluate_js(f"window.Quick && window.Quick.{method}({json.dumps(payload)})")
-    except Exception:
-        pass
+class CardChannel:
+    """Messages for the card. The engine starts before the card has loaded (WebView2
+    needs ~2 s to open), so early messages wait here and are replayed on load."""
+
+    def __init__(self, window):
+        self._window = window
+        self._lock = threading.Lock()
+        self._waiting: List[Tuple[str, Dict[str, Any]]] = []
+        self._ready = False
+
+    def send(self, method: str, payload: Dict[str, Any]):
+        with self._lock:
+            if not self._ready:
+                self._waiting.append((method, payload))
+                return
+        self._deliver(method, payload)
+
+    def page_loaded(self):
+        with self._lock:
+            self._ready = True
+            waiting, self._waiting = self._waiting, []
+        for method, payload in waiting:
+            self._deliver(method, payload)
+
+    def _deliver(self, method: str, payload: Dict[str, Any]):
+        try:
+            self._window.evaluate_js(f"window.Quick && window.Quick.{method}({json.dumps(payload)})")
+        except Exception:
+            pass
 
 
-def _start_engine(window, tool: Dict, action: Dict, files: List[str]):
-    _push(window, "start", {"label": action["label"], "files": files})
+def _start_engine(card: CardChannel, tool: Dict, action: Dict, files: List[str]):
+    card.send("start", {"label": action["label"], "files": files})
     blocker = run_blocker(tool["id"])
     if blocker:
-        _push(window, "failed", {"message": blocker})
+        card.send("failed", {"message": blocker})
         return
     target = tool_store_service.get_engine_target(tool["id"]) or ""
     if not target or not os.path.exists(target):
-        _push(window, "failed", {"message": "This tool is not installed yet. Open Boltools to install it."})
+        card.send("failed", {"message": "This tool is not installed yet. Open Boltools to install it."})
         return
 
     def on_complete(outputs: Any):
@@ -77,10 +103,10 @@ def _start_engine(window, tool: Dict, action: Dict, files: List[str]):
         if isinstance(outputs, dict) and "outputs" in outputs:
             stats, outputs = outputs.get("stats"), outputs.get("outputs")
         output_list = outputs if isinstance(outputs, list) else [outputs]
-        _push(window, "done", {"outputs": output_list, "stats": with_file_sizes(stats, files, output_list)})
+        card.send("done", {"outputs": output_list, "stats": with_file_sizes(stats, files, output_list)})
 
     def on_error(err: Any):
-        _push(window, "failed", {"message": err.get("message") if isinstance(err, dict) else str(err)})
+        card.send("failed", {"message": err.get("message") if isinstance(err, dict) else str(err)})
 
     engine_runner.run_engine(
         tool_id=tool["id"],
@@ -89,7 +115,7 @@ def _start_engine(window, tool: Dict, action: Dict, files: List[str]):
         input_files=files,
         options=dict(action.get("options") or {}),
         output_dir=os.path.dirname(os.path.abspath(files[0])),
-        on_progress=lambda pct, status: _push(window, "progress", {"percent": pct, "status": status}),
+        on_progress=lambda pct, status: card.send("progress", {"percent": pct, "status": status}),
         on_log=lambda _msg: None,
         on_complete=on_complete,
         on_error=on_error,
@@ -114,8 +140,12 @@ def run_quick(tool: Dict, action: Dict, files: List[str], root_dir: str, bridge,
         text_select=False,
     )
     api._window = window
-    window.events.loaded += lambda: _start_engine(window, tool, action, files)
+    card = CardChannel(window)
+    window.events.loaded += card.page_loaded
+    _start_engine(card, tool, action, files)
 
     storage_dir = os.path.join(os.path.expanduser("~"), ".boltools", "quick_webview2")
     os.makedirs(storage_dir, exist_ok=True)
-    webview.start(gui="edgechromium", icon=icon_path, private_mode=False, storage_path=storage_dir)
+    # Its own port: on the shared one it could load the open main window's (maybe older) files.
+    webview.start(gui="edgechromium", icon=icon_path, private_mode=False, storage_path=storage_dir,
+                  http_port=free_port())

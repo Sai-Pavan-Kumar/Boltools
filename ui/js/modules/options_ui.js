@@ -88,6 +88,28 @@
     return goal + size + moreOptions(options, format + shape);
   }
 
+  // WhatsApp, email and most forms cap videos at 16-25 MB; 10 MB covers strict portals.
+  const VIDEO_LIMITS = [
+    { value: '0', label: 'No limit' },
+    { value: '10', label: 'Under 10 MB' },
+    { value: '16', label: 'Under 16 MB', hint: 'WhatsApp' },
+    { value: '25', label: 'Under 25 MB', hint: 'Email' },
+    { value: '50', label: 'Under 50 MB' }
+  ];
+
+  function videoGoal(options) {
+    const modes = [
+      { value: 'High Quality', label: 'Best', hint: 'Near original' },
+      { value: 'Balanced', label: 'Balanced', hint: 'Recommended' },
+      { value: 'Small Size', label: 'Smallest', hint: 'Tiny files' }
+    ];
+    const limit = String(options.limit_mb || 0);
+    const goal = limit !== '0' ? '' : segmented({ key: 'mode', label: 'Goal', current: options.mode || 'Balanced', options: modes });
+    const size = chips({ key: 'limit_mb', label: 'Size limit', current: limit, options: VIDEO_LIMITS,
+      hint: 'The video is checked after compressing and made smaller until it fits.' });
+    return goal + size;
+  }
+
   // Rarely needed settings stay folded (Hick's law); the summary shows what is chosen.
   function moreOptions(options, body) {
     const formatLabel = (options.format || 'webp') === 'jpg' ? 'JPG' : 'WebP';
@@ -113,5 +135,5 @@
     options[key] = raw;
   }
 
-  window.OptionsUI = { segmented, chips, compressGoal, apply };
+  window.OptionsUI = { segmented, chips, compressGoal, videoGoal, apply };
 })();

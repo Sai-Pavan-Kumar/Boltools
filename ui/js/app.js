@@ -1432,7 +1432,7 @@ function getDefaultOptionsForTool(toolId) {
   if (toolId === 'pdf_compress') return { preset: 'balanced', target_kb: 0 };
   if (toolId === 'pdf_studio') return { mode: 'merge', split_mode: 'ranges', ranges: '1-', every_n: 1 };
   if (toolId === 'media_audio_extractor') return { format: 'MP3 (320 kbps Studio Quality)' };
-  if (toolId === 'video_compressor') return { mode: 'Balanced', target_mb: 50 };
+  if (toolId === 'video_compressor') return { mode: 'Balanced', limit_mb: 0 };
   if (toolId === 'pdf_converter') return { mode: 'PDF to Images (PNG)' };
   if (toolId === 'image_webp_compress') return { preset: 'balanced', target_kb: 0 };
   if (toolId === 'system_batch_rename') return { rule: 'Add Suffix', text1: '_v1', text2: '', op_mode: 'Save to Destination' };
@@ -1641,20 +1641,7 @@ function renderToolSpecificOptions(toolId) {
       })}
     `;
   } else if (toolId === 'video_compressor') {
-    return `
-      <span class="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Compression Mode</span>
-      <div class="grid grid-cols-2 gap-2 pt-1">
-        ${['Balanced', 'High Quality', 'Small Size', 'Custom'].map(m => `
-          <button 
-            type="button"
-            data-action="set-studio-mode" data-mode="${escapeAttr(m)}"
-            class="p-2.5 rounded-lg border text-left text-xs transition-all ${state.activeToolOptions.mode === m ? 'border-[var(--brand-primary)] bg-[var(--brand-light)] font-semibold text-[var(--brand-primary)]' : 'border-[var(--border-subtle)] bg-[var(--surface-inset)] text-[var(--text-primary)] hover:border-[var(--border-hover)]'}"
-          >
-            ${m}
-          </button>
-        `).join('')}
-      </div>
-    `;
+    return OptionsUI.videoGoal(state.activeToolOptions);
   } else if (toolId === 'pdf_compress') {
     return OptionsUI.compressGoal(state.activeToolOptions, 'pdf');
   } else if (toolId === 'pdf_converter') {

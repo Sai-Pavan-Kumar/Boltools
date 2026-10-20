@@ -52,6 +52,7 @@ from src._build import IS_RELEASE
 from src.core import single_instance
 from src.core.explorer_menu import write_menu_file
 from src.core.file_actions import resolve_key
+from src.core.ui_port import main_window_port
 from src.core.launch_requests import launch_requests
 from src.core.tool_store import tool_store_service
 
@@ -177,7 +178,8 @@ def main():
         gui="edgechromium",
         debug=False,
         private_mode=False,
-        storage_path=storage_dir
+        storage_path=storage_dir,
+        http_port=main_window_port()
     )
 
 

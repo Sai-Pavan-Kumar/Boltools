@@ -8,7 +8,10 @@ show, then re-encoded as JPEG when that is actually smaller. Built on pikepdf
 Options:
   preset    "smallest" | "balanced" (default) | "best" | "lossless"
             (old labels like "72 DPI", "150 DPI (Balanced)", "200 DPI" still work)
-  target_kb N -> walk down the presets until the file fits under N KB
+  target_kb N -> shrink pictures step by step until the file fits under N KB.
+            When pictures alone cannot get there (text-heavy files), pages are
+            saved as compact pictures as a last resort, and the log says so.
+            If even that cannot fit, the run reports it instead of pretending.
 
 A result is never bigger than the original, and a locked or broken file is
 reported by name without stopping the rest of the batch.
@@ -22,6 +25,7 @@ import tempfile
 from io import BytesIO
 
 import pikepdf
+import pypdfium2 as pdfium
 from PIL import Image
 
 # (longest image side in px, JPEG quality); ~1600 px fills an A4 page at ~190 DPI.
@@ -29,9 +33,15 @@ PRESETS = {
     "best": (2400, 82),
     "balanced": (1600, 70),
     "smallest": (1100, 55),
-    "tiny": (800, 42),
 }
-TARGET_LADDER = ["balanced", "smallest", "tiny"]
+# Target mode keeps stepping down from "balanced" until the file fits.
+TARGET_START = PRESETS["balanced"]
+TARGET_SIDE_STEP = 0.8
+TARGET_MIN_SIDE = 300
+TARGET_QUALITY_STEP = 6
+TARGET_MIN_QUALITY = 20
+# Last resort for a hard size limit: (page DPI, JPEG quality), largest first.
+RASTER_LADDER = [(150, 70), (120, 60), (100, 50), (80, 42), (72, 35), (60, 30), (50, 25)]
 SKIP_IMAGE_BYTES = 12 * 1024
 UNSAFE_FILTERS = {"/JBIG2Decode", "/CCITTFaxDecode", "/JPXDecode"}
 
@@ -91,10 +101,20 @@ def shrink_image(obj, max_side, quality):
     return original_size - len(data)
 
 
-def compress_with(src, dst, preset):
+def target_steps():
+    """(longest side, quality) pairs from balanced down to very small pictures."""
+    max_side, quality = TARGET_START
+    while max_side >= TARGET_MIN_SIDE:
+        yield max_side, quality
+        max_side = int(max_side * TARGET_SIDE_STEP)
+        quality = max(TARGET_MIN_QUALITY, quality - TARGET_QUALITY_STEP)
+
+
+def compress_with(src, dst, settings):
+    """settings: (longest side, quality), or None for lossless clean-up only."""
     with pikepdf.open(src) as pdf:
-        if preset != "lossless":
-            max_side, quality = PRESETS[preset]
+        if settings:
+            max_side, quality = settings
             seen = set()
             for page in pdf.pages:
                 for _, image in page.get_images().items():
@@ -108,23 +128,46 @@ def compress_with(src, dst, preset):
     return os.path.getsize(dst)
 
 
-def compress_file(src, dst, preset, target_kb):
-    """Writes the best result to dst and returns its size; falls back to the original bytes."""
-    original = os.path.getsize(src)
-    ladder = TARGET_LADDER if target_kb else [preset]
-    best_size, work_dir = original, tempfile.mkdtemp(prefix="boltools_pdf_")
+def rasterize(src, dst, dpi, quality):
+    """Every page becomes one JPEG picture. Text can no longer be selected."""
+    document = pdfium.PdfDocument(src)
     try:
-        for step in ladder:
-            trial = os.path.join(work_dir, f"{step}.pdf")
-            size = compress_with(src, trial, step)
-            if size < best_size:
-                best_size = size
-                shutil.copyfile(trial, dst)
-            if target_kb and size <= target_kb * 1024:
-                break
+        pages = [page.render(scale=dpi / 72).to_pil().convert("RGB") for page in document]
+    finally:
+        document.close()
+    pages[0].save(dst, "PDF", save_all=True, append_images=pages[1:], resolution=dpi, quality=quality)
+    return os.path.getsize(dst)
+
+
+def compress_file(src, dst, preset, target_kb):
+    """Writes the best result to dst. Returns (size, note); note is "" or a sentence for the log."""
+    original = os.path.getsize(src)
+    limit = target_kb * 1024
+    best_size, work_dir = original, tempfile.mkdtemp(prefix="boltools_pdf_")
+
+    def try_step(name, make):
+        nonlocal best_size
+        trial = os.path.join(work_dir, f"{name}.pdf")
+        size = make(trial)
+        if size < best_size:
+            best_size = size
+            shutil.copyfile(trial, dst)
+        return size
+
+    try:
+        if not target_kb:
+            try_step(preset, lambda t: compress_with(src, t, None if preset == "lossless" else PRESETS[preset]))
+        elif original > limit:
+            for index, settings in enumerate(target_steps()):
+                if try_step(f"step{index}", lambda t: compress_with(src, t, settings)) <= limit:
+                    break
+            if best_size > limit:
+                for dpi, quality in RASTER_LADDER:
+                    if try_step(f"raster{dpi}", lambda t: rasterize(src, t, dpi, quality)) <= limit:
+                        return best_size, "To fit the size limit, pages were saved as pictures (text can't be selected)."
         if best_size >= original:
             shutil.copyfile(src, dst)
-        return best_size
+        return best_size, ""
     finally:
         shutil.rmtree(work_dir, ignore_errors=True)
 
@@ -178,7 +221,7 @@ def main():
         send({"type": "progress", "percent": round(5 + index / len(files) * 90, 1), "status": f"Compressing {name}…"})
         dst = output_path(src, out_dir, custom_name, len(files) > 1)
         try:
-            size = compress_file(src, dst, preset, target_kb)
+            size, note = compress_file(src, dst, preset, target_kb)
         except Exception as err:
             failed.append({"file": src, "reason": reason_for(err)})
             send({"type": "log", "message": f"{name}: {reason_for(err)}"})
@@ -188,6 +231,10 @@ def main():
         before_total += original
         after_total += min(size, original)
         send({"type": "log", "message": f"{name}: {original // 1024} KB → {min(size, original) // 1024} KB"})
+        if note:
+            send({"type": "log", "message": f"{name}: {note}"})
+        if target_kb and min(size, original) > target_kb * 1024:
+            failed.append({"file": src, "reason": f"Smallest possible is {min(size, original) // 1024} KB, above your {target_kb} KB limit."})
 
     if not outputs:
         send({"type": "error", "message": failed[0]["reason"] if failed else "No PDFs could be compressed."})

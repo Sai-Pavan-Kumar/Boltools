@@ -61,7 +61,10 @@
       const what = count > 1 ? `${count} files saved next to the original` : `Saved as ${fileName(outputPath)}`;
       $('quick-status').textContent = what;
       appendSizes($('quick-status'), stats);
-      $('quick-title').textContent = 'Done';
+      // A size limit that could not be met is still a saved file, but the user must know.
+      const missed = stats && Array.isArray(stats.failed) && stats.failed[0];
+      if (missed) $('quick-status').append(document.createTextNode(` · ${RunStats.brand(missed.reason)}`));
+      $('quick-title').textContent = missed ? 'Done, but over the limit' : 'Done';
       $('quick-show').focus();
       scheduleClose();
     },

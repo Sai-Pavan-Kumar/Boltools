@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "sequence": 10,
+  "sequence": 11,
   "updated_at": "2026-10-20T10:15:38Z",
   "tools": [
     {
@@ -10,14 +10,14 @@
       "category_name": "Media & Video",
       "description": "Extract clean MP3, WAV, AAC, or FLAC audio tracks from video and audio files locally.",
       "icon": "music",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "engine_type": "python",
       "engine_folder": "audio_extractor",
       "engine_url": "https://boltools.thesurfboard.in/engines/audio_extractor/engine.py",
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/audio_extractor/engine.py",
-      "release_notes": "Faster cancel, files are never overwritten.",
+      "release_notes": "Works with WinGet media engine installs; clear message when the media engine is missing.",
       "is_implemented": true,
-      "sha256": "ef436397aa5b3197d613d94a4a79debd62a711de4503b925e95acfef3b33762f",
+      "sha256": "ad422bfc9b3c4c9dd4121296fc24fac4b6f042bffee55b1320469c011d5b1a0d",
       "accepts": [
         "mp4",
         "mkv",
@@ -44,7 +44,7 @@
           }
         }
       ],
-      "min_engine_version": "1.1.0"
+      "min_engine_version": "1.2.0"
     },
     {
       "id": "video_compressor",
@@ -53,14 +53,14 @@
       "category_name": "Media & Video",
       "description": "Compress video files with Low, Balanced, and Maximum compression presets.",
       "icon": "video",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "engine_type": "python",
       "engine_folder": "video_compressor",
       "engine_url": "https://boltools.thesurfboard.in/engines/video_compressor/engine.py",
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/video_compressor/engine.py",
-      "release_notes": "Faster cancel, never bigger than the original, files are never overwritten.",
+      "release_notes": "Size limits that are always met (10/16/25/50 MB); works with WinGet media engine installs.",
       "is_implemented": true,
-      "sha256": "0b9a60fa464dd41aa311c2f0dcc78a47c9588f0f6409630640d5762378d543f1",
+      "sha256": "89f44d1a41d7fb3469309ed464c8cf3b0a4d535853bf0a4288822e0c5781c4f0",
       "accepts": [
         "mp4",
         "mkv",
@@ -77,12 +77,18 @@
         {
           "label": "Make video smaller",
           "options": {
+            "mode": "Balanced"
+          }
+        },
+        {
+          "label": "Video under 16 MB (WhatsApp)",
+          "options": {
             "mode": "Balanced",
-            "target_mb": 50
+            "limit_mb": 16
           }
         }
       ],
-      "min_engine_version": "1.1.0"
+      "min_engine_version": "1.2.0"
     },
     {
       "id": "pdf_merge",
@@ -154,17 +160,17 @@
       "category_name": "PDF Studio",
       "description": "Reduce PDF file size while preserving high visual and text quality.",
       "icon": "minimize-2",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "engine_type": "python",
       "engine_folder": "pdf_compressor",
       "entry": "engine.py",
       "engine_url": "https://boltools.thesurfboard.in/engines/pdf_compressor/engine.py",
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/pdf_compressor/engine.py",
-      "release_notes": "High-efficiency offline PDF compression with multiple DPI presets.",
+      "release_notes": "Size limits are met: finer steps, and a last-resort picture mode for text-heavy files.",
       "is_implemented": true,
       "size_bytes": 1024000,
       "size_mb": 1,
-      "sha256": "53cedc47d736fa0c4219f0fa016fcd9e8ad96fe73dc00a22dd9bfb0e11e56350",
+      "sha256": "5fb2cf7859894c5aaa26bfb9f48cd8a692488dacefc9b1df1a9802a16d82831e",
       "accepts": [
         "pdf"
       ],
@@ -177,8 +183,16 @@
             "preset": "balanced",
             "target_kb": 0
           }
+        },
+        {
+          "label": "PDF under 1 MB",
+          "options": {
+            "preset": "balanced",
+            "target_kb": 1024
+          }
         }
-      ]
+      ],
+      "min_engine_version": "1.1.0"
     },
     {
       "id": "pdf_converter",
@@ -234,14 +248,14 @@
       "category_name": "Image Studio",
       "description": "Bulk compress photos into web-optimized WebP images with custom quality controls.",
       "icon": "image",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "engine_type": "python",
       "engine_folder": "webp_compressor",
       "engine_url": "https://boltools.thesurfboard.in/engines/webp_compressor/engine.py",
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/webp_compressor/engine.py",
-      "release_notes": "Target sizes (20-50 KB, 10-20 KB), portal photo crops, never bigger than the original.",
+      "release_notes": "Size limits are a hard maximum: never a byte over.",
       "is_implemented": true,
-      "sha256": "a08393060d2dfb6f9a56af8ba57a81c57f162705c3789706e42fc90377c8dd0d",
+      "sha256": "58b1802919f894a5375099cf2fd223d2ae91dcbbac167398f3a7aa431d4d04b6",
       "accepts": [
         "png",
         "jpg",
@@ -267,7 +281,7 @@
           }
         }
       ],
-      "min_engine_version": "1.1.0"
+      "min_engine_version": "1.2.0"
     },
     {
       "id": "system_batch_rename",
@@ -298,14 +312,14 @@
       "category_name": "Media & Video",
       "description": "Create viral animated subtitles with word-by-word karaoke highlight, custom fonts, colors, and live timing editor.",
       "icon": "type",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "engine_type": "python",
       "engine_folder": "subtitle_animator",
       "engine_url": "https://boltools.thesurfboard.in/engines/subtitle_animator/engine.py",
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/subtitle_animator/engine.py",
-      "release_notes": "Faster cancel, files are never overwritten.",
+      "release_notes": "Works with WinGet media engine installs; clear message when the media engine is missing.",
       "is_implemented": true,
-      "sha256": "6ec4453a5233879edb457ecc0741ca833fededa430d0744b4093aa56fe6befd7",
+      "sha256": "c60f2c3905ea61474d313948d2f66107f40604ebba8aeaa103007e104bb4cc93",
       "accepts": [
         "mp4",
         "mkv",
@@ -316,7 +330,7 @@
       ],
       "min_files": 1,
       "menu_label": "Add animated subtitles…",
-      "min_engine_version": "1.1.0"
+      "min_engine_version": "1.2.0"
     }
   ]
 }
