@@ -1,0 +1,31 @@
+/* Theme reveal (see js/modules/theme_transition.js). The browser's default
+   cross-fade is switched off; the new theme grows as a circle instead. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* The new theme is drawn above the old one while the circle grows. */
+::view-transition-new(root) { z-index: 2; }
+::view-transition-old(root) { z-index: 1; }
+
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+
+/* The sun/moon turns into place as the circle leaves the button. */
+.theme-icon-enter {
+  animation: theme-icon-enter 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes theme-icon-enter {
+  from { transform: rotate(-90deg) scale(0.4); opacity: 0; }
+  to { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-icon-enter { animation: none; }
+}
