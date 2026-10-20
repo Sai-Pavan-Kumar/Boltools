@@ -42,9 +42,27 @@ else:
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
+# Right-click launches in dev mode carry --dev, because Explorer has no BOLTOOLS_DEV.
+if "--dev" in sys.argv:
+    os.environ["BOLTOOLS_DEV"] = "1"
+
 import webview
 from src.desktop_bridge import desktop_bridge
 from src._build import IS_RELEASE
+from src.core import single_instance
+from src.core.explorer_menu import write_menu_file
+from src.core.launch_requests import launch_requests
+from src.core.tool_store import tool_store_service
+
+
+def _sync_explorer_menu():
+    """Rewrites the right-click menu from the tools list; a failure only costs the menu."""
+    try:
+        tools = (tool_store_service.cached_manifest or {}).get("tools", [])
+        is_dev = not IS_RELEASE and os.environ.get("BOLTOOLS_DEV") == "1"
+        write_menu_file(tools, root_dir, is_dev)
+    except Exception as err:
+        print(f"[explorer-menu] could not write menu file: {err}", file=sys.stderr)
 
 
 def _get_icon_path():
@@ -84,6 +102,14 @@ def _apply_win_icon(window):
 
 
 def main():
+    launch_request = single_instance.parse_open_request(sys.argv)
+    # Automated test copies run beside the founder's window and must not hand off to it.
+    is_test_copy = bool(os.environ.get("BOLTOOLS_WEBVIEW_DATA"))
+    if not is_test_copy and single_instance.hand_off(launch_request):
+        return
+    launch_requests.set_initial(launch_request)
+    _sync_explorer_menu()
+
     # WebView2 keeps an HTTP cache in storage_path and happily served a stale index.html
     # after updates, so new scripts never loaded. A per-launch URL forces a fresh page;
     # the ?v= stamps on scripts and styles still let those be cached between launches.
@@ -105,6 +131,9 @@ def main():
         raise RuntimeError("Failed to create webview window.")
 
     desktop_bridge.set_window(window)
+    launch_requests.set_window(window)
+    if not is_test_copy:
+        single_instance.listen(launch_requests.deliver)
 
     # Guarantee native shell flag injection regardless of query string mangling by WebView2
     def _on_loaded():

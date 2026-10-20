@@ -3905,6 +3905,7 @@ async function initApp() {
           else if (state.currentView === 'tool_hub') renderToolHub(container);
           else if (state.currentView === 'favorites') renderFavorites(container);
         }
+        OpenRequest.takeInitial();
         break;
       }
       attempts++;

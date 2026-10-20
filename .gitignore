@@ -59,3 +59,7 @@ nul
 tools_dev/catalog_*.json
 engines/**/target/
 
+
+# Right-click menu build output
+shell_menu/.cache/
+shell_menu/bin/

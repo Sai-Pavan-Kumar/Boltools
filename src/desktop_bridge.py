@@ -27,6 +27,7 @@ from src.core.tool_store import tool_store_service
 from src.core.ui_dispatcher import ui_dispatcher
 from src.core.output_stats import with_file_sizes
 from src.core.thumbnails import make_thumbnails
+from src.core.launch_requests import launch_requests
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -390,6 +391,10 @@ class DesktopBridge:
         """Returns complete tool definition."""
         validate_identifier(tool_id, "tool_id")
         return tool_store_service.get_tool_meta(tool_id)
+
+    def get_launch_request(self) -> Optional[Dict[str, Any]]:
+        """The right-click request this window was started with, handed out once."""
+        return launch_requests.take_initial()
 
     # ── Helper for Frontend Dispatch ─────────────────────────────────────────
     def _notify_frontend(self, handler_name: str, payload: Any):
