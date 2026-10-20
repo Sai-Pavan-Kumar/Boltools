@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "sequence": 15,
+  "sequence": 16,
   "updated_at": "2026-10-20T10:15:38Z",
   "tools": [
     {
@@ -44,7 +44,12 @@
           }
         }
       ],
-      "min_engine_version": "1.2.0"
+      "min_engine_version": "1.2.0",
+      "needs": [
+        "media_engine"
+      ],
+      "size_bytes": 8570,
+      "size_mb": 0.01
     },
     {
       "id": "video_compressor",
@@ -88,7 +93,12 @@
           }
         }
       ],
-      "min_engine_version": "1.2.0"
+      "min_engine_version": "1.2.0",
+      "needs": [
+        "media_engine"
+      ],
+      "size_bytes": 10015,
+      "size_mb": 0.01
     },
     {
       "id": "pdf_merge",
@@ -118,7 +128,8 @@
             "mode": "merge"
           }
         }
-      ]
+      ],
+      "needs": []
     },
     {
       "id": "pdf_split",
@@ -151,7 +162,8 @@
             "every_n": 1
           }
         }
-      ]
+      ],
+      "needs": []
     },
     {
       "id": "pdf_compress",
@@ -168,8 +180,8 @@
       "engine_fallback_url": "https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/pdf_compressor/engine.py",
       "release_notes": "Size limits are met: finer steps, and a last-resort picture mode for text-heavy files.",
       "is_implemented": true,
-      "size_bytes": 1024000,
-      "size_mb": 1,
+      "size_bytes": 9761,
+      "size_mb": 0.01,
       "sha256": "5fb2cf7859894c5aaa26bfb9f48cd8a692488dacefc9b1df1a9802a16d82831e",
       "accepts": [
         "pdf"
@@ -192,7 +204,10 @@
           }
         }
       ],
-      "min_engine_version": "1.1.0"
+      "min_engine_version": "1.1.0",
+      "needs": [
+        "picture_pdf_core"
+      ]
     },
     {
       "id": "pdf_converter",
@@ -239,7 +254,12 @@
           }
         }
       ],
-      "min_engine_version": "1.1.0"
+      "min_engine_version": "1.1.0",
+      "needs": [
+        "picture_pdf_core"
+      ],
+      "size_bytes": 5605,
+      "size_mb": 0.01
     },
     {
       "id": "image_webp_compress",
@@ -281,7 +301,12 @@
           }
         }
       ],
-      "min_engine_version": "1.2.0"
+      "min_engine_version": "1.2.0",
+      "needs": [
+        "picture_pdf_core"
+      ],
+      "size_bytes": 11468,
+      "size_mb": 0.01
     },
     {
       "id": "system_batch_rename",
@@ -303,7 +328,10 @@
       ],
       "min_files": 1,
       "menu_label": "Rename files…",
-      "min_engine_version": "1.1.0"
+      "min_engine_version": "1.1.0",
+      "needs": [],
+      "size_bytes": 2878,
+      "size_mb": 0.0
     },
     {
       "id": "subtitle_animator",
@@ -330,7 +358,12 @@
       ],
       "min_files": 1,
       "menu_label": "Add animated subtitles…",
-      "min_engine_version": "1.2.0"
+      "min_engine_version": "1.2.0",
+      "needs": [
+        "media_engine"
+      ],
+      "size_bytes": 19450,
+      "size_mb": 0.02
     },
     {
       "id": "thumbnail_preview",
@@ -403,7 +436,13 @@
         "limits": "JPG, PNG or WEBP · one or many",
         "before": "A thumbnail becomes phone, desktop and sidebar previews"
       },
-      "sha256": "8782d1889d53f5006c2c69eaacce818f62187a894fcd182d1daabbc99bbce3cf"
+      "sha256": "8782d1889d53f5006c2c69eaacce818f62187a894fcd182d1daabbc99bbce3cf",
+      "output": "preview",
+      "needs": [
+        "picture_pdf_core"
+      ],
+      "size_bytes": 10896,
+      "size_mb": 0.01
     }
   ]
 }
