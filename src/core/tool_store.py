@@ -40,6 +40,7 @@ from typing import List, Dict, Any, Optional, Tuple, Set
 from datetime import datetime
 
 from src.core.paths import get_data_path, get_base_dir
+from src.core import install_plan
 from src._build import IS_RELEASE, BUILD_MIN_SEQUENCE, APP_VERSION, EMBEDDED_PUBLIC_KEYS
 
 try:
@@ -541,6 +542,9 @@ class ToolStoreService:
     def get_catalog_summary(self) -> List[Dict[str, Any]]:
         """Returns compact tool summaries optimized for virtual lists and rapid serialization."""
         tools = self.get_tools_catalog()
+        # Engines some installed tool already brought (Merge and Split share one).
+        installed_engines = {t.get("engine_folder") for t in tools
+                             if t.get("status") in ("installed", "update_available") and t.get("engine_folder")}
         summaries = []
         for t in tools:
             desc = t.get("description") or ""
@@ -563,6 +567,9 @@ class ToolStoreService:
                 "ux": t.get("ux") or None,
                 "accepts": t.get("accepts") or [],
                 "output": t.get("output") or "files",
+                "install_plan": install_plan.plan_for(
+                    t, engine_on_pc=t.get("status") not in ("installed", "update_available")
+                    and t.get("engine_folder") in installed_engines),
             })
         return summaries
 

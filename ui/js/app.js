@@ -383,8 +383,8 @@ function renderHome(container) {
   // CRITICAL USER RULE: Only render right rail if genuine recent files or used tools exist!
   const hasRecentActivity = recentFilesList.length > 0 || recentToolsList.length > 0;
 
-  // Real Tools Cards Grid (Using authentic tools from state.tools)
-  const displayTools = state.tools;
+  // Home lists what the user has; everything else waits in Tool Hub (installing adds it here).
+  const displayTools = readyTools;
   const toolsGridHtml = displayTools.map(t => {
     const isFav = (state.favorites || []).includes(t.id);
     const isInstalled = t.status === 'installed' || t.status === 'update_available' || t.update_available;
@@ -863,6 +863,7 @@ function renderToolHubCard(t, index) {
         </div>
         <h4 class="text-sm font-semibold text-[var(--text-primary)] truncate">${window.ToolSearchIndex ? window.ToolSearchIndex.highlight(t.name, state.searchQuery) : escapeHtml(t.name)}</h4>
         <p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2 leading-relaxed">${window.ToolSearchIndex ? window.ToolSearchIndex.highlight(t.description, state.searchQuery) : escapeHtml(t.description)}</p>
+        ${isInstalled ? '' : `<p class="hub-install-line"><span>${escapeHtml(InstallDetails.summaryLine(t))}</span><button type="button" data-action="install-details" data-tool-id="${escapeAttr(t.id)}">What gets installed</button></p>`}
       </div>
       <div class="px-4 py-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
         ${isUpdate ? `
@@ -959,7 +960,7 @@ function renderToolHub(container) {
     activeHubVirtualGrid = new VirtualGrid({
       container: viewport,
       items: matchingTools,
-      cardHeight: 190,
+      cardHeight: 212,
       gap: 14,
       bufferRows: 3,
       renderCard: renderToolHubCard
@@ -3313,6 +3314,10 @@ async function initApp() {
         if (theme) ThemeTransition.switchTo(theme, el);
         break;
       }
+
+      case 'install-details':
+        InstallDetails.show(el.dataset.toolId);
+        break;
 
       case 'pick-file-action':
         FileActionsPicker.pick(el.dataset.index);

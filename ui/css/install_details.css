@@ -1,0 +1,79 @@
+/* Tool Hub install details (js/modules/install_details.js). */
+.hub-install-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hub-install-line button {
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand-primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hub-install-line button:hover { text-decoration: underline; }
+
+.idt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+}
+.idt-backdrop.hidden { display: none; }
+.idt-panel {
+  width: min(440px, 100%);
+  padding: 24px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--surface-card);
+}
+.idt-title { margin: 0 0 4px; font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.idt-total { margin: 0 0 16px; font-size: 13px; color: var(--text-secondary); }
+.idt-total strong { color: var(--text-primary); }
+.idt-parts { display: grid; gap: 8px; margin: 0 0 20px; padding: 0; list-style: none; }
+.idt-part {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-inset);
+}
+.idt-part strong { font-size: 13px; color: var(--text-primary); }
+.idt-part span { font-size: 12px; color: var(--text-secondary); }
+.idt-part em { font-size: 12px; font-style: normal; color: var(--text-secondary); }
+.idt-download { border-left-color: var(--brand-primary); }
+.idt-present, .idt-built_in { border-left-color: #16A34A; }
+.idt-missing { border-left-color: #D97706; }
+.idt-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.idt-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.idt-btn:hover { background: var(--surface-card-hover); }
+.idt-btn-primary { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--text-on-brand); }
+.idt-btn-primary:hover { background: var(--brand-primary); filter: brightness(1.08); }
+.idt-btn:focus-visible { outline: 2px solid var(--border-active); outline-offset: 2px; }
