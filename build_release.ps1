@@ -31,13 +31,12 @@ if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
 
 $original = Get-Content $buildFlags -Raw
 try {
-    $original.Replace('IS_RELEASE: bool = False', 'IS_RELEASE: bool = True') |
-        Set-Content $buildFlags -NoNewline -Encoding utf8
+    [IO.File]::WriteAllText($buildFlags, $original.Replace('IS_RELEASE: bool = False', 'IS_RELEASE: bool = True'))
     & $python -m PyInstaller Boltools.spec -y --clean
     if ($LASTEXITCODE -ne 0) { throw 'App build failed.' }
 }
 finally {
-    Set-Content $buildFlags $original -NoNewline -Encoding utf8
+    [IO.File]::WriteAllText($buildFlags, $original)
 }
 
 & (Join-Path $PSScriptRoot 'shell_menu\build_menu.ps1') -Destination (Join-Path $PSScriptRoot 'dist\Boltools') -Executable 'Boltools.exe'
