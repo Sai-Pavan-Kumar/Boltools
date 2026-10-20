@@ -3358,6 +3358,10 @@ async function initApp() {
         break;
       }
 
+      case 'toggle-sidebar':
+        SidebarToggle.toggle();
+        break;
+
       case 'toggle-theme':
         ThemeTransition.switchTo(state.theme === 'dark' ? 'light' : 'dark', el);
         break;
