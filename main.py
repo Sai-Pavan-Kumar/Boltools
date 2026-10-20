@@ -51,6 +51,7 @@ from src.desktop_bridge import desktop_bridge
 from src._build import IS_RELEASE
 from src.core import single_instance
 from src.core.explorer_menu import write_menu_file
+from src.core.file_actions import resolve_key
 from src.core.launch_requests import launch_requests
 from src.core.tool_store import tool_store_service
 
@@ -101,8 +102,24 @@ def _apply_win_icon(window):
         pass
 
 
+def _run_quick_action(request) -> bool:
+    """Right-click one-click actions finish in a small card; False means open the app."""
+    tools = (tool_store_service.cached_manifest or {}).get("tools", [])
+    tool, action = resolve_key(tools, request["tool_id"])
+    files = [f for f in request["files"] if os.path.isfile(f)]
+    if not tool or not action or not files:
+        if tool:
+            request["tool_id"] = tool["id"]
+        return False
+    from src.quick_run import run_quick
+    run_quick(tool, action, files, root_dir, desktop_bridge, _get_icon_path())
+    return True
+
+
 def main():
     launch_request = single_instance.parse_open_request(sys.argv)
+    if launch_request and _run_quick_action(launch_request):
+        return
     # Automated test copies run beside the founder's window and must not hand off to it.
     is_test_copy = bool(os.environ.get("BOLTOOLS_WEBVIEW_DATA"))
     if not is_test_copy and single_instance.hand_off(launch_request):

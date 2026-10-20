@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Boltools</title>
+  <link rel="stylesheet" href="css/styles.css?v=1">
+  <link rel="stylesheet" href="css/quick.css?v=1">
+</head>
+<body>
+  <!-- Right-click runs land here: a small card that does the work and gets out of the way. -->
+  <main class="quick" id="quick" data-phase="running" aria-live="polite">
+    <header class="quick-head pywebview-drag-region">
+      <img class="quick-logo" src="assets/boltools.ico" alt="" onerror="this.remove()">
+      <p class="quick-title" id="quick-title">Working…</p>
+      <button class="quick-close" id="quick-close" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </header>
+    <p class="quick-file" id="quick-file"></p>
+    <div class="quick-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="quick-bar"><span id="quick-fill"></span></div>
+    <p class="quick-status" id="quick-status">Starting…</p>
+    <div class="quick-actions" id="quick-actions">
+      <button class="quick-btn quick-btn-primary" id="quick-show" type="button">Show file</button>
+      <button class="quick-btn" id="quick-dismiss" type="button">Close</button>
+    </div>
+  </main>
+  <script src="js/modules/run_stats.js?v=4"></script>
+  <script src="js/quick.js?v=1"></script>
+</body>
+</html>

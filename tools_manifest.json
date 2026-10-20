@@ -35,7 +35,15 @@
         "aac"
       ],
       "min_files": 1,
-      "menu_label": "Take out the audio"
+      "menu_label": "Take out the audio",
+      "quick_actions": [
+        {
+          "label": "Take out the audio (MP3)",
+          "options": {
+            "format": "MP3 (320 kbps Studio Quality)"
+          }
+        }
+      ]
     },
     {
       "id": "video_compressor",
@@ -63,7 +71,16 @@
         "m4v"
       ],
       "min_files": 1,
-      "menu_label": "Make video smaller"
+      "menu_label": "Make video smaller",
+      "quick_actions": [
+        {
+          "label": "Make video smaller",
+          "options": {
+            "mode": "Balanced",
+            "target_mb": 50
+          }
+        }
+      ]
     },
     {
       "id": "pdf_merge",
@@ -85,7 +102,15 @@
         "pdf"
       ],
       "min_files": 2,
-      "menu_label": "Merge PDFs"
+      "menu_label": "Merge PDFs",
+      "quick_actions": [
+        {
+          "label": "Merge into one PDF",
+          "options": {
+            "mode": "merge"
+          }
+        }
+      ]
     },
     {
       "id": "pdf_split",
@@ -107,7 +132,18 @@
         "pdf"
       ],
       "min_files": 1,
-      "menu_label": "Split pages"
+      "menu_label": "Split pages",
+      "quick_actions": [
+        {
+          "label": "Split into single pages",
+          "options": {
+            "mode": "split",
+            "split_mode": "each_page",
+            "ranges": "1-",
+            "every_n": 1
+          }
+        }
+      ]
     },
     {
       "id": "pdf_compress",
@@ -131,7 +167,16 @@
         "pdf"
       ],
       "min_files": 1,
-      "menu_label": "Make PDF smaller"
+      "menu_label": "Make PDF smaller",
+      "quick_actions": [
+        {
+          "label": "Make PDF smaller",
+          "options": {
+            "preset": "balanced",
+            "target_kb": 0
+          }
+        }
+      ]
     },
     {
       "id": "pdf_converter",
@@ -155,7 +200,29 @@
         "jpeg"
       ],
       "min_files": 1,
-      "menu_label": "Turn into PDF or photos"
+      "menu_label": "Turn into PDF or photos",
+      "quick_actions": [
+        {
+          "label": "Turn pages into photos",
+          "accepts": [
+            "pdf"
+          ],
+          "options": {
+            "mode": "PDF to Images (JPG)"
+          }
+        },
+        {
+          "label": "Make one PDF from photos",
+          "accepts": [
+            "png",
+            "jpg",
+            "jpeg"
+          ],
+          "options": {
+            "mode": "Images to PDF Document"
+          }
+        }
+      ]
     },
     {
       "id": "image_webp_compress",
@@ -180,7 +247,23 @@
         "webp"
       ],
       "min_files": 1,
-      "menu_label": "Make photo smaller"
+      "menu_label": "Make photo smaller",
+      "quick_actions": [
+        {
+          "label": "Make photo smaller",
+          "options": {
+            "preset": "balanced",
+            "target_kb": 0
+          }
+        },
+        {
+          "label": "Photo under 50 KB",
+          "options": {
+            "preset": "balanced",
+            "target_kb": 50
+          }
+        }
+      ]
     },
     {
       "id": "system_batch_rename",
@@ -201,7 +284,7 @@
         "*"
       ],
       "min_files": 1,
-      "menu_label": "Rename files"
+      "menu_label": "Rename files…"
     },
     {
       "id": "subtitle_animator",
@@ -227,7 +310,7 @@
         "vtt"
       ],
       "min_files": 1,
-      "menu_label": "Add animated subtitles"
+      "menu_label": "Add animated subtitles…"
     }
   ]
 }

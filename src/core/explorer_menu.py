@@ -8,6 +8,8 @@ import os
 import sys
 from typing import Dict, Iterable
 
+from src.core.file_actions import menu_items
+
 MENU_FILE = os.path.join(os.path.expanduser("~"), ".boltools", "explorer-menu.txt")
 
 
@@ -30,14 +32,10 @@ def _clean(text: str) -> str:
 def write_menu_file(tools: Iterable[Dict], root_dir: str, is_dev: bool) -> None:
     command, work_dir, icon = _launch_line(root_dir, is_dev)
     lines = [command, work_dir, icon]
-    for tool in tools:
-        accepts = tool.get("accepts") or []
-        if not accepts or not tool.get("is_implemented", True):
-            continue
-        label = tool.get("menu_label") or tool.get("name") or tool["id"]
+    for item in menu_items(tools):
         lines.append("|".join([
-            _clean(tool["id"]), _clean(label), str(int(tool.get("min_files", 1))),
-            ",".join(_clean(e).lower() for e in accepts),
+            _clean(item["key"]), _clean(item["label"]), str(item["min_files"]),
+            ",".join(_clean(e).lower() for e in item["accepts"]),
         ]))
     os.makedirs(os.path.dirname(MENU_FILE), exist_ok=True)
     temp = MENU_FILE + ".tmp"

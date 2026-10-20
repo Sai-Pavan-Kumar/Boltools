@@ -1,0 +1,86 @@
+/* Right-click quick card. Tokens come from styles.css; sizes sit on the 4px grid. */
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--surface-card);
+  font-family: 'Overused Grotesk', system-ui, sans-serif;
+  color: var(--text-primary);
+}
+
+.quick {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px 16px;
+  border: 1px solid var(--border-subtle);
+}
+
+.quick > * { flex-shrink: 0; }
+.quick-head { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+.quick-logo { width: 20px; height: 20px; }
+.quick-title { flex: 1; margin: 0; font-size: 15px; font-weight: 600; }
+
+.quick-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.quick-close:hover { background: var(--surface-card-hover); color: var(--text-primary); }
+
+.quick-file {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-bar { height: 6px; border-radius: 4px; background: var(--surface-pill); overflow: hidden; }
+.quick-bar span {
+  display: block;
+  height: 100%;
+  width: 4%;
+  border-radius: 4px;
+  background: var(--brand-primary);
+  transition: width 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.quick-status { margin: 0; font-size: 13px; color: var(--text-secondary); min-height: 16px; }
+.quick-status strong { color: var(--text-primary); font-weight: 600; }
+
+.quick-actions { display: none; gap: 8px; margin-top: auto; }
+.quick-btn {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.quick-btn:hover { background: var(--surface-card-hover); }
+.quick-btn-primary { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--text-on-brand); }
+.quick-btn-primary:hover { background: var(--brand-primary); filter: brightness(1.08); }
+
+.quick[data-phase="done"] .quick-bar span { background: #16A34A; }
+.quick[data-phase="done"] .quick-actions,
+.quick[data-phase="failed"] .quick-actions { display: flex; }
+.quick[data-phase="failed"] .quick-bar span { background: #DC2626; }
+.quick[data-phase="failed"] #quick-show { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-bar span { transition: none; }
+}
