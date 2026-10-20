@@ -13,7 +13,7 @@ APP_VERSION: str = "1.1.0"
 # Formatted as hex-encoded 32-byte Ed25519 public keys.
 EMBEDDED_PUBLIC_KEYS = {
     # Key 1: Primary release key
-    "key_1": "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0",
+    "key_1": "b4a6b85925c014b262e6a9a7be7b951e387f48d8f489ba76c564ed06f924e9a1",
     # Key 2: Secondary / Backup rotation key
     "key_2": ""
 }
