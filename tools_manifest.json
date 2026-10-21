@@ -436,5 +436,11 @@
       "size_bytes": 12577,
       "size_mb": 0.01
     }
-  ]
+  ],
+  "media_pack": {
+    "version": "9.0.2",
+    "url": "https://github.com/Sai-Pavan-Kumar/Boltools/releases/download/media-pack-9.0.2/media-pack-9.0.2.zip",
+    "sha256": "e9dceccc6d50b3bfe170b38cfbf36a6918baafc3b372c9357d65150cc48e6fb9",
+    "size_bytes": 74916348
+  }
 }
