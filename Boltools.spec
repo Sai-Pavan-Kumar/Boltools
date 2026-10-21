@@ -11,7 +11,9 @@ datas = [
     # and the signed .bolpack files let tools install with no internet at all.
     ('tools_manifest.json', '.'),
     ('tools_manifest.sig', '.'),
-    ('release_bundles', 'release_bundles')
+    ('release_bundles', 'release_bundles'),
+    # Licence texts for Settings -> About -> Licences (regenerate with tools_dev/collect_licences.py).
+    ('licenses', 'licenses')
 ]
 binaries = []
 hiddenimports = [

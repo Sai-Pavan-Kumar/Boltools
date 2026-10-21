@@ -1,0 +1,294 @@
+{
+  "components": [
+    {
+      "id": "python",
+      "name": "Python",
+      "version": "3.14.7",
+      "used_for": "Runs the app and its tools",
+      "licence": "PSF-2.0",
+      "url": "https://www.python.org",
+      "files": [
+        "LICENSE.txt"
+      ]
+    },
+    {
+      "id": "pywebview",
+      "name": "pywebview",
+      "version": "6.2.1",
+      "used_for": "App window",
+      "licence": "BSD-3-Clause",
+      "url": "https://pywebview.flowrl.com",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "id": "webview2_sdk",
+      "name": "Microsoft WebView2 SDK",
+      "version": "1.0.3856.49",
+      "used_for": "App window",
+      "licence": "BSD-3-Clause",
+      "url": "https://aka.ms/webview2",
+      "files": [
+        "webview2-sdk-LICENSE.txt"
+      ]
+    },
+    {
+      "id": "pythonnet",
+      "name": "pythonnet",
+      "version": "3.2.0",
+      "used_for": "Connects the app to Windows",
+      "licence": "MIT",
+      "url": "https://github.com/pythonnet/pythonnet",
+      "files": [
+        "AUTHORS.md",
+        "LICENSE"
+      ]
+    },
+    {
+      "id": "clr_loader",
+      "name": "clr_loader",
+      "version": "0.3.1",
+      "used_for": "Connects the app to Windows",
+      "licence": "MIT",
+      "url": "https://github.com/pythonnet/clr-loader",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "id": "bottle",
+      "name": "Bottle",
+      "version": "0.13.4",
+      "used_for": "App window",
+      "licence": "MIT",
+      "url": "https://bottlepy.org",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "id": "proxy_tools",
+      "name": "proxy_tools",
+      "version": "0.1.0",
+      "used_for": "App window",
+      "licence": "MIT",
+      "url": "https://github.com/jtushman/proxy_tools",
+      "files": [
+        "proxy_tools-NOTE.txt"
+      ]
+    },
+    {
+      "id": "pillow",
+      "name": "Pillow",
+      "version": "12.3.0",
+      "used_for": "Pictures",
+      "licence": "MIT-CMU",
+      "url": "https://python-pillow.org",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "id": "pikepdf",
+      "name": "pikepdf, with qpdf",
+      "version": "10.17.0",
+      "used_for": "PDF tools",
+      "licence": "MPL-2.0 (qpdf: Apache-2.0)",
+      "url": "https://github.com/pikepdf/pikepdf",
+      "files": [
+        "LICENSE.txt",
+        "CC-BY-4.0-veraPDF.txt",
+        "GCC-exception-3.1.txt",
+        "GPL-3.0.txt",
+        "README.md",
+        "libjpeg-turbo-README.ijg.txt",
+        "libjpeg-turbo.txt",
+        "microsoft-visual-cpp-runtime.txt",
+        "openssl.txt",
+        "pdfminer.six.txt",
+        "qpdf.txt",
+        "sRGB-icc-profile.txt",
+        "zlib.txt"
+      ]
+    },
+    {
+      "id": "pypdfium2",
+      "name": "pypdfium2, with PDFium",
+      "version": "5.14.0",
+      "used_for": "PDF pages and pictures",
+      "licence": "Apache-2.0 / BSD-3-Clause",
+      "url": "https://github.com/pypdfium2-team/pypdfium2",
+      "files": [
+        "Apache-2.0.txt",
+        "BSD-3-Clause.txt",
+        "CC-BY-4.0.txt",
+        "abseil.txt",
+        "agg23.txt",
+        "fast_float.txt",
+        "freetype.txt",
+        "icu.txt",
+        "lcms.txt",
+        "libjpeg_turbo.ijg",
+        "libjpeg_turbo.md",
+        "libopenjpeg.txt",
+        "libpng.txt",
+        "llvm-libc.txt",
+        "pdfium-binaries.txt",
+        "pdfium.txt",
+        "simdutf.txt",
+        "zlib.txt"
+      ]
+    },
+    {
+      "id": "lxml",
+      "name": "lxml, with libxml2 and libxslt",
+      "version": "6.1.3",
+      "used_for": "PDF tools",
+      "licence": "BSD-3-Clause",
+      "url": "https://lxml.de",
+      "files": [
+        "LICENSE.txt",
+        "LICENSES.txt"
+      ]
+    },
+    {
+      "id": "cryptography",
+      "name": "cryptography",
+      "version": "50.0.2",
+      "used_for": "Checks that tools are genuine",
+      "licence": "Apache-2.0 OR BSD-3-Clause",
+      "url": "https://cryptography.io",
+      "files": [
+        "LICENSE",
+        "LICENSE.APACHE",
+        "LICENSE.BSD"
+      ]
+    },
+    {
+      "id": "openssl",
+      "name": "OpenSSL",
+      "version": "3.5.7",
+      "used_for": "Secure downloads",
+      "licence": "Apache-2.0",
+      "url": "https://www.openssl.org",
+      "files": [
+        "openssl.txt"
+      ]
+    },
+    {
+      "id": "pynacl",
+      "name": "PyNaCl, with libsodium",
+      "version": "1.6.2",
+      "used_for": "Checks that tools are genuine",
+      "licence": "Apache-2.0 (libsodium: ISC)",
+      "url": "https://github.com/pyca/pynacl",
+      "files": [
+        "LICENSE",
+        "LICENSE.libsodium.txt"
+      ]
+    },
+    {
+      "id": "cffi",
+      "name": "cffi",
+      "version": "2.1.1",
+      "used_for": "Checks that tools are genuine",
+      "licence": "MIT-0",
+      "url": "https://cffi.readthedocs.io",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "id": "pycparser",
+      "name": "pycparser",
+      "version": "3.0",
+      "used_for": "Checks that tools are genuine",
+      "licence": "BSD-3-Clause",
+      "url": "https://github.com/eliben/pycparser",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "id": "packaging",
+      "name": "packaging",
+      "version": "26.3",
+      "used_for": "Version checks",
+      "licence": "Apache-2.0 OR BSD-2-Clause",
+      "url": "https://github.com/pypa/packaging",
+      "files": [
+        "LICENSE",
+        "LICENSE.APACHE",
+        "LICENSE.BSD"
+      ]
+    },
+    {
+      "id": "typing_extensions",
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "used_for": "Runs the app",
+      "licence": "PSF-2.0",
+      "url": "https://github.com/python/typing_extensions",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "id": "setuptools",
+      "name": "setuptools",
+      "version": "84.0.0",
+      "used_for": "Runs the app",
+      "licence": "MIT",
+      "url": "https://github.com/pypa/setuptools",
+      "files": [
+        "LICENSE"
+      ]
+    },
+    {
+      "id": "vc_runtime",
+      "name": "Microsoft Visual C++ Runtime",
+      "version": "",
+      "used_for": "Runs the app",
+      "licence": "Microsoft redistribution terms",
+      "url": "https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist",
+      "files": [
+        "microsoft-visual-cpp-runtime.txt"
+      ]
+    },
+    {
+      "id": "overused_grotesk",
+      "name": "Overused Grotesk",
+      "version": "",
+      "used_for": "App font",
+      "licence": "OFL-1.1",
+      "url": "https://github.com/RandomMaerks/Overused-Grotesk",
+      "files": [
+        "OFL-OverusedGrotesk.txt"
+      ]
+    },
+    {
+      "id": "geist_mono",
+      "name": "Geist Mono",
+      "version": "",
+      "used_for": "App font",
+      "licence": "OFL-1.1",
+      "url": "https://github.com/vercel/geist-font",
+      "files": [
+        "OFL-GeistMono.txt"
+      ]
+    },
+    {
+      "id": "ffmpeg",
+      "name": "FFmpeg, with x264 (media pack)",
+      "version": "9.0.2",
+      "used_for": "Video and audio tools, downloaded once on first use",
+      "licence": "GPL-3.0",
+      "url": "https://github.com/Sai-Pavan-Kumar/Boltools/releases/tag/media-pack-9.0.2",
+      "files": [
+        "ffmpeg-NOTE.txt",
+        "GPL-3.0.txt"
+      ]
+    }
+  ]
+}

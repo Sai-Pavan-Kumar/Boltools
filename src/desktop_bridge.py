@@ -19,6 +19,7 @@ import webbrowser
 from typing import Dict, Any, List, Optional
 import webview
 
+from src._build import APP_VERSION
 from src.core.system_monitor import system_monitor
 from src.core.favorites import favorites_service
 from src.core.community import community_service
@@ -34,6 +35,7 @@ from src.core import previews
 from src.core import live_preview
 from src.core import new_tools, background_check
 from src.core.media_pack_api import MediaPackApi
+from src.core.licences import LicencesApi
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -46,7 +48,7 @@ def validate_identifier(val: str, name: str = "identifier") -> str:
     return val
 
 
-class DesktopBridge(MediaPackApi):
+class DesktopBridge(MediaPackApi, LicencesApi):
     """JS-accessible API exposed to the WebView2 frontend via window.pywebview.api."""
 
     def __init__(self):
@@ -85,7 +87,8 @@ class DesktopBridge(MediaPackApi):
             },
             "announcements": self.get_announcements(),
             "system_stats": {"cpu": cpu, "ram": ram, "disk": disk},
-            "default_downloads": os.path.join(os.path.expanduser("~"), "Downloads")
+            "default_downloads": os.path.join(os.path.expanduser("~"), "Downloads"),
+            "app_version": APP_VERSION
         }
 
     def get_catalog_summary(self) -> List[Dict[str, Any]]:

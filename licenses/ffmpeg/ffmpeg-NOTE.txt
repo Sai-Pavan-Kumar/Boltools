@@ -1,0 +1,14 @@
+FFmpeg 9.0.2 (n9.0.2-31-gc89d6ee1ca), with x264 and other libraries
+
+Not part of the Boltools app. Boltools downloads it once, as the "media pack", the
+first time a video or audio tool runs, and runs it as a separate program.
+
+The build is configured with --enable-gpl --enable-version3, so it is licensed under
+the GNU General Public License version 3 (full text in GPL-3.0.txt next to this file).
+It was made by BtbN/FFmpeg-Builds and is redistributed unmodified.
+
+Complete corresponding source (FFmpeg source, the exact build scripts, and the list of
+every library source with its commit):
+https://github.com/Sai-Pavan-Kumar/Boltools/releases/tag/media-pack-9.0.2
+
+FFmpeg is a trademark of Fabrice Bellard, originator of the FFmpeg project.

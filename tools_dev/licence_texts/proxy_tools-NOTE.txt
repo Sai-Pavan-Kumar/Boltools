@@ -1,0 +1,4 @@
+proxy_tools 0.1.0 (used by pywebview)
+
+The package declares the MIT licence in its metadata but does not ship a licence
+file. Project: https://github.com/jtushman/proxy_tools

@@ -1187,9 +1187,12 @@ function renderSettings(container) {
       <div class="p-5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-subtle)] space-y-4">
         <span class="text-xs font-semibold text-[var(--text-muted)] tracking-wider uppercase">About & Diagnostics</span>
         <div>
-          <h4 class="text-sm font-semibold text-[var(--text-primary)]">Boltools Desktop v1.1</h4>
+          <h4 class="text-sm font-semibold text-[var(--text-primary)]">Boltools Desktop${state.appVersion ? ` v${escapeHtml(state.appVersion)}` : ''}</h4>
           <p class="text-xs text-[var(--text-secondary)] leading-relaxed mt-0.5">Fast, private, 100% offline utilities for creators and power users. Designed and built with obsessed human craftsmanship.</p>
         </div>
+        <button type="button" data-action="open-licences" class="lic-open px-3.5 text-xs font-medium rounded-lg bg-[var(--surface-inset)] hover:bg-[var(--surface-card-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] transition-colors cursor-pointer">
+          Licences
+        </button>
         <div>
           <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium bg-[var(--surface-inset)] text-[var(--text-muted)]">
             ${getIcon('shield', 'w-3 h-3 text-emerald-500')}
@@ -3358,6 +3361,9 @@ async function initApp() {
       case 'clean-cache':
         handleCleanCache(el);
         break;
+      case 'open-licences':
+        Licences.open();
+        break;
 
       case 'navigate-back':
         if (state.isToolRunning && RunStage.confirmLeave()) break;
@@ -3875,6 +3881,7 @@ async function initApp() {
         if (initData.updates_count !== undefined) state.updatesCount = initData.updates_count;
         if (initData.system_stats) state.systemStats = initData.system_stats;
         if (initData.default_downloads) state.defaultDownloads = initData.default_downloads;
+        if (initData.app_version) state.appVersion = initData.app_version;
 
         // Fetch compact catalog summaries via get_catalog_summary
         const summaryData = await callBridge('get_catalog_summary');

@@ -96,3 +96,43 @@
 .mpk-status { margin: 0 0 20px; font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .mpk-error { margin: 0 0 16px; font-size: 12px; color: #D97706; }
 @media (prefers-reduced-motion: reduce) { .mpk-bar { transition: none; } }
+
+/* Licences (js/modules/licences.js) reuses the panel above. */
+.lic-open { min-height: 44px; }
+.lic-panel { width: min(640px, 100%); max-height: calc(100vh - 48px); display: flex; flex-direction: column; }
+.lic-list { display: grid; gap: 8px; margin: 0 0 20px; padding: 0 4px 0 0; list-style: none; overflow-y: auto; }
+.lic-item { padding: 12px; border: 1px solid var(--border-subtle); border-radius: 10px; background: var(--surface-inset); }
+.lic-head { display: flex; justify-content: space-between; gap: 12px; }
+.lic-head strong { font-size: 13px; color: var(--text-primary); }
+.lic-head span { font-size: 12px; color: var(--text-secondary); text-align: right; }
+.lic-item p { margin: 2px 0 8px; font-size: 12px; color: var(--text-secondary); }
+.lic-files { display: flex; flex-wrap: wrap; gap: 6px; }
+.lic-file, .lic-link {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.lic-link { min-height: 0; padding: 0; border: 0; background: none; color: var(--brand-primary); font-weight: 600; }
+.lic-file:hover { background: var(--surface-card-hover); }
+.lic-link:hover { text-decoration: underline; }
+.lic-file:focus-visible, .lic-link:focus-visible, .lic-text:focus-visible { outline: 2px solid var(--border-active); outline-offset: 2px; }
+.lic-text {
+  flex: 1;
+  min-height: 0;
+  margin: 0 0 20px;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 10px;
+  background: var(--surface-inset);
+  color: var(--text-primary);
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
