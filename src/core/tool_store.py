@@ -762,7 +762,6 @@ class ToolStoreService:
         folder = validate_id(meta.get("engine_folder", tool_id), "engine_folder")
         remote_version = meta.get("version", "1.0.0")
         urls_to_try.append(f"https://boltools.thesurfboard.in/engines/{folder}/{tool_id}-{remote_version}.bolpack")
-        urls_to_try.append(f"https://raw.githubusercontent.com/Sai-Pavan-Kumar/Boltools/main/website/engines/{folder}/engine.py")
 
         download_bytes: Optional[bytes] = None
         last_error = ""
@@ -825,7 +824,12 @@ class ToolStoreService:
                     assert_inside_dir(bundled_engine, self.bundled_engines_dir)
                     try:
                         with open(bundled_engine, "rb") as f:
-                            download_bytes = f.read()
+                            bundled_data = f.read()
+                        # Same fingerprint rule as a download: a stale or edited local copy must never run.
+                        if not expected_sha256 or hashlib.sha256(bundled_data).hexdigest().lower() == expected_sha256.lower().strip():
+                            download_bytes = bundled_data
+                        else:
+                            last_error = f"SHA256 mismatch for bundled {tool_id} engine."
                     except Exception as e:
                         last_error = str(e)
 
