@@ -57,6 +57,10 @@ from src.core import new_tools, toast, background_check
 from src.core.ui_dispatcher import ui_dispatcher
 from src.core.launch_requests import launch_requests
 from src.core.tool_store import tool_store_service
+from src.core import media_pack
+
+# Before any engine, quick action or Tool Store check looks for the media engine on PATH.
+media_pack.activate()
 
 
 def _sync_explorer_menu():

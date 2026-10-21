@@ -77,3 +77,22 @@
 .idt-btn-primary { background: var(--brand-primary); border-color: var(--brand-primary); color: var(--text-on-brand); }
 .idt-btn-primary:hover { background: var(--brand-primary); filter: brightness(1.08); }
 .idt-btn:focus-visible { outline: 2px solid var(--border-active); outline-offset: 2px; }
+
+/* Media pack download (js/modules/media_pack.js) reuses the panel above. */
+.mpk-track {
+  height: 8px;
+  margin: 4px 0 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-inset);
+}
+.mpk-bar {
+  height: 100%;
+  background: var(--brand-primary);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms ease-out;
+}
+.mpk-status { margin: 0 0 20px; font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.mpk-error { margin: 0 0 16px; font-size: 12px; color: #D97706; }
+@media (prefers-reduced-motion: reduce) { .mpk-bar { transition: none; } }

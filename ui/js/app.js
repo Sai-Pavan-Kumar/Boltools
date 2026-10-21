@@ -2212,6 +2212,8 @@ async function handleExecuteTool(toolId) {
     alert('Please select or drop at least one file to process.');
     return;
   }
+  // Video and audio tools offer the one-time media pack download instead of failing.
+  if (!(await MediaPack.ensureReady(toolId))) return;
 
   // Preview tools write to a private folder; the viewer shows them and Save copies them out.
   const outDir = PreviewViewer.isPreviewTool(toolId)
@@ -2370,7 +2372,7 @@ window.onToolError = function(errMsg) {
     btnExec.classList.remove('opacity-50');
   }
   if (LivePreview.isSaving()) return LivePreview.finishSave([], errMsg);
-  RunStage.fail(errMsg);
+  RunStage.fail(MediaPack.cleanMessage(errMsg));
 };
 
 // ── Subtitle Animation Maker Studio Suite ─────────────────────────────────────

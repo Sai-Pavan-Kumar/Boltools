@@ -566,6 +566,7 @@ class ToolStoreService:
                 "settings": t.get("settings") or [],
                 "ux": t.get("ux") or None,
                 "accepts": t.get("accepts") or [],
+                "needs": t.get("needs") or [],
                 "output": t.get("output") or "files",
                 "install_plan": install_plan.plan_for(
                     t, engine_on_pc=t.get("status") not in ("installed", "update_available")

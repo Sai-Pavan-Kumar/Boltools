@@ -16,7 +16,7 @@ SHARED_PARTS = {
     "media_engine": {
         "name": "Media engine",
         "built_in": False,
-        "missing_hint": "Not on this PC yet. Install it once with: winget install Gyan.FFmpeg",
+        "missing_hint": "Not on this PC yet. Boltools downloads it once, the first time you use a media tool.",
     },
 }
 

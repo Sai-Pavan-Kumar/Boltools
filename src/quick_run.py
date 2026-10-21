@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Tuple
 
 import webview
 
-from src.core.engine_compat import run_blocker
+from src.core.engine_compat import MEDIA_PACK_MESSAGE, run_blocker
 from src.core.output_stats import with_file_sizes
 from src.core.ui_port import free_port
 from src.core.tool_store import tool_store_service
@@ -90,6 +90,10 @@ class CardChannel:
 def _start_engine(card: CardChannel, tool: Dict, action: Dict, files: List[str]):
     card.send("start", {"label": action["label"], "files": files})
     blocker = run_blocker(tool["id"])
+    if blocker == MEDIA_PACK_MESSAGE:
+        # The corner card has no download button; the main window does.
+        card.send("failed", {"message": "This needs the media pack. Open this tool in Boltools once to download it."})
+        return
     if blocker:
         card.send("failed", {"message": blocker})
         return

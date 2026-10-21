@@ -33,6 +33,7 @@ from src.core.file_actions import menu_entries
 from src.core import previews
 from src.core import live_preview
 from src.core import new_tools, background_check
+from src.core.media_pack_api import MediaPackApi
 from src.engine_runner import engine_runner
 
 VALID_ID_PATTERN = re.compile(r"^[a-z0-9_]{1,64}$")
@@ -45,7 +46,7 @@ def validate_identifier(val: str, name: str = "identifier") -> str:
     return val
 
 
-class DesktopBridge:
+class DesktopBridge(MediaPackApi):
     """JS-accessible API exposed to the WebView2 frontend via window.pywebview.api."""
 
     def __init__(self):
